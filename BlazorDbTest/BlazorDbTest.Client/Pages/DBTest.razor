@@ -1,0 +1,208 @@
+﻿@page "/dbtest"
+@* HttpClient を受け取る *@
+@inject HttpClient HttpClient
+
+<PageTitle>DB Test</PageTitle>
+
+<h1>Hi!</h1>
+
+<h3>INPUT</h3>
+<EditForm EditContext="editContextPatientInfo" FormName="patientinfoform"/>
+
+<br />
+<h4>○ 患者ID</h4>
+<div class="part-group">
+    <label>ID:</label>
+    <InputText @bind-Value="PatientInfoModel.ID" autocomplete=off />
+</div>
+
+<br />
+<h4>○ 患者情報</h4>
+<div class="part-group">
+    <label>Family Name:</label>
+    <InputText @bind-Value="PatientInfoModel.FamilyName" autocomplete=off />
+</div>
+<div class="part-group">
+    <label>First Name:</label>
+    <InputText @bind-Value="PatientInfoModel.FirstName" autocomplete=off />
+</div>
+<div>
+    <label>Gender:</label>
+    <InputRadioGroup @bind-Value="PatientInfoModel.Gender">
+        <InputRadio Value="Gender.man" />Man
+        <InputRadio Value="Gender.female" />Female
+        <InputRadio Value="Gender.NoSpecified" />NoSpecified
+    </InputRadioGroup>
+</div>
+<div>
+    <label>Birthday:</label>
+    <InputDate @bind-Value="PatientInfoModel.BirthDate" max="@DateTime.Today.ToString("yyyy-MM-dd")" min="@MinDate" />
+</div>
+<div>
+    <button @onclick="PatientInfoButtonClick">Register</button>
+</div>
+
+<br />
+<EditForm EditContext="editContextAxial" FormName="axialform" />
+<h4>○ 眼軸長測定値</h4>
+<div class="part-group">
+    <label>Axial(R):</label>
+    <input type="number" @bind-value=AxialModel.RAxial />
+</div>
+<div class="part-group">
+    <label>Axial(L):</label>
+    <input type="number" @bind-value=AxialModel.LAxial />
+</div>
+<div>
+    <label>Exam Date:</label>
+    <InputDate @bind-Value="AxialModel.ExamDateTime" max="@DateTime.Today.ToString("yyyy-MM-dd")" min="@MinDate" />
+</div>
+<div>
+    <button @onclick="AxialButtonClick">Register</button>
+</div>
+
+<br />
+<h4>○ 治療方法登録</h4>
+<p><em>Coming Soon...</em></p>
+
+<br />
+<h4>○ 患者の治療状況登録</h4>
+<p><em>Coming Soon...</em></p>
+
+<br/>
+<h3>OUTPUT</h3>
+
+@if (patientList == null) {
+    <p><em>Loading...</em></p>
+} else {
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Gender</th>
+                <th>Age</th>
+                <th>BirthDay</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var patientinfo in patientList) {
+                <tr>
+                    <td>@patientinfo.ID</td>
+                    <td>@patientinfo.FamilyName</td>
+                    <td>@patientinfo.FirstName</td>
+                    <td>@patientinfo.Gender</td>
+                    <td>@patientinfo.Age</td>
+                    <td>@patientinfo.BirthDate</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private PatientInfo[]? patientList;
+    private string MinDate = new DateTime(1990, 1, 1).ToString("yyyy-MM-dd");
+    private string? messagetext;
+
+    [SupplyParameterFromForm]
+    private PatientInfo PatientInfoModel { get; set; } = default!;
+    private Axial AxialModel { get; set; } = default!;
+    private EditContext editContextPatientInfo { get; set; } = default!;
+    private EditContext editContextAxial { get; set; } = default!;
+    private ValidationMessageStore ValidationMessageStore { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync() {
+        PatientInfoModel ??= new();
+        PatientInfoModel.Gender = Gender.NoSpecified;
+        PatientInfoModel.BirthDate = DateTime.Today;
+        editContextPatientInfo = new(PatientInfoModel);
+
+        AxialModel ??= new();
+        AxialModel.ExamDateTime = DateTime.Now;
+        editContextAxial = new(AxialModel);
+
+        // API を呼び出してデータを取得
+        patientList = await HttpClient.GetFromJsonAsync<PatientInfo[]>("api/DBPatientInfo/GetPatientInfoList");
+    }
+
+    void PatientInfoButtonClick() {
+        // 患者情報をDBに書込み
+        Task.Run(() => SetPatientInfoAsync());
+    }
+
+    void AxialButtonClick() {
+        // 眼軸長測定値をDBに書込み
+
+    }
+
+    protected async Task SetPatientInfoAsync() {
+        string content = $"api/DBPatientInfo/SetPatientInfo/";
+        content += Convert.ToBase64String(Encoding.UTF8.GetBytes(PatientInfoModel.ID));
+        content += "/";
+        content += Convert.ToBase64String(Encoding.UTF8.GetBytes(PatientInfoModel.FamilyName));
+        content += "/";
+        content += Convert.ToBase64String(Encoding.UTF8.GetBytes(PatientInfoModel.FirstName));
+        content += "/";
+        content += PatientInfoModel.Gender;
+        content += "/";
+        content += Convert.ToBase64String(Encoding.UTF8.GetBytes(PatientInfoModel.BirthDate?.ToString()));
+
+        await HttpClient.GetAsync(content);
+
+        // todo: set→getまでに間がある
+        patientList = await HttpClient.GetFromJsonAsync<PatientInfo[]>("api/DBPatientInfo/GetPatientInfoList");
+    }
+
+    //被験者情報
+    public class PatientInfo {
+        public bool Mark { get; set; }                      //お気に入り(仮)
+        public string ID { get; set; } = default!;
+        public string FamilyName { get; set; } = default!;  //被験者姓
+        public string FirstName { get; set; } = default!;   //被験者名
+        public Gender Gender { get; set; }                  //性別
+        public int Age { get; set; }                        //年齢
+        public DateTime? BirthDate { get; set; }             //生年月日
+        public string SameID { get; set; } = default!;      //同一ID
+    }
+
+    //性別
+    public enum Gender {
+        man,
+        female,
+        NoSpecified//未指定
+    }
+
+    //検索結果
+    class PatientSerch {
+        public PatientInfo PatientInfo { get; set; } = default!;    //被験者情報
+        public DateTime LatestPicDate { get; set; }                 //最新撮影日
+        public double LatestRAxial { get; set; }                    //最新右眼軸長
+        public double LatestLAxial { get; set; }                    //最新左眼軸長
+        public string PatientComment { get; set; } = default!;      //患者コメント
+        public string AllTreatName { get; set; } = default!;        //治療名称一覧
+    }
+
+    //眼軸長
+    class Axial {
+        public double RAxial { get; set; }                  //右眼軸長
+        public double LAxial { get; set; }                  //左眼軸長
+        public DateTime ExamDateTime { get; set; }          //測定日時
+    }
+
+    //治療方法設定
+    class TreatmentMethodSetting {
+        public int ID { get; set; }
+        public string TreatName { get; set; } = default!;       //治療方法の名前
+        public RGBAColor RGBAColor { get; set; } = default!;    //治療方法に割り当てられた色
+        public int SuppresionRate { get; set; }                 //抑制率
+    }
+
+    class RGBAColor {
+        public int R { get; set; }                              //色のR値
+        public int G { get; set; }                              //色のG値
+        public int B { get; set; }                              //色のB値
+        public int A { get; set; }                              //色のA値
+    }
+}
