@@ -29,9 +29,9 @@
 <div>
     <label>Gender:</label>
     <InputRadioGroup @bind-Value="PatientInfoModel.Gender">
-        <InputRadio Value="Gender.man" />Man
+        <InputRadio Value="Gender.male" />Man
         <InputRadio Value="Gender.female" />Female
-        <InputRadio Value="Gender.NoSpecified" />NoSpecified
+        <InputRadio Value="Gender.other" />NoSpecified
     </InputRadioGroup>
 </div>
 <div>
@@ -72,6 +72,9 @@
 <br/>
 <h3>OUTPUT</h3>
 
+<div>
+    <button @onclick="UpdatePatientListButtonClick">Update</button>
+</div>
 @if (patientList == null) {
     <p><em>Loading...</em></p>
 } else {
@@ -101,8 +104,37 @@
     </table>
 }
 
+<div>
+    <button @onclick="UpdateAxialListButtonClick">Update</button>
+</div>
+@if (axialList == null) {
+    <p><em>Loading...</em></p>
+} else {
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>R</th>
+                <th>L</th>
+                <th>Exam Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var axial in axialList) {
+                <tr>
+                    <td>@axial.ID</td>
+                    <td>@axial.RAxial</td>
+                    <td>@axial.LAxial</td>
+                    <td>@axial.ExamDateTime</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
 @code {
     private PatientInfo[]? patientList;
+    private Axial[]? axialList;
     private string MinDate = new DateTime(1990, 1, 1).ToString("yyyy-MM-dd");
     private string? messagetext;
 
@@ -115,7 +147,7 @@
 
     protected override async Task OnInitializedAsync() {
         PatientInfoModel ??= new();
-        PatientInfoModel.Gender = Gender.NoSpecified;
+        PatientInfoModel.Gender = Gender.other;
         PatientInfoModel.BirthDate = DateTime.Today;
         editContextPatientInfo = new(PatientInfoModel);
 
@@ -134,7 +166,17 @@
 
     void AxialButtonClick() {
         // 眼軸長測定値をDBに書込み
+        Task.Run(() => SetAxialDataAsync());
+    }
 
+    void UpdatePatientListButtonClick() {
+        // 眼軸長測定値をDBに書込み
+        Task.Run(() => GetPatientListAsync());
+    }
+    
+    void UpdateAxialListButtonClick() {
+        // 眼軸長測定値をDBに書込み
+        Task.Run(() => GetAxialListAsync());
     }
 
     protected async Task SetPatientInfoAsync() {
@@ -152,15 +194,41 @@
         await HttpClient.GetAsync(content);
 
         // todo: set→getまでに間がある
+    //    patientList = await HttpClient.GetFromJsonAsync<PatientInfo[]>("api/DBPatientInfo/GetPatientInfoList");
+    }
+
+    protected async Task GetPatientListAsync() {
         patientList = await HttpClient.GetFromJsonAsync<PatientInfo[]>("api/DBPatientInfo/GetPatientInfoList");
+    }
+
+    protected async Task SetAxialDataAsync() {
+        string content = $"api/DBAxialData/SetOptAxial/";
+        content += Convert.ToBase64String(Encoding.UTF8.GetBytes(PatientInfoModel.ID));
+        content += "/";
+        content += AxialModel.RAxial;
+        content += "/";
+        content += AxialModel.LAxial;
+        content += "/";
+        content += Convert.ToBase64String(Encoding.UTF8.GetBytes(AxialModel.ExamDateTime.ToString()));
+
+        await HttpClient.GetAsync(content);
+    }
+
+    protected async Task GetAxialListAsync() {
+        string content = $"api/DBAxialData/GetOptAxialList/";
+        content += Convert.ToBase64String(Encoding.UTF8.GetBytes(PatientInfoModel.ID));
+
+        axialList = await HttpClient.GetFromJsonAsync<Axial[]>(content);
+
+        // todo: 受け取った後で、測定日を揃える？
     }
 
     //被験者情報
     public class PatientInfo {
         public bool Mark { get; set; }                      //お気に入り(仮)
         public string ID { get; set; } = default!;
-        public string FamilyName { get; set; } = default!;  //被験者姓
-        public string FirstName { get; set; } = default!;   //被験者名
+        public string FamilyName { get; set; } = default!;  //患者姓
+        public string FirstName { get; set; } = default!;   //患者名
         public Gender Gender { get; set; }                  //性別
         public int Age { get; set; }                        //年齢
         public DateTime? BirthDate { get; set; }             //生年月日
@@ -169,9 +237,10 @@
 
     //性別
     public enum Gender {
-        man,
+        none,
+        male,
         female,
-        NoSpecified//未指定
+        other, //未指定
     }
 
     //検索結果
@@ -185,10 +254,11 @@
     }
 
     //眼軸長
-    class Axial {
+    public class Axial {
+        public string ID { get; set; } = default!;          //患者ID
         public double RAxial { get; set; }                  //右眼軸長
         public double LAxial { get; set; }                  //左眼軸長
-        public DateTime ExamDateTime { get; set; }          //測定日時
+        public DateTime? ExamDateTime { get; set; }          //測定日時
     }
 
     //治療方法設定

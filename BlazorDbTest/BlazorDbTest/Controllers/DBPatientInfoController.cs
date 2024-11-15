@@ -1,6 +1,5 @@
 ﻿using BlazorDbTest.Client.Pages;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Primitives;
 using Npgsql;
 using System.Data;
 using System.Text;
@@ -35,9 +34,8 @@ namespace BlazorDbTest.Controllers {
                 // PostgreSQL Server 通信接続
                 sqlConnection.Open();
 
-                // クエリコマンド実行
                 // UUIDの有無を確認(true:update / false:insert)
-                var uuid = Select_PTUUID_by_PTID(sqlConnection, Encoding.UTF8.GetString(Convert.FromBase64String(id)));
+                var uuid = CommonController.Select_PTUUID_by_PTID(sqlConnection, Encoding.UTF8.GetString(Convert.FromBase64String(id)));
                 if (uuid == string.Empty) {
                     // Insert
                     DateTime dateTime = DateTime.Now;
@@ -45,7 +43,7 @@ namespace BlazorDbTest.Controllers {
                         pt_id = Encoding.UTF8.GetString(Convert.FromBase64String(id)),
                         pt_lastname = Encoding.UTF8.GetString(Convert.FromBase64String(lastname)),
                         pt_firstname = Encoding.UTF8.GetString(Convert.FromBase64String(firstname)),
-                        gender_id = (int)gender,
+                        gender_id = CommonController.Select_GenderId(sqlConnection, GENDER_TYPE[(int)gender]),
                         pt_dob = DateTime.Parse(Encoding.UTF8.GetString(Convert.FromBase64String(dob))),
                         pt_description = string.Empty,
                         pt_updated_at = dateTime,
@@ -62,7 +60,7 @@ namespace BlazorDbTest.Controllers {
                         pt_id = Encoding.UTF8.GetString(Convert.FromBase64String(id)),
                         pt_lastname = Encoding.UTF8.GetString(Convert.FromBase64String(lastname)),
                         pt_firstname = Encoding.UTF8.GetString(Convert.FromBase64String(firstname)),
-                        gender_id = (int)gender,
+                        gender_id = CommonController.Select_GenderId(sqlConnection, GENDER_TYPE[(int)gender]),
                         pt_dob = DateTime.Parse(Encoding.UTF8.GetString(Convert.FromBase64String(dob))),
                         pt_updated_at = dateTime
                     };
@@ -76,7 +74,7 @@ namespace BlazorDbTest.Controllers {
                 }
 
                 // PostgreSQL Server 通信切断
-                if(sqlConnection.State != ConnectionState.Closed) {
+                if (sqlConnection.State != ConnectionState.Closed) {
                     sqlConnection.Close();
                 }
             }
@@ -106,17 +104,11 @@ namespace BlazorDbTest.Controllers {
 
                 // 実行するクエリコマンド定義
                 string Query = "SELECT * FROM ";
-                Query += "\"";
-                Query += DB_TableNames[1];
-                Query += "\"";
+                Query += CommonController._table(CommonController.DB_TableNames[(int)CommonController.eDbTable.PATIENT_LIST]);
                 Query += " WHERE ";
-                Query += "\"";
-                Query += COLNAME_PatientList[1];
-                Query += "\"";
+                Query += CommonController._col(CommonController.COLNAME_PatientList[(int)CommonController.ePatientList.pt_id]);
                 Query += " = ";
-                Query += "\'";
-                Query += Encoding.UTF8.GetString(Convert.FromBase64String(patientId));
-                Query += "\'";
+                Query += CommonController._val(Encoding.UTF8.GetString(Convert.FromBase64String(patientId)));
 
                 //Using NpgsqlCommand and Query create connection with database
                 NpgsqlCommand Command = new(Query, sqlConnection);
@@ -131,21 +123,21 @@ namespace BlazorDbTest.Controllers {
                     DataRow data = DataTable.Rows[0];
                     DataSource = new DBTest.PatientInfo() {
                         Mark = false,
-                        ID = data[COLNAME_PatientList[1]].ToString() ?? string.Empty,
-                        FamilyName = data[COLNAME_PatientList[2]].ToString() ?? string.Empty,
-                        FirstName = data[COLNAME_PatientList[3]].ToString() ?? string.Empty,
-                        Gender = (DBTest.Gender)Enum.ToObject(typeof(DBTest.Gender), data[COLNAME_PatientList[4]]),
-                        Age = GetAge(_objectToDateTime(data[COLNAME_PatientList[5]]), DateTime.Today),
-                        BirthDate = _objectToDateTime(data[COLNAME_PatientList[5]]),
+                        ID = data[CommonController.COLNAME_PatientList[(int)CommonController.ePatientList.pt_id]].ToString() ?? string.Empty,
+                        FamilyName = data[CommonController.COLNAME_PatientList[(int)CommonController.ePatientList.pt_lastname]].ToString() ?? string.Empty,
+                        FirstName = data[CommonController.COLNAME_PatientList[(int)CommonController.ePatientList.pt_firstname]].ToString() ?? string.Empty,
+                        Gender = (DBTest.Gender)Enum.ToObject(typeof(DBTest.Gender), data[CommonController.COLNAME_PatientList[(int)CommonController.ePatientList.gender_id]]),
+                        Age = CommonController.GetAge(CommonController._objectToDateTime(data[CommonController.COLNAME_PatientList[(int)CommonController.ePatientList.pt_dob]]), DateTime.Today),
+                        BirthDate = CommonController._objectToDateTime(data[CommonController.COLNAME_PatientList[(int)CommonController.ePatientList.pt_dob]]),
                         SameID = default!       // todo: 別Tableから取得
                     };
                 }
             } catch {
             } finally {
                 // PostgreSQL Server 通信切断
-                if(sqlConnection.State != ConnectionState.Closed) {
+                if (sqlConnection.State != ConnectionState.Closed) {
                     sqlConnection.Close();
-                }                
+                }
             }
 
             return DataSource;
@@ -154,7 +146,7 @@ namespace BlazorDbTest.Controllers {
         [HttpGet("GetPatientInfoList")]
         public List<DBTest.PatientInfo> GetDBPatientInfoList() {
             // todo: 検索条件の付与
-            
+
             // appsettings.jsonと接続
             IConfigurationRoot configuration = new ConfigurationBuilder()
                 .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
@@ -165,7 +157,11 @@ namespace BlazorDbTest.Controllers {
             string? ConnectionString = configuration.GetConnectionString("db");
 
             // 実行するクエリコマンド定義
-            string Query = "SELECT * FROM \"patient_list\" ORDER BY \"" + COLNAME_PatientList[7] + "\"";
+            string Query = "SELECT * FROM ";
+            Query += CommonController._table(CommonController.DB_TableNames[(int)CommonController.eDbTable.PATIENT_LIST]);
+            Query += " ORDER BY ";
+            Query += CommonController._col(CommonController.COLNAME_PatientList[(int)CommonController.ePatientList.updated_at]);
+
             NpgsqlConnection sqlConnection = new(ConnectionString);
 
             List<DBTest.PatientInfo> DataSource = new();
@@ -177,26 +173,24 @@ namespace BlazorDbTest.Controllers {
                 //Using NpgsqlDataAdapter execute the NpgsqlCommand 
                 NpgsqlDataAdapter DataAdapter = new(Command);
                 DataTable DataTable = new();
-                // Using NpgsqlDataAdapter, process the query string and fill the data into the dataset
-                // Fillの戻り値は、正常に追加・更新された行数
                 DataAdapter.Fill(DataTable);
-                
+
                 // Cast the data fetched from NpgsqlDataAdapter to List<T>
                 DataSource = (from DataRow data in DataTable.Rows
-                                  select new DBTest.PatientInfo() {
-                                      ID = data[COLNAME_PatientList[1]].ToString() ?? string.Empty,
-                                      FamilyName = data[COLNAME_PatientList[2]].ToString() ?? string.Empty,
-                                      FirstName = data[COLNAME_PatientList[3]].ToString() ?? string.Empty,
-                                      Gender = (DBTest.Gender)Enum.ToObject(typeof(DBTest.Gender), data[COLNAME_PatientList[4]]),
-                                      Age = GetAge(_objectToDateTime(data[COLNAME_PatientList[5]]), DateTime.Today),
-                                      BirthDate = _objectToDateTime(data[COLNAME_PatientList[5]]),
-                                      SameID = default!       // todo: 別Tableから取得
-                                  }).ToList();
+                              select new DBTest.PatientInfo() {
+                                  ID = data[CommonController.COLNAME_PatientList[(int)CommonController.ePatientList.pt_id]].ToString() ?? string.Empty,
+                                  FamilyName = data[CommonController.COLNAME_PatientList[(int)CommonController.ePatientList.pt_lastname]].ToString() ?? string.Empty,
+                                  FirstName = data[CommonController.COLNAME_PatientList[(int)CommonController.ePatientList.pt_firstname]].ToString() ?? string.Empty,
+                                  Gender = (DBTest.Gender)Enum.ToObject(typeof(DBTest.Gender), data[CommonController.COLNAME_PatientList[(int)CommonController.ePatientList.gender_id]]),
+                                  Age = CommonController.GetAge(CommonController._objectToDateTime(data[CommonController.COLNAME_PatientList[(int)CommonController.ePatientList.pt_dob]]), DateTime.Today),
+                                  BirthDate = CommonController._objectToDateTime(data[CommonController.COLNAME_PatientList[(int)CommonController.ePatientList.pt_dob]]),
+                                  SameID = default!       // todo: 別Tableから取得
+                              }).ToList();
             } catch {
             } finally {
                 sqlConnection.Close();
             }
-            
+
             return DataSource;
         }
 
@@ -206,17 +200,17 @@ namespace BlazorDbTest.Controllers {
 
             StringBuilder stringBuilder = new();
             stringBuilder.Append("insert into ");
-            stringBuilder.Append("\"" + DB_TableNames[1] + "\"");
+            stringBuilder.Append(CommonController._table(CommonController.DB_TableNames[(int)CommonController.eDbTable.PATIENT_LIST]));
             string text = " (";
             string text2 = " (";
-            for (int i = 1; i < COLNAME_PatientList.Count(); i++) {
+            for (int i = 1; i < CommonController.COLNAME_PatientList.Count(); i++) {
                 if (i != 1) {
                     text += ",";
                     text2 += ",";
                 }
 
-                text += "\"" + COLNAME_PatientList[i] + "\"";
-                text2 += "@" + COLNAME_PatientList[i];
+                text += CommonController._col(CommonController.COLNAME_PatientList[i]);
+                text2 += CommonController._bind(CommonController.COLNAME_PatientList[i]);
             }
 
             text += ")";
@@ -227,14 +221,14 @@ namespace BlazorDbTest.Controllers {
             stringBuilder.Append(";");
 
             using (NpgsqlCommand npgsqlCommand = new NpgsqlCommand(stringBuilder.ToString(), sqlConnection)) {
-                npgsqlCommand.Parameters.AddWithValue(COLNAME_PatientList[1], aPatientRec.pt_id);
-                npgsqlCommand.Parameters.AddWithValue(COLNAME_PatientList[2], aPatientRec.pt_lastname);
-                npgsqlCommand.Parameters.AddWithValue(COLNAME_PatientList[3], aPatientRec.pt_firstname);
-                npgsqlCommand.Parameters.AddWithValue(COLNAME_PatientList[4], aPatientRec.gender_id);
-                npgsqlCommand.Parameters.AddWithValue(COLNAME_PatientList[5], _DateTimeToObject(aPatientRec.pt_dob));
-                npgsqlCommand.Parameters.AddWithValue(COLNAME_PatientList[6], aPatientRec.pt_description);
-                npgsqlCommand.Parameters.AddWithValue(COLNAME_PatientList[7], _DateTimeToObject(aPatientRec.pt_updated_at));
-                npgsqlCommand.Parameters.AddWithValue(COLNAME_PatientList[8], _DateTimeToObject(aPatientRec.pt_created_at));
+                npgsqlCommand.Parameters.AddWithValue(CommonController.COLNAME_PatientList[(int)CommonController.ePatientList.pt_id], aPatientRec.pt_id);
+                npgsqlCommand.Parameters.AddWithValue(CommonController.COLNAME_PatientList[(int)CommonController.ePatientList.pt_lastname], aPatientRec.pt_lastname);
+                npgsqlCommand.Parameters.AddWithValue(CommonController.COLNAME_PatientList[(int)CommonController.ePatientList.pt_firstname], aPatientRec.pt_firstname);
+                npgsqlCommand.Parameters.AddWithValue(CommonController.COLNAME_PatientList[(int)CommonController.ePatientList.gender_id], aPatientRec.gender_id);
+                npgsqlCommand.Parameters.AddWithValue(CommonController.COLNAME_PatientList[(int)CommonController.ePatientList.pt_dob], CommonController._DateTimeToObject(aPatientRec.pt_dob));
+                npgsqlCommand.Parameters.AddWithValue(CommonController.COLNAME_PatientList[(int)CommonController.ePatientList.pt_description], aPatientRec.pt_description);
+                npgsqlCommand.Parameters.AddWithValue(CommonController.COLNAME_PatientList[(int)CommonController.ePatientList.updated_at], CommonController._DateTimeToObject(aPatientRec.pt_updated_at));
+                npgsqlCommand.Parameters.AddWithValue(CommonController.COLNAME_PatientList[(int)CommonController.ePatientList.created_at], CommonController._DateTimeToObject(aPatientRec.pt_created_at));
                 num = npgsqlCommand.ExecuteNonQuery();
             }
 
@@ -245,13 +239,13 @@ namespace BlazorDbTest.Controllers {
             int num = 0;
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.Append("update ");
-            stringBuilder.Append("\"" + DB_TableNames[1] + "\"");
+            stringBuilder.Append(CommonController._table(CommonController.DB_TableNames[(int)CommonController.eDbTable.PATIENT_LIST]));
             stringBuilder.Append("set ");
             string text = "";
             for (int i = 1; i < 9; i++) {
                 // コメントおよび作成日時は、アプリ上から更新されない
-                if(i != 6 && i != 8) {
-                    text = text + "\"" + COLNAME_PatientList[i] + "\"" + "= " + "@" + COLNAME_PatientList[i];
+                if (i != 6 && i != 8) {
+                    text = text + CommonController._col(CommonController.COLNAME_PatientList[i]) + "= " + CommonController._bind(CommonController.COLNAME_PatientList[i]);
                     if (i != 7) {
                         text += ",";
                     }
@@ -260,79 +254,27 @@ namespace BlazorDbTest.Controllers {
 
             stringBuilder.Append(text);
             stringBuilder.Append(" where ");
-            stringBuilder.Append("\"" + COLNAME_PatientList[0] + "\"");
+            stringBuilder.Append(CommonController._col(CommonController.COLNAME_PatientList[(int)CommonController.ePatientList.pt_uuid]));
             stringBuilder.Append("= ");
-            stringBuilder.Append("\'" + aPatientRec.pt_uuid + "\'");
+            stringBuilder.Append(CommonController._val(aPatientRec.pt_uuid));
             stringBuilder.Append(";");
             using (NpgsqlCommand npgsqlCommand = new NpgsqlCommand(stringBuilder.ToString(), sqlConnection)) {
-                npgsqlCommand.Parameters.AddWithValue(COLNAME_PatientList[1], aPatientRec.pt_id);
-                npgsqlCommand.Parameters.AddWithValue(COLNAME_PatientList[2], aPatientRec.pt_lastname);
-                npgsqlCommand.Parameters.AddWithValue(COLNAME_PatientList[3], aPatientRec.pt_firstname);
-                npgsqlCommand.Parameters.AddWithValue(COLNAME_PatientList[4], aPatientRec.gender_id);
-                npgsqlCommand.Parameters.AddWithValue(COLNAME_PatientList[5], _DateTimeToObject(aPatientRec.pt_dob));
-                //npgsqlCommand.Parameters.AddWithValue(COLNAME_PatientList[6], aPatientRec.pt_description);
-                npgsqlCommand.Parameters.AddWithValue(COLNAME_PatientList[7], _DateTimeToObject(DateTime.Now));
-                //npgsqlCommand.Parameters.AddWithValue(COLNAME_PatientList[8], _DateTimeToObject(aPatientRec.pt_created_at));
+                npgsqlCommand.Parameters.AddWithValue(CommonController.COLNAME_PatientList[(int)CommonController.ePatientList.pt_id], aPatientRec.pt_id);
+                npgsqlCommand.Parameters.AddWithValue(CommonController.COLNAME_PatientList[(int)CommonController.ePatientList.pt_lastname], aPatientRec.pt_lastname);
+                npgsqlCommand.Parameters.AddWithValue(CommonController.COLNAME_PatientList[(int)CommonController.ePatientList.pt_firstname], aPatientRec.pt_firstname);
+                npgsqlCommand.Parameters.AddWithValue(CommonController.COLNAME_PatientList[(int)CommonController.ePatientList.gender_id], aPatientRec.gender_id);
+                npgsqlCommand.Parameters.AddWithValue(CommonController.COLNAME_PatientList[(int)CommonController.ePatientList.pt_dob], CommonController._DateTimeToObject(aPatientRec.pt_dob));
+                //npgsqlCommand.Parameters.AddWithValue(CommonContorller.COLNAME_PatientList[(int)CommonController.ePatientList.pt_description], aPatientRec.pt_description);
+                npgsqlCommand.Parameters.AddWithValue(CommonController.COLNAME_PatientList[(int)CommonController.ePatientList.updated_at], CommonController._DateTimeToObject(DateTime.Now));
+                //npgsqlCommand.Parameters.AddWithValue(CommonContorller.COLNAME_PatientList[(int)CommonController.ePatientList.created_at], CommonContorller._DateTimeToObject(aPatientRec.pt_created_at));
                 num = npgsqlCommand.ExecuteNonQuery();
             }
 
             return num != 0;
         }
 
-        public string Select_PTUUID_by_PTID(NpgsqlConnection sqlConnection, string sPtid) {
-            string result = string.Empty;
-            StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.Append("select ");
-            stringBuilder.Append("\"" + COLNAME_PatientList[0] + "\"");
-            stringBuilder.Append("from ");
-            stringBuilder.Append("\"" + DB_TableNames[1] + "\"");
-            stringBuilder.Append("where ");
-            stringBuilder.Append("\"" + COLNAME_PatientList[1] + "\"");
-            stringBuilder.Append("= ");
-            stringBuilder.Append("'" + sPtid + "'");
-            stringBuilder.Append(";");
-            using NpgsqlCommand npgsqlCommand = new NpgsqlCommand(stringBuilder.ToString(), sqlConnection);
-            using NpgsqlDataReader npgsqlDataReader = npgsqlCommand.ExecuteReader();
-            while (npgsqlDataReader.Read()) {
-                result = npgsqlDataReader[COLNAME_PatientList[0]].ToString() ?? string.Empty;
-            }
-
-            return result;
-        }
-
-        protected object _DateTimeToObject(DateTime? input) {
-            object obj = input;
-            obj ??= DBNull.Value;
-            return obj;
-        }
-
-        private static int GetAge(DateTime? birthDate, DateTime today) {
-            int age = -1;
-
-            if (birthDate.HasValue) {
-                age = (int.Parse(today.ToString("yyyyMMdd")) - int.Parse(birthDate?.ToString("yyyyMMdd"))) / 10000;
-            }
-
-            return age;
-        }
-
-        protected DateTime? _objectToDateTime(object oColumnRes, bool bisUTC = true) {
-            if (!DateTime.TryParse(oColumnRes.ToString(), out var result)) {
-                return null;
-            }
-
-            return bisUTC ? result.ToUniversalTime() : result;
-        }
-
-        // todo:
-        public static string[] DB_TableNames = new string[2]
-    {
-        "", "patient_list" 
-    };
-
-        public static string[] COLNAME_PatientList = new string[9] { "pt_uuid", "pt_id", "pt_lastname", "pt_firstname", "gender_id", "pt_dob", "pt_description", "pt_updated_at", "pt_created_at" };
-
-    }
+        public static string[] GENDER_TYPE = ["", "male", "female", "other"];
+    }   
 }
 
 public class PatientRec {
