@@ -122,7 +122,7 @@
         <tbody>
             @foreach (var axial in axialList) {
                 <tr>
-                    <td>@axial.ID</td>
+                    <td>@axial.PatientID</td>
                     <td>@axial.RAxial</td>
                     <td>@axial.LAxial</td>
                     <td>@axial.ExamDateTime</td>
@@ -134,13 +134,13 @@
 
 @code {
     private PatientInfo[]? patientList;
-    private Axial[]? axialList;
+    private AxialList[]? axialList;
     private string MinDate = new DateTime(1990, 1, 1).ToString("yyyy-MM-dd");
     private string? messagetext;
 
     [SupplyParameterFromForm]
     private PatientInfo PatientInfoModel { get; set; } = default!;
-    private Axial AxialModel { get; set; } = default!;
+    private AxialList AxialModel { get; set; } = default!;
     private EditContext editContextPatientInfo { get; set; } = default!;
     private EditContext editContextAxial { get; set; } = default!;
     private ValidationMessageStore ValidationMessageStore { get; set; } = default!;
@@ -173,12 +173,16 @@
         // 眼軸長測定値をDBに書込み
         Task.Run(() => GetPatientListAsync());
     }
-    
+
     void UpdateAxialListButtonClick() {
         // 眼軸長測定値をDBに書込み
         Task.Run(() => GetAxialListAsync());
     }
 
+    /// <summary>
+    /// DBへ患者情報を書込み
+    /// </summary>
+    /// <returns></returns>
     protected async Task SetPatientInfoAsync() {
         string content = $"api/DBPatientInfo/SetPatientInfo/";
         content += Convert.ToBase64String(Encoding.UTF8.GetBytes(PatientInfoModel.ID));
@@ -193,14 +197,22 @@
 
         await HttpClient.GetAsync(content);
 
-        // todo: set→getまでに間がある
-    //    patientList = await HttpClient.GetFromJsonAsync<PatientInfo[]>("api/DBPatientInfo/GetPatientInfoList");
+        // todo: 画面更新で反映される
+        patientList = await HttpClient.GetFromJsonAsync<PatientInfo[]>("api/DBPatientInfo/GetPatientInfoList");
     }
 
+    /// <summary>
+    /// DBから患者情報を取得
+    /// </summary>
+    /// <returns></returns>
     protected async Task GetPatientListAsync() {
         patientList = await HttpClient.GetFromJsonAsync<PatientInfo[]>("api/DBPatientInfo/GetPatientInfoList");
     }
 
+    /// <summary>
+    /// DBへ眼軸長測定値を書込み
+    /// </summary>
+    /// <returns></returns>
     protected async Task SetAxialDataAsync() {
         string content = $"api/DBAxialData/SetOptAxial/";
         content += Convert.ToBase64String(Encoding.UTF8.GetBytes(PatientInfoModel.ID));
@@ -214,13 +226,121 @@
         await HttpClient.GetAsync(content);
     }
 
+    /// <summary>
+    /// DBから眼軸長測定値を取得
+    /// </summary>
+    /// <returns></returns>
     protected async Task GetAxialListAsync() {
         string content = $"api/DBAxialData/GetOptAxialList/";
         content += Convert.ToBase64String(Encoding.UTF8.GetBytes(PatientInfoModel.ID));
 
-        axialList = await HttpClient.GetFromJsonAsync<Axial[]>(content);
+        AxialData[] ?axialDataList = await HttpClient.GetFromJsonAsync<AxialData[]>(content);
 
-        // todo: 受け取った後で、測定日を揃える？
+        if (axialDataList != null) {
+            SetAxialList(axialDataList);
+        } else {
+            axialList = new AxialList[0];
+        }
+    }
+
+    /// <summary>
+    /// DBから取得したデータを下記ルールに則りリストへセット
+    /// ・1測定日1データとする
+    /// ・同じ測定日のデータがある場合、装置種別AxMのデータを優先する
+    /// ・同じ測定日のデータは、測定時間が新しいものを採用する
+    /// ・装置種別AxMのデータは、1測定日に1つしか登録できない
+    /// </summary>
+    /// <param name="axialDataList"></param>
+    public void SetAxialList(AxialData[] axialDataList) {
+        List<AxialList> list = new List<AxialList>();
+        if (axialDataList != null) {
+            try {
+                for (int i = 0; i < axialDataList.Length; i++) {
+                    bool isExist = false;
+                    for(int j = 0; j < list.Count; j++) {
+                        if (_DateTimeToDate(list[j].ExamDateTime) == _DateTimeToDate(axialDataList[i].ExamDateTime)) {
+
+                            if (axialDataList[i].EyeId == EyeType.right) {
+                                // 装置種別AxMのデータを優先する
+                                // 装置種別AxMのデータは、1測定日に1つしか登録できない
+                                if (!list[j].IsRManualInput) {
+                                    if (list[j].RAxial == 0.0) {
+                                        // 右眼かつ同じ測定日の右眼が0のとき
+                                        list[j].RExamID = axialDataList[i].ID;
+                                        list[j].RAxial = axialDataList[i].Axial;
+                                        list[j].IsRManualInput = (axialDataList[i].DeviceID == 2);  // todo:
+                                        isExist = true;
+                                        break;
+                                    } else if (list[j].ExamDateTime < axialDataList[i].ExamDateTime) {
+                                        // 右眼かつ同じ測定時間が新しい
+                                        list[j].RExamID = axialDataList[i].ID;
+                                        list[j].RAxial = axialDataList[i].Axial;
+                                        list[j].IsRManualInput = (axialDataList[i].DeviceID == 2);  // todo:
+                                        list[j].ExamDateTime = axialDataList[i].ExamDateTime;
+                                        isExist = true;
+                                        break;
+                                    }
+                                }
+                            } else if (axialDataList[i].EyeId == EyeType.left) {
+                                if (!list[j].IsLManualInput) {
+                                    if (list[j].LAxial == 0.0) {
+                                        // 左眼かつ同じ測定日の左眼が0のとき
+                                        list[j].LExamID = axialDataList[i].ID;
+                                        list[j].LAxial = axialDataList[i].Axial;
+                                        list[j].IsLManualInput = (axialDataList[i].DeviceID == 2);  // todo:
+                                        isExist = true;
+                                        break;
+                                    } else if (list[j].ExamDateTime < axialDataList[i].ExamDateTime) {
+                                        // 左眼かつ同じ測定時間が新しい
+                                        list[j].LExamID = axialDataList[i].ID;
+                                        list[j].LAxial = axialDataList[i].Axial;
+                                        list[j].IsLManualInput = (axialDataList[i].DeviceID == 2);  // todo:
+                                        list[j].ExamDateTime = axialDataList[i].ExamDateTime;
+                                        isExist = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // 同じ測定日のデータがないとき追加
+                    if (!isExist) {
+                        AxialList var = new AxialList() {
+                                PatientID = PatientInfoModel.ID,
+                                RExamID = string.Empty,
+                                LExamID = string.Empty,
+                                RAxial = 0.0,
+                                LAxial = 0.0,
+                                ExamDateTime = axialDataList[i].ExamDateTime,
+                                IsRManualInput = false,
+                                IsLManualInput = false,
+                            };
+                        if (axialDataList[i].EyeId == EyeType.right) {
+                            var.RExamID = axialDataList[i].ID;
+                            var.RAxial = axialDataList[i].Axial;
+                            var.IsRManualInput = (axialDataList[i].DeviceID == 2);  // todo:
+                        } else if (axialDataList[i].EyeId == EyeType.left) {
+                            var.LExamID = axialDataList[i].ID;
+                            var.LAxial = axialDataList[i].Axial;
+                            var.IsLManualInput = (axialDataList[i].DeviceID == 2);  // todo:
+                        }
+                        list.Add(var);
+                    }
+                }
+            } catch {
+            }
+
+            axialList = list.ToArray();
+        }
+    }
+
+    // 測定日時の日付部分のみ取得
+    private DateTime _DateTimeToDate(DateTime? input) {
+        if (input == null) {
+			return DateTime.MinValue;
+		}
+		return (DateTime)input.Value.Date;
     }
 
     //被験者情報
@@ -231,7 +351,7 @@
         public string FirstName { get; set; } = default!;   //患者名
         public Gender Gender { get; set; }                  //性別
         public int Age { get; set; }                        //年齢
-        public DateTime? BirthDate { get; set; }             //生年月日
+        public DateTime? BirthDate { get; set; }            //生年月日
         public string SameID { get; set; } = default!;      //同一ID
     }
 
@@ -245,7 +365,7 @@
 
     //検索結果
     class PatientSerch {
-        public PatientInfo PatientInfo { get; set; } = default!;    //被験者情報
+        public PatientInfo PatientInfo { get; set; } = default!;    //患者情報
         public DateTime LatestPicDate { get; set; }                 //最新撮影日
         public double LatestRAxial { get; set; }                    //最新右眼軸長
         public double LatestLAxial { get; set; }                    //最新左眼軸長
@@ -254,25 +374,31 @@
     }
 
     //眼軸長
-    public class Axial {
-        public string ID { get; set; } = default!;          //患者ID
+    public class AxialList {
+        public string PatientID { get; set; } = default!;   //患者ID
+        public string RExamID { get; set; } = default!;     //右測定データID
+        public string LExamID { get; set; } = default!;     //左測定データID
         public double RAxial { get; set; }                  //右眼軸長
         public double LAxial { get; set; }                  //左眼軸長
-        public DateTime? ExamDateTime { get; set; }          //測定日時
+        public DateTime? ExamDateTime { get; set; }         //測定日
+        public bool IsRManualInput { get; set; }            //右眼手入力フラグ
+        public bool IsLManualInput { get; set; }            //左眼手入力フラグ
     }
 
-    //治療方法設定
-    class TreatmentMethodSetting {
-        public int ID { get; set; }
-        public string TreatName { get; set; } = default!;       //治療方法の名前
-        public RGBAColor RGBAColor { get; set; } = default!;    //治療方法に割り当てられた色
-        public int SuppresionRate { get; set; }                 //抑制率
+    // DBから取得する眼軸長データ
+    public class AxialData {
+        public string ID { get; set; } = default!;          //患者ID
+        public double Axial { get; set; }                   //眼軸長
+        public EyeType EyeId { get; set; }                  //左右眼情報
+        public int DeviceID { get; set; }                   //測定装置ID
+        public DateTime? ExamDateTime { get; set; }         //測定日時
     }
 
-    class RGBAColor {
-        public int R { get; set; }                              //色のR値
-        public int G { get; set; }                              //色のG値
-        public int B { get; set; }                              //色のB値
-        public int A { get; set; }                              //色のA値
-    }
+    // todo: 古い定義を使用しているため、修正が必要
+    public enum EyeType {
+		none,
+        right,
+		left,
+        both,
+	}
 }

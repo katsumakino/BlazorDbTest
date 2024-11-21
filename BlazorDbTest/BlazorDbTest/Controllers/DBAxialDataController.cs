@@ -1,13 +1,9 @@
 ﻿using BlazorDbTest.Client.Pages;
 using BlazorDbTest.Common;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Primitives;
 using Npgsql;
 using System.Data;
-using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Text;
-using static BlazorDbTest.Client.Pages.DBTest;
 
 namespace BlazorDbTest.Controllers {
 
@@ -97,8 +93,8 @@ namespace BlazorDbTest.Controllers {
 
         // 眼軸長測定値書込み
         [HttpGet("GetOptAxialList/{patientId}")]
-        public List<DBTest.Axial> GetOptAxialList(string patientId) {
-            List<DBTest.Axial> DataSource = new();
+        public List<DBTest.AxialData> GetOptAxialList(string patientId) {
+            List<DBTest.AxialData> DataSource = new();
             if (patientId == null || patientId == string.Empty) return DataSource;
 
             bool result = false;
@@ -126,51 +122,44 @@ namespace BlazorDbTest.Controllers {
                     return DataSource;
                 } else {
                     // 実行するクエリコマンド定義
-                    // ExamListの取得
                     string Query = "SELECT * FROM ";
+                    Query += CommonController._table(CommonController.DB_TableNames[(int)CommonController.eDbTable.EXAM_OPTAXIAL]);
+                    Query += " WHERE ";
+                    Query += " EXISTS( ";
+                    Query += "SELECT * FROM ";
                     Query += CommonController._table(CommonController.DB_TableNames[(int)CommonController.eDbTable.EXAM_LIST]);
                     Query += " WHERE ";
+                    Query += CommonController._table(CommonController.DB_TableNames[(int)CommonController.eDbTable.EXAM_OPTAXIAL]);
+                    Query += ".";
+                    Query += CommonController._col(COLNAME_ExamOptaxialList[(int)eExamOptAxial.exam_id]);
+                    Query += " = ";
+                    Query += CommonController._table(CommonController.DB_TableNames[(int)CommonController.eDbTable.EXAM_LIST]);
+                    Query += ".";
+                    Query += CommonController._col(CommonController.COLNAME_ExamList[(int)CommonController.eExamList.exam_id]);
+                    Query += " AND ";
+                    Query += CommonController._table(CommonController.DB_TableNames[(int)CommonController.eDbTable.EXAM_LIST]);
+                    Query += ".";
                     Query += CommonController._col(CommonController.COLNAME_ExamList[(int)CommonController.eExamList.pt_uuid]);
-                    Query += " = '";
+                    Query += " = ";
                     Query += CommonController._val(uuid);
+                    Query += " )";
+                    Query += " ORDER BY ";
+                    Query += CommonController._col(COLNAME_ExamOptaxialList[(int)eExamOptAxial.measured_at]);
+                    Query += " ASC; ";
 
                     NpgsqlCommand Command = new(Query, sqlConnection);
                     NpgsqlDataAdapter DataAdapter = new(Command);
                     DataTable DataTable = new();
                     DataAdapter.Fill(DataTable);
 
-                    for(int i=0; i<DataTable.Rows.Count; i++) {
-                        string? exam_id = DataTable.Rows[i][CommonController.COLNAME_ExamList[(int)CommonController.eExamList.exam_id]].ToString();
-
-                        if(exam_id != null) {
-                            Query = "SELECT * FROM ";
-                            Query += CommonController._table(CommonController.DB_TableNames[(int)CommonController.eDbTable.EXAM_OPTAXIAL]);
-                            Query += " WHERE ";
-                            Query += CommonController._col(COLNAME_ExamOptaxialList[(int)eExamOptAxial.exam_id]);
-                            Query += " = ";
-                            Query += CommonController._val(exam_id);
-
-                            // todo: 右左を考慮
-                            // todo: 複数Tableの検索を同時に実行するやつ使用
-
-                            // Axial測定値取得コマンド実行
-                            Command = new(Query, sqlConnection);
-                            DataAdapter = new(Command);
-                            DataTable DataTable2 = new();
-                            DataAdapter.Fill(DataTable2);
-
-                            DataSource.Add(new DBTest.Axial {
-                                ID = patientId,
-                                RAxial = DataTable2.Rows[0][COLNAME_ExamOptaxialList[(int)eExamOptAxial.axial_mm]].ToString() != null ?
-                                         double.Parse(DataTable2.Rows[0][COLNAME_ExamOptaxialList[(int)eExamOptAxial.axial_mm]].ToString()) : 0.0,
-                                LAxial = double.Parse(DataTable2.Rows[1][COLNAME_ExamOptaxialList[(int)eExamOptAxial.axial_mm]].ToString()),
-                                ExamDateTime = CommonController._objectToDateTime(DataTable2.Rows[0][COLNAME_ExamOptaxialList[(int)eExamOptAxial.measured_at]])
-                            }) ;
-
-                        }
-                        
-                    }
-                                                      
+                    DataSource = (from DataRow data in DataTable.Rows
+                                  select new DBTest.AxialData() {
+                                      ID = data[COLNAME_ExamOptaxialList[(int)eExamOptAxial.exam_id]].ToString() ?? string.Empty,
+                                      Axial = Convert.ToDouble(data[COLNAME_ExamOptaxialList[(int)eExamOptAxial.axial_mm]].ToString()),
+                                      EyeId = (DBTest.EyeType)Enum.ToObject(typeof(DBTest.EyeType), data[COLNAME_ExamOptaxialList[(int)eExamOptAxial.eye_id]]),
+                                      DeviceID = 2,     // todo: 
+                                      ExamDateTime = (DateTime)data[COLNAME_ExamOptaxialList[(int)eExamOptAxial.measured_at]],
+                                  }).ToList();
                 }
             } catch {
             } finally {
