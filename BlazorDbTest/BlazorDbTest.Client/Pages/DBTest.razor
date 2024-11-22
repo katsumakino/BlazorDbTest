@@ -197,8 +197,10 @@
 
         await HttpClient.GetAsync(content);
 
-        // todo: 画面更新で反映される
         patientList = await HttpClient.GetFromJsonAsync<PatientInfo[]>("api/DBPatientInfo/GetPatientInfoList");
+
+        //画面を更新する
+        StateHasChanged();
     }
 
     /// <summary>
@@ -207,6 +209,9 @@
     /// <returns></returns>
     protected async Task GetPatientListAsync() {
         patientList = await HttpClient.GetFromJsonAsync<PatientInfo[]>("api/DBPatientInfo/GetPatientInfoList");
+
+        //画面を更新する
+        StateHasChanged();
     }
 
     /// <summary>
@@ -241,11 +246,14 @@
         } else {
             axialList = new AxialList[0];
         }
+
+        //画面を更新する
+        StateHasChanged();
     }
 
     /// <summary>
     /// DBから取得したデータを下記ルールに則りリストへセット
-    /// ・1測定日1データとする
+    /// ・1測定日1データ(右左)とする
     /// ・同じ測定日のデータがある場合、装置種別AxMのデータを優先する
     /// ・同じ測定日のデータは、測定時間が新しいものを採用する
     /// ・装置種別AxMのデータは、1測定日に1つしか登録できない
@@ -343,7 +351,7 @@
 		return (DateTime)input.Value.Date;
     }
 
-    //被験者情報
+    //患者情報
     public class PatientInfo {
         public bool Mark { get; set; }                      //お気に入り(仮)
         public string ID { get; set; } = default!;
@@ -373,7 +381,7 @@
         public string AllTreatName { get; set; } = default!;        //治療名称一覧
     }
 
-    //眼軸長
+    //眼軸長(データ表示/書込に使用するもの)
     public class AxialList {
         public string PatientID { get; set; } = default!;   //患者ID
         public string RExamID { get; set; } = default!;     //右測定データID
