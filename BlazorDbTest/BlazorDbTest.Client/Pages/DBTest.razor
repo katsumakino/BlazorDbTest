@@ -38,40 +38,18 @@
     <label>Birthday:</label>
     <InputDate @bind-Value="PatientInfoModel.BirthDate" max="@DateTime.Today.ToString("yyyy-MM-dd")" min="@MinDate" />
 </div>
+<div class="part-group">
+    <label>Mark:</label>
+    <InputCheckbox @bind-Value="PatientInfoModel.Mark" />
+</div>
+<div class="part-group">
+    <label>Same ID:</label>
+    <InputText @bind-Value="PatientInfoModel.SameID" autocomplete=off />
+</div>
 <div>
     <button @onclick="PatientInfoButtonClick">Register</button>
 </div>
-
 <br />
-<EditForm EditContext="editContextAxial" FormName="axialform" />
-<h4>○ 眼軸長測定値</h4>
-<div class="part-group">
-    <label>Axial(R):</label>
-    <input type="number" @bind-value=AxialModel.RAxial />
-</div>
-<div class="part-group">
-    <label>Axial(L):</label>
-    <input type="number" @bind-value=AxialModel.LAxial />
-</div>
-<div>
-    <label>Exam Date:</label>
-    <InputDate @bind-Value="AxialModel.ExamDateTime" max="@DateTime.Today.ToString("yyyy-MM-dd")" min="@MinDate" />
-</div>
-<div>
-    <button @onclick="AxialButtonClick">Register</button>
-</div>
-
-<br />
-<h4>○ 治療方法登録</h4>
-<p><em>Coming Soon...</em></p>
-
-<br />
-<h4>○ 患者の治療状況登録</h4>
-<p><em>Coming Soon...</em></p>
-
-<br/>
-<h3>OUTPUT</h3>
-
 <div>
     <button @onclick="UpdatePatientListButtonClick">Update</button>
 </div>
@@ -104,6 +82,25 @@
     </table>
 }
 
+<br />
+<EditForm EditContext="editContextAxial" FormName="axialform" />
+<h4>○ 眼軸長測定値</h4>
+<div class="part-group">
+    <label>Axial(R):</label>
+    <input type="number" @bind-value=AxialModel.RAxial />
+</div>
+<div class="part-group">
+    <label>Axial(L):</label>
+    <input type="number" @bind-value=AxialModel.LAxial />
+</div>
+<div>
+    <label>Exam Date:</label>
+    <InputDate @bind-Value="AxialModel.ExamDateTime" max="@DateTime.Today.ToString("yyyy-MM-dd")" min="@MinDate" />
+</div>
+<div>
+    <button @onclick="AxialButtonClick">Register</button>
+</div>
+<br />
 <div>
     <button @onclick="UpdateAxialListButtonClick">Update</button>
 </div>
@@ -132,17 +129,139 @@
     </table>
 }
 
+<br />
+<h4>○ 治療名称</h4>
+<div class="part-group">
+    <label>Treat ID:</label>
+    <input type="number" @bind-value=TreatmentMethodModel.ID />
+</div>
+<div class="part-group">
+    <label>Treat Name:</label>
+    <InputText @bind-Value="TreatmentMethodModel.TreatName" autocomplete=off />
+</div>
+<br />
+
+<h4>○ 治療方法登録</h4>
+<div class="part-group">
+    <label>RED:</label>
+    <input type="number" @bind-value=TreatmentMethodModel.RGBAColor.R />
+</div>
+<div class="part-group">
+    <label>Green:</label>
+    <input type="number" @bind-value=TreatmentMethodModel.RGBAColor.G />
+</div>
+<div class="part-group">
+    <label>Blue:</label>
+    <input type="number" @bind-value=TreatmentMethodModel.RGBAColor.B />
+</div>
+<div class="part-group">
+    <label>Alpha:</label>
+    <input type="number" @bind-value=TreatmentMethodModel.RGBAColor.A />
+</div>
+<div class="part-group">
+    <label>Suppression Rate:</label>
+    <input type="number" @bind-value=TreatmentMethodModel.SuppresionRate />
+</div>
+<div>
+    <button @onclick="TreatmentMethodButtonClick">Register</button>
+</div>
+
+<br />
+<div>
+    <button @onclick="UpdateTreatmentMethodListButtonClick">Update</button>
+</div>
+@if (treatmentMethodList == null) {
+    <p><em>Loading...</em></p>
+} else {
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Treatment ID</th>
+                <th>Treatment Name</th>
+                <th>Red</th>
+                <th>Green</th>
+                <th>Blue</th>
+                <th>Alpha</th>
+                <th>Suppression Rate</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var treatMethod in treatmentMethodList) {
+                <tr>
+                    <td>@treatMethod.ID</td>
+                    <td>@treatMethod.TreatName</td>
+                    <td>@treatMethod.RGBAColor.R</td>
+                    <td>@treatMethod.RGBAColor.G</td>
+                    <td>@treatMethod.RGBAColor.B</td>
+                    <td>@treatMethod.RGBAColor.A</td>
+                    <td>@treatMethod.SuppresionRate</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<br />
+<h4>○ 患者の治療状況登録</h4>
+<div>
+    <label>Start Date:</label>
+    <InputDate @bind-Value="TreatmentModel.StartDateTime" max="@DateTime.Today.ToString("yyyy-MM-dd")" min="@MinDate" />
+</div>
+<div>
+    <label>End Date:</label>
+    <InputDate @bind-Value="TreatmentModel.EndDateTime" max="@DateTime.Today.ToString("yyyy-MM-dd")" min="@MinDate" />
+</div>
+<div>
+    <button @onclick="TreatmentButtonClick">Register</button>
+</div>
+
+<br />
+<div>
+    <button @onclick="UpdateTreatmentListButtonClick">Update</button>
+</div>
+@if (treatmentList == null) {
+    <p><em>Loading...</em></p>
+} else {
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Treatment ID</th>
+                <th>Treatment Type ID</th>
+                <th>Start</th>
+                <th>End</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var treatment in treatmentList) {
+                <tr>
+                    <td>@treatment.ID</td>
+                    <td>@treatment.TreatID</td>
+                    <td>@treatment.StartDateTime</td>
+                    <td>@treatment.EndDateTime</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+
 @code {
     private PatientInfo[]? patientList;
     private AxialList[]? axialList;
+    private TreatmentData[]? treatmentList;
+    private TreatmentMethodSetting[]? treatmentMethodList;
     private string MinDate = new DateTime(1990, 1, 1).ToString("yyyy-MM-dd");
     private string? messagetext;
 
     [SupplyParameterFromForm]
     private PatientInfo PatientInfoModel { get; set; } = default!;
     private AxialList AxialModel { get; set; } = default!;
+    private TreatmentData TreatmentModel { get; set; } = default!;
+    private TreatmentMethodSetting TreatmentMethodModel { get; set; } = default!;
     private EditContext editContextPatientInfo { get; set; } = default!;
     private EditContext editContextAxial { get; set; } = default!;
+    private EditContext editContextTreatmentMethod { get; set; } = default!;
+    private EditContext editContextTreatment { get; set; } = default!;
     private ValidationMessageStore ValidationMessageStore { get; set; } = default!;
 
     protected override async Task OnInitializedAsync() {
@@ -154,6 +273,15 @@
         AxialModel ??= new();
         AxialModel.ExamDateTime = DateTime.Now;
         editContextAxial = new(AxialModel);
+
+        TreatmentMethodModel ??= new();
+        TreatmentMethodModel.RGBAColor = new();
+        editContextTreatmentMethod = new(TreatmentMethodModel);
+
+        TreatmentModel ??= new();
+        TreatmentModel.StartDateTime = DateTime.Now;
+        TreatmentModel.EndDateTime = DateTime.Now;
+        editContextTreatment = new(TreatmentModel);
 
         // API を呼び出してデータを取得
         patientList = await HttpClient.GetFromJsonAsync<PatientInfo[]>("api/DBPatientInfo/GetPatientInfoList");
@@ -169,14 +297,34 @@
         Task.Run(() => SetAxialDataAsync());
     }
 
+    void TreatmentMethodButtonClick() {
+        // 治療方法データをDBに書込み
+        Task.Run(() => SetTreatmentMethodAsync());
+    }
+
+    void TreatmentButtonClick() {
+        // 治療状況データをDBに書込み
+        Task.Run(() => SetTreatmentDataAsync());
+    }
+
     void UpdatePatientListButtonClick() {
-        // 眼軸長測定値をDBに書込み
+        // 患者情報リスト更新
         Task.Run(() => GetPatientListAsync());
     }
 
     void UpdateAxialListButtonClick() {
-        // 眼軸長測定値をDBに書込み
+        // 眼軸長測定値リスト更新
         Task.Run(() => GetAxialListAsync());
+    }
+
+    void UpdateTreatmentMethodListButtonClick() {
+        // 治療方法リスト更新
+        Task.Run(() => GetTreatmentMethodListAsync());
+    }
+
+    void UpdateTreatmentListButtonClick() {
+        // 治療状況リスト更新
+        Task.Run(() => GetTreatmentDataListAsync());
     }
 
     /// <summary>
@@ -209,6 +357,21 @@
     /// <returns></returns>
     protected async Task GetPatientListAsync() {
         patientList = await HttpClient.GetFromJsonAsync<PatientInfo[]>("api/DBPatientInfo/GetPatientInfoList");
+
+        //画面を更新する
+        StateHasChanged();
+    }
+
+    ////////////////////////////////////////////////////////////////////
+    // todo: 患者リストを取得
+    // ID,名前,性別,年齢: PATIENT_LIST
+    // 最新測定日,最新眼軸長: EXAM_OPTAXIAL
+    // - ソートして先頭に来るデータを取得(右左ごと)
+    // - 右左の測定日が同じなら両方表示
+    // フラグ,治療方法,コメント: AXM_TABLE
+    ////////////////////////////////////////////////////////////////////
+    protected async Task GetPatientDataListAsync() {
+        // todo:
 
         //画面を更新する
         StateHasChanged();
@@ -343,12 +506,78 @@
         }
     }
 
+    /// <summary>
+    /// DBへ治療方法を書込み
+    /// </summary>
+    /// <returns></returns>
+    protected async Task SetTreatmentMethodAsync() {
+        string content = $"api/DBTreatment/SetTreatmentMethod/";
+        content += TreatmentMethodModel.ID;
+        content += "/";
+        content += Convert.ToBase64String(Encoding.UTF8.GetBytes(TreatmentMethodModel.TreatName));
+        content += "/";
+        content += TreatmentMethodModel.RGBAColor.R;
+        content += "/";
+        content += TreatmentMethodModel.RGBAColor.G;
+        content += "/";
+        content += TreatmentMethodModel.RGBAColor.B;
+        content += "/";
+        content += TreatmentMethodModel.RGBAColor.A;
+        content += "/";
+        content += TreatmentMethodModel.SuppresionRate;
+
+        await HttpClient.GetAsync(content);
+    }
+
+    /// <summary>
+    /// DBから治療方法を取得
+    /// </summary>
+    /// <returns></returns>
+    protected async Task GetTreatmentMethodListAsync() {
+        string content = $"api/DBTreatment/GetTreatmentMethodList";
+        treatmentMethodList = await HttpClient.GetFromJsonAsync<TreatmentMethodSetting[]>(content);
+
+        //画面を更新する
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// DBへ治療方法を書込み
+    /// </summary>
+    /// <returns></returns>
+    protected async Task SetTreatmentDataAsync() {
+        string content = $"api/DBTreatment/SetTreatment/";
+        content += Convert.ToBase64String(Encoding.UTF8.GetBytes(PatientInfoModel.ID));
+        content += "/";
+        content += TreatmentMethodModel.ID;
+        content += "/";
+        content += Convert.ToBase64String(Encoding.UTF8.GetBytes(TreatmentModel.StartDateTime.ToString()));
+        content += "/";
+        content += Convert.ToBase64String(Encoding.UTF8.GetBytes(TreatmentModel.EndDateTime.ToString()));
+
+        await HttpClient.GetAsync(content);
+    }
+
+    /// <summary>
+    /// DBから治療方法を取得
+    /// </summary>
+    /// <returns></returns>
+    protected async Task GetTreatmentDataListAsync() {
+        string content = $"api/DBTreatment/GetTreatmentList/";
+        content += Convert.ToBase64String(Encoding.UTF8.GetBytes(PatientInfoModel.ID));
+
+        treatmentList = await HttpClient.GetFromJsonAsync<TreatmentData[]>(content);
+
+        //画面を更新する
+        StateHasChanged();
+    }
+
     // 測定日時の日付部分のみ取得
     private DateTime _DateTimeToDate(DateTime? input) {
         if (input == null) {
-			return DateTime.MinValue;
-		}
-		return (DateTime)input.Value.Date;
+            return DateTime.MinValue;
+        }
+        return (DateTime)input.Value.Date;
     }
 
     //患者情報
@@ -404,9 +633,32 @@
 
     // todo: 古い定義を使用しているため、修正が必要
     public enum EyeType {
-		none,
+        none,
         right,
-		left,
+        left,
         both,
-	}
+    }
+
+    //治療方法設定
+    public class TreatmentMethodSetting {
+        public int ID { get; set; }
+        public string TreatName { get; set; } = default!;//治療方法の名前
+        public RGBAColor ?RGBAColor { get; set; }//治療方法に割り当てられた色
+        public int SuppresionRate { get; set; }//抑制率
+    }
+
+    public class RGBAColor {
+        public int R { get; set; } = 0;//色のR値
+        public int G { get; set; } = 0;//色のG値
+        public int B { get; set; } = 0;//色のB値
+        public int A { get; set; } = 0;//色のA値
+    }
+
+    public class TreatmentData {
+        public int ID { get; set; } = 0;                     //治療ID
+        public int TreatID { get; set; } = 0;      //治療方法ID
+        public DateTime? StartDateTime { get; set; }         //治療開始日時
+        public DateTime? EndDateTime { get; set; }           //治療終了日時
+    }
+
 }

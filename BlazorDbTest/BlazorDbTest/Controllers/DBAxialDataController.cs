@@ -97,7 +97,6 @@ namespace BlazorDbTest.Controllers {
             List<DBTest.AxialData> DataSource = new();
             if (patientId == null || patientId == string.Empty) return DataSource;
 
-            bool result = false;
             // appsettings.jsonと接続
             IConfigurationRoot configuration = new ConfigurationBuilder()
                 .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
@@ -163,7 +162,10 @@ namespace BlazorDbTest.Controllers {
                 }
             } catch {
             } finally {
-                if (!result) { }
+                // PostgreSQL Server 通信切断
+                if (sqlConnection.State != ConnectionState.Closed) {
+                    sqlConnection.Close();
+                }
             }
 
             return DataSource;
