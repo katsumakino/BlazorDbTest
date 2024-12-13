@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.Drawing;
+using System.Text;
 
 namespace BlazorDbTest.Common {
     public class Const {
@@ -257,5 +258,6 @@ namespace BlazorDbTest.Common {
         };
         #endregion
 
+        public static string EmptyText = Convert.ToBase64String(Encoding.UTF8.GetBytes("Noi_Npu_Tva_Lue"));   // todo: Common定義
     }
 }

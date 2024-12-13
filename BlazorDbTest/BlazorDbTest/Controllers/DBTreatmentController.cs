@@ -3,10 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Npgsql;
 using System.Data;
 using System.Text;
-using System.Xml.Linq;
 using static BlazorDbTest.Controllers.CommonController;
-using static BlazorDbTest.Controllers.DBAxialDataController;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace BlazorDbTest.Controllers {
 
@@ -159,7 +156,7 @@ namespace BlazorDbTest.Controllers {
                 var type_id = Select_TreatmentTypeId_By_TreatmentInfo(sqlConnection, treatmenttype_id);
                 // 治療方法IDが登録されていない場合は、エラーとして処理を終了する
                 if (type_id == -1) {
-                    return;    
+                    return;
                 }
 
                 // 治療状況ID取得
@@ -269,7 +266,7 @@ namespace BlazorDbTest.Controllers {
             // SQLコマンド
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.Append("insert into ");
-            stringBuilder.Append(CommonController._table(CommonController.DB_TableNames[(int)CommonController.eDbTable.AXM_TREATMENT_INFO]));
+            stringBuilder.Append(_table(DB_TableNames[(int)eDbTable.AXM_TREATMENT_INFO]));
             string text = " (";
             string text2 = " (";
             for (int i = 0; i < COLNAME_AxmTreatmentInfoList.Count(); i++) {
@@ -278,8 +275,8 @@ namespace BlazorDbTest.Controllers {
                     text2 += ",";
                 }
 
-                text += CommonController._col(COLNAME_AxmTreatmentInfoList[i]);
-                text2 += CommonController._bind(COLNAME_AxmTreatmentInfoList[i]);
+                text += _col(COLNAME_AxmTreatmentInfoList[i]);
+                text2 += _bind(COLNAME_AxmTreatmentInfoList[i]);
             }
 
             text += ")";
@@ -287,21 +284,21 @@ namespace BlazorDbTest.Controllers {
             stringBuilder.Append(text);
             stringBuilder.Append(" values ");
             stringBuilder.Append(text2);
-            stringBuilder.Append(CommonController._onconflict("pk_axm_treatment_info"));
-            stringBuilder.Append(CommonController._doupdateexam(COLNAME_AxmTreatmentInfoList[(int)eAxmTreatmentInfo.updated_at], DateTime.Now));
+            stringBuilder.Append(_onconflict("pk_axm_treatment_info"));
+            stringBuilder.Append(_doupdateexam(COLNAME_AxmTreatmentInfoList[(int)eAxmTreatmentInfo.updated_at], DateTime.Now));
             stringBuilder.Append(";");
             int num = 0;
             // SQLコマンド実行
             using (NpgsqlCommand sqlCommand = new(stringBuilder.ToString(), sqlConnection)) {
-                sqlCommand.Parameters.Add(new NpgsqlParameter("@treatmenttype_id", rec.treatmenttype_id));
-                sqlCommand.Parameters.Add(new NpgsqlParameter("@treatment_name", rec.treatment_name));
-                sqlCommand.Parameters.Add(new NpgsqlParameter("@color_r", rec.color_r));
-                sqlCommand.Parameters.Add(new NpgsqlParameter("@color_g", rec.color_g));
-                sqlCommand.Parameters.Add(new NpgsqlParameter("@color_b", rec.color_b));
-                sqlCommand.Parameters.Add(new NpgsqlParameter("@color_a", rec.color_a));
-                sqlCommand.Parameters.Add(new NpgsqlParameter("@suppression_rate", rec.suppression_rate));
-                sqlCommand.Parameters.Add(new NpgsqlParameter("@created_at", CommonController._DateTimeToObject(rec.created_at)));
-                sqlCommand.Parameters.Add(new NpgsqlParameter("@updated_at", CommonController._DateTimeToObject(rec.updated_at)));
+                sqlCommand.Parameters.AddWithValue(COLNAME_AxmTreatmentInfoList[(int)eAxmTreatmentInfo.treatmenttype_id], rec.treatmenttype_id);
+                sqlCommand.Parameters.AddWithValue(COLNAME_AxmTreatmentInfoList[(int)eAxmTreatmentInfo.treatment_name], rec.treatment_name);
+                sqlCommand.Parameters.AddWithValue(COLNAME_AxmTreatmentInfoList[(int)eAxmTreatmentInfo.color_r], rec.color_r);
+                sqlCommand.Parameters.AddWithValue(COLNAME_AxmTreatmentInfoList[(int)eAxmTreatmentInfo.color_g], rec.color_g);
+                sqlCommand.Parameters.AddWithValue(COLNAME_AxmTreatmentInfoList[(int)eAxmTreatmentInfo.color_b], rec.color_b);
+                sqlCommand.Parameters.AddWithValue(COLNAME_AxmTreatmentInfoList[(int)eAxmTreatmentInfo.color_a], rec.color_a);
+                sqlCommand.Parameters.AddWithValue(COLNAME_AxmTreatmentInfoList[(int)eAxmTreatmentInfo.suppression_rate], rec.suppression_rate);
+                sqlCommand.Parameters.AddWithValue(COLNAME_AxmTreatmentInfoList[(int)eAxmTreatmentInfo.created_at], _DateTimeToObject(rec.created_at));
+                sqlCommand.Parameters.AddWithValue(COLNAME_AxmTreatmentInfoList[(int)eAxmTreatmentInfo.updated_at], _DateTimeToObject(rec.updated_at));
                 num = sqlCommand.ExecuteNonQuery();
             }
 
@@ -312,7 +309,7 @@ namespace BlazorDbTest.Controllers {
             // SQLコマンド
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.Append("insert into ");
-            stringBuilder.Append(CommonController._table(CommonController.DB_TableNames[(int)CommonController.eDbTable.AXM_TREATMENT]));
+            stringBuilder.Append(_table(DB_TableNames[(int)eDbTable.AXM_TREATMENT]));
             string text = " (";
             string text2 = " (";
             for (int i = 0; i < COLNAME_AxmTreatmentList.Count(); i++) {
@@ -321,8 +318,8 @@ namespace BlazorDbTest.Controllers {
                     text2 += ",";
                 }
 
-                text += CommonController._col(COLNAME_AxmTreatmentList[i]);
-                text2 += CommonController._bind(COLNAME_AxmTreatmentList[i]);
+                text += _col(COLNAME_AxmTreatmentList[i]);
+                text2 += _bind(COLNAME_AxmTreatmentList[i]);
             }
 
             text += ")";
@@ -330,19 +327,19 @@ namespace BlazorDbTest.Controllers {
             stringBuilder.Append(text);
             stringBuilder.Append(" values ");
             stringBuilder.Append(text2);
-            stringBuilder.Append(CommonController._onconflict("pk_axm_treatment"));
-            stringBuilder.Append(CommonController._doupdateexam(COLNAME_AxmTreatmentList[(int)eAxmTreatment.updated_at], DateTime.Now));
+            stringBuilder.Append(_onconflict("pk_axm_treatment"));
+            stringBuilder.Append(_doupdateexam(COLNAME_AxmTreatmentList[(int)eAxmTreatment.updated_at], DateTime.Now));
             stringBuilder.Append(";");
             int num = 0;
             // SQLコマンド実行
             using (NpgsqlCommand sqlCommand = new(stringBuilder.ToString(), sqlConnection)) {
-                sqlCommand.Parameters.Add(new NpgsqlParameter("@treatment_id", rec.treatment_id));
-                sqlCommand.Parameters.Add(new NpgsqlParameter("@treatmenttype_id", rec.treatmenttype_id));
-                sqlCommand.Parameters.Add(new NpgsqlParameter("@pt_uuid", Guid.Parse(rec.pt_uuid)));
-                sqlCommand.Parameters.Add(new NpgsqlParameter("@start_at", CommonController._DateTimeToObject(rec.start_at)));
-                sqlCommand.Parameters.Add(new NpgsqlParameter("@end_at", CommonController._DateTimeToObject(rec.end_at)));
-                sqlCommand.Parameters.Add(new NpgsqlParameter("@created_at", CommonController._DateTimeToObject(rec.created_at)));
-                sqlCommand.Parameters.Add(new NpgsqlParameter("@updated_at", CommonController._DateTimeToObject(rec.updated_at)));
+                sqlCommand.Parameters.AddWithValue(COLNAME_AxmTreatmentList[(int)eAxmTreatment.treatment_id], rec.treatment_id);
+                sqlCommand.Parameters.AddWithValue(COLNAME_AxmTreatmentList[(int)eAxmTreatment.treatmenttype_id], rec.treatmenttype_id);
+                sqlCommand.Parameters.AddWithValue(COLNAME_AxmTreatmentList[(int)eAxmTreatment.pt_uuid], Guid.Parse(rec.pt_uuid));
+                sqlCommand.Parameters.AddWithValue(COLNAME_AxmTreatmentList[(int)eAxmTreatment.start_at], _DateTimeToObject(rec.start_at));
+                sqlCommand.Parameters.AddWithValue(COLNAME_AxmTreatmentList[(int)eAxmTreatment.end_at], _DateTimeToObject(rec.end_at));
+                sqlCommand.Parameters.AddWithValue(COLNAME_AxmTreatmentList[(int)eAxmTreatment.created_at], _DateTimeToObject(rec.created_at));
+                sqlCommand.Parameters.AddWithValue(COLNAME_AxmTreatmentList[(int)eAxmTreatment.updated_at], _DateTimeToObject(rec.updated_at));
                 num = sqlCommand.ExecuteNonQuery();
             }
 

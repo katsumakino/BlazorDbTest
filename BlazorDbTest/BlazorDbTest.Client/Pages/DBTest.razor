@@ -244,12 +244,65 @@
     </table>
 }
 
+<br />
+<h4>○ コメント登録</h4>
+<div class="part-group">
+    <label>Exam Date:</label>
+    <InputDate @bind-Value="AxmCommentModel.ExamDateTime" max="@DateTime.Today.ToString("yyyy-MM-dd")" min="@MinDate" />
+</div>
+<div class="part-group">
+    <label>Comment Type:</label>
+    <InputRadioGroup @bind-Value="AxmCommentModel.CommentType">
+        <InputRadio Value="AxmCommentType.none" />none
+        <InputRadio Value="AxmCommentType.Patient" />Patient
+        <InputRadio Value="AxmCommentType.ExamDate" />Exam Date
+    </InputRadioGroup>
+</div>
+<div class="part-group">
+    <label>Comment:</label>
+    <InputTextArea @bind-Value="AxmCommentModel.Description" autocomplete=off />
+</div>
+<div>
+    <button @onclick="AxmCommentButtonClick">Register</button>
+</div>
+
+<br />
+<div>
+    <button @onclick="UpdateAxmCommentListButtonClick">Update</button>
+</div>
+@if (axmCommentList == null) {
+    <p><em>Loading...</em></p>
+} else {
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Comment ID</th>
+                <th>Comment Type ID</th>
+                <th>Comment</th>
+                <th>Exam Date Time</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var axmComment in axmCommentList) {
+                <tr>
+                    <td>@axmComment.ID</td>
+                    <td>@axmComment.CommentType</td>
+                    <td>@axmComment.Description</td>
+                    <td>@axmComment.ExamDateTime</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
 
 @code {
+    public readonly string EmptyText = Convert.ToBase64String(Encoding.UTF8.GetBytes("Noi_Npu_Tva_Lue"));   // todo: Common定義
+
     private PatientInfo[]? patientList;
     private AxialList[]? axialList;
     private TreatmentData[]? treatmentList;
     private TreatmentMethodSetting[]? treatmentMethodList;
+    private AxmComment[]? axmCommentList;
     private string MinDate = new DateTime(1990, 1, 1).ToString("yyyy-MM-dd");
     private string? messagetext;
 
@@ -258,10 +311,13 @@
     private AxialList AxialModel { get; set; } = default!;
     private TreatmentData TreatmentModel { get; set; } = default!;
     private TreatmentMethodSetting TreatmentMethodModel { get; set; } = default!;
+    private AxmComment AxmCommentModel { get; set; } = default!;
     private EditContext editContextPatientInfo { get; set; } = default!;
+    private EditContext editContextAxmPatientList { get; set; } = default!;
     private EditContext editContextAxial { get; set; } = default!;
     private EditContext editContextTreatmentMethod { get; set; } = default!;
     private EditContext editContextTreatment { get; set; } = default!;
+    private EditContext editContextAxmComment { get; set; } = default!;
     private ValidationMessageStore ValidationMessageStore { get; set; } = default!;
 
     protected override async Task OnInitializedAsync() {
@@ -282,6 +338,11 @@
         TreatmentModel.StartDateTime = DateTime.Now;
         TreatmentModel.EndDateTime = DateTime.Now;
         editContextTreatment = new(TreatmentModel);
+
+        AxmCommentModel ??= new();
+        AxmCommentModel.CommentType = AxmCommentType.none;
+        AxmCommentModel.ExamDateTime = DateTime.Now;
+        editContextAxmComment = new(AxmCommentModel);
 
         // API を呼び出してデータを取得
         patientList = await HttpClient.GetFromJsonAsync<PatientInfo[]>("api/DBPatientInfo/GetPatientInfoList");
@@ -307,6 +368,11 @@
         Task.Run(() => SetTreatmentDataAsync());
     }
 
+    void AxmCommentButtonClick() {
+        // 治療状況リスト更新
+        Task.Run(() => SetAxmCommentListAsync());
+    }
+
     void UpdatePatientListButtonClick() {
         // 患者情報リスト更新
         Task.Run(() => GetPatientListAsync());
@@ -327,21 +393,30 @@
         Task.Run(() => GetTreatmentDataListAsync());
     }
 
+    void UpdateAxmCommentListButtonClick() {
+        // 治療状況リスト更新
+        Task.Run(() => GetAxmCommentListAsync());
+    }
+
     /// <summary>
     /// DBへ患者情報を書込み
     /// </summary>
     /// <returns></returns>
     protected async Task SetPatientInfoAsync() {
         string content = $"api/DBPatientInfo/SetPatientInfo/";
-        content += Convert.ToBase64String(Encoding.UTF8.GetBytes(PatientInfoModel.ID));
+        content += CheckString(PatientInfoModel.ID);
         content += "/";
-        content += Convert.ToBase64String(Encoding.UTF8.GetBytes(PatientInfoModel.FamilyName));
+        content += CheckString(PatientInfoModel.FamilyName);
         content += "/";
-        content += Convert.ToBase64String(Encoding.UTF8.GetBytes(PatientInfoModel.FirstName));
+        content += CheckString(PatientInfoModel.FirstName);
         content += "/";
         content += PatientInfoModel.Gender;
         content += "/";
-        content += Convert.ToBase64String(Encoding.UTF8.GetBytes(PatientInfoModel.BirthDate?.ToString()));
+        content += CheckString(PatientInfoModel.BirthDate?.ToString());
+        content += "/";
+        content += PatientInfoModel.Mark;
+        content += "/";
+        content += CheckString(PatientInfoModel.SameID);
 
         await HttpClient.GetAsync(content);
 
@@ -572,6 +647,38 @@
         StateHasChanged();
     }
 
+    /// <summary>
+    /// DBへコメントを登録
+    /// </summary>
+    /// <returns></returns>
+    protected async Task SetAxmCommentListAsync() {
+        string content = $"api/DBAxmComment/SetAxmComment/";
+        content += CheckString(PatientInfoModel.ID);
+        content += "/";
+        content += AxmCommentModel.CommentType;
+        content += "/";
+        content += CheckString(AxmCommentModel.Description);
+        content += "/";
+        content += (AxmCommentModel.CommentType == AxmCommentType.ExamDate) 
+        ? CheckString(AxmCommentModel.ExamDateTime.ToString()) : CheckString("");
+
+        await HttpClient.GetAsync(content);
+    }
+
+    /// <summary>
+    /// DBからコメントを取得
+    /// </summary>
+    /// <returns></returns>
+    protected async Task GetAxmCommentListAsync() {
+        string content = $"api/DBAxmComment/GetDBAxmCommentList/";
+        content += CheckString(PatientInfoModel.ID);
+
+        axmCommentList = await HttpClient.GetFromJsonAsync<AxmComment[]>(content);
+
+        //画面を更新する
+        StateHasChanged();
+    }
+
     // 測定日時の日付部分のみ取得
     private DateTime _DateTimeToDate(DateTime? input) {
         if (input == null) {
@@ -579,6 +686,11 @@
         }
         return (DateTime)input.Value.Date;
     }
+
+    // 文字列のnull&空文字チェック
+    private string CheckString(string? str) {
+        return string.IsNullOrEmpty(str) ? EmptyText : Convert.ToBase64String(Encoding.UTF8.GetBytes(str));
+	}
 
     //患者情報
     public class PatientInfo {
@@ -656,9 +768,22 @@
 
     public class TreatmentData {
         public int ID { get; set; } = 0;                     //治療ID
-        public int TreatID { get; set; } = 0;      //治療方法ID
+        public int TreatID { get; set; } = 0;                //治療方法ID
         public DateTime? StartDateTime { get; set; }         //治療開始日時
         public DateTime? EndDateTime { get; set; }           //治療終了日時
     }
 
+    public class AxmComment {
+        public int ID { get; set; } = default!;                 //AXM用コメントデータID
+        public AxmCommentType CommentType { get; set; } = 0;               //コメントタイプ
+        public string Description { get; set; } = default!;     //コメント
+        public DateTime? ExamDateTime { get; set; }             //測定日時
+    }
+
+    //コメントタイプ
+    public enum AxmCommentType {
+        none,
+        Patient,
+        ExamDate
+    }
 }

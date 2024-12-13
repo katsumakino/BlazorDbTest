@@ -1,4 +1,5 @@
 ﻿using BlazorDbTest.Client.Pages;
+using BlazorDbTest.Common;
 using Npgsql;
 using System.Data;
 using System.Reflection;
@@ -352,7 +353,8 @@ namespace BlazorDbTest.Controllers {
             return age;
         }
 
-        public static DateTime? _objectToDateTime(object oColumnRes, bool bisUTC = true) {
+        // todo: T/Fどちらをデフォルトとするか確認
+        public static DateTime? _objectToDateTime(object oColumnRes, bool bisUTC = false) {
             if (!DateTime.TryParse(oColumnRes.ToString(), out var result)) {
                 return null;
             }
@@ -366,7 +368,6 @@ namespace BlazorDbTest.Controllers {
             return result;
         }
 
-        // todo:
         public static string _col(string aColumn) {
             return " \"" + aColumn + "\" ";
         }
@@ -399,6 +400,11 @@ namespace BlazorDbTest.Controllers {
             return "do update set \"" + colUpdatedAt + "\" = '" + dtUpdate.ToString("yyyy-MM-dd HH:mm:ss.FFFFFF") + "' ";
         }
 
+        // null&空文字チェックして、string型に復元
+        public static string CheckConvertString(string str) {
+            return (str != Const.EmptyText) ? Encoding.UTF8.GetString(Convert.FromBase64String(str)) : string.Empty;
+        }
+
         // todo:
         public static string[] DB_TableNames =
         [
@@ -418,6 +424,9 @@ namespace BlazorDbTest.Controllers {
         public static string[] COLNAME_MstSelecttypesList = ["select_id", "select_type", "updated_at", "created_at"];
         public static string[] COLNAME_MstTargeteyeList = ["target_eye_id", "target_eye_type", "updated_at", "created_at"];
         public static string[] COLNAME_MstIolEyesList = ["iol_eye_id", "iol_eye_type", "updated_at", "created_at"];
+        // 以下、AXM用
+        public static string[] COLNAME_AxmPatientList = ["pt_uuid", "axm_pt_id", "axm_flag", "is_axm_same_pt_id", "axm_same_pt_id", "updated_at", "created_at"];
+        public static string[] COLNAME_MstAxmCommentTypesList = ["commenttype_id", "commenttype_type", "updated_at", "created_at"];
 
         public enum eDbTable {
             none = 0,
@@ -482,6 +491,17 @@ namespace BlazorDbTest.Controllers {
             exam_operator_firstname,
             device_id,
             exam_datetime,
+            updated_at,
+            created_at,
+            MAX
+        }
+
+        public enum eAxmPatientList {
+            pt_uuid = 0,
+            axm_pt_id,
+            axm_flag,
+            is_axm_same_pt_id,
+            axm_same_pt_id,
             updated_at,
             created_at,
             MAX
