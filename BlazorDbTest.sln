@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34902.65
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorDbTest", "BlazorDbTest\BlazorDbTest\BlazorDbTest.csproj", "{7D088C5B-B401-41DC-8CCD-756A242D173D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorDbTest", "BlazorDbTest\BlazorDbTest\BlazorDbTest.csproj", "{7D088C5B-B401-41DC-8CCD-756A242D173D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorDbTest.Client", "BlazorDbTest\BlazorDbTest.Client\BlazorDbTest.Client.csproj", "{13AE3A49-EBE7-4EA0-BC12-537D8AE643BC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorDbTest.Client", "BlazorDbTest\BlazorDbTest.Client\BlazorDbTest.Client.csproj", "{13AE3A49-EBE7-4EA0-BC12-537D8AE643BC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

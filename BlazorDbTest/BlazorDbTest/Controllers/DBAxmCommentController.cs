@@ -255,6 +255,12 @@ namespace BlazorDbTest.Controllers {
 
         public static string[] AXM_COMMENT_TYPE = ["none", "Patient", "ExamDate"];
 
+        public enum eAxmCommentType {
+            none = 0,
+            Patient,
+            ExamDate
+        }
+
         public enum eAxmComment {
             comment_id = 0,
             commenttype_id,

@@ -1,0 +1,212 @@
+﻿@page "/PatientListTest"
+@inject HttpClient HttpClient
+@using System.Text.Json;
+
+<PageTitle>Patient List Test</PageTitle>
+
+<h3>◆ 検索条件</h3>
+<EditForm EditContext="editContextPatientSearch" FormName="patientsearchform" />
+
+<div class="form-group">
+	<label for="IdOrName">IDまたは名前:</label>
+	<InputText @bind-Value="PatientSearchModel.IdOrName" id="IdOrName" class="form-control" />
+</div>
+
+<div class="form-group">
+    <label>性別:</label>
+    <InputRadioGroup @bind-Value="PatientSearchModel.Gender">
+        <InputRadio Value="Gender.male" />男性
+        <InputRadio Value="Gender.female" />女性
+        <InputRadio Value="Gender.other" />指定しない
+    </InputRadioGroup>
+</div>
+
+<div class="form-group">
+    <label>年齢:</label>
+    <input type="number" @bind-value=PatientSearchModel.AgeMin />
+    <label>　～　</label>
+    <input type="number" @bind-value=PatientSearchModel.AgeMax />
+</div>
+
+<div class="form-group">
+    <label>眼軸長:</label>
+    <input type="number" @bind-value=PatientSearchModel.AxialMin />
+    <label>　～　</label>
+    <input type="number" @bind-value=PatientSearchModel.AxialMax />
+</div>
+
+<div class="form-group">
+    <InputCheckbox @bind-Value="PatientSearchModel.IsExamDate" />
+	<label>最新測定日:</label>
+	<input type="date" @bind-value=PatientSearchModel.ExamDateMin />
+	<label>　～　</label>
+	<input type="date" @bind-value=PatientSearchModel.ExamDateMax />
+ </div>
+
+<div class="form-group">
+    <label>治療方法:</label>
+    <input type="number" @bind-value=PatientSearchModel.TreatmentType[0] />
+    <input type="number" @bind-value=PatientSearchModel.TreatmentType[1] />
+    <input type="number" @bind-value=PatientSearchModel.TreatmentType[2] />
+    <input type="number" @bind-value=PatientSearchModel.TreatmentType[3] />
+    <input type="number" @bind-value=PatientSearchModel.TreatmentType[4] />
+</div>
+
+<div class="form-group">
+	<label for="PatientComment">患者コメント:</label>
+	<InputText @bind-Value="PatientSearchModel.PatientComment" id="PatientComment" class="form-control" />
+</div>
+
+<div class="form-group">
+	<InputCheckbox @bind-Value="PatientSearchModel.IsMark" />
+	<label>お気に入り患者のみ</label>
+</div>
+
+<div class="form-group">
+	<InputCheckbox @bind-Value="PatientSearchModel.IsSameID" />
+	<label>同一ID患者のみ</label>
+</div>
+
+<div>
+    <button type="button" class="btn btn-primary" @onclick="SearchPatientListButtonClick">検索</button>
+</div>
+
+<br/>
+<h3>◆ 検索結果</h3>
+@if (patientList == null) {
+    <p><em>Loading...</em></p>
+} else {
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Gender</th>
+                <th>Age</th>
+                <th>BirthDay</th>
+                <th>Exam Date</th>
+                <th>Latest Axial(R)</th>
+                <th>Latest Axial(L)</th>
+                <th>Patient Comment</th>
+                <th>All Treatment Type</th>
+                <th>Mark</th>
+                <th>Same ID</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var row in patientList) {
+                <tr>
+                    <td>@row.PatientInfo.ID</td>
+                    <td>@row.PatientInfo.FirstName</td>
+                    <td>@row.PatientInfo.FamilyName</td>
+                    <td>@row.PatientInfo.Gender</td>
+                    <td>@row.PatientInfo.Age</td>
+                    <td>@row.PatientInfo.BirthDate</td>
+                    <td>@row.LatestPicDate</td>
+                    <td>@row.LatestRAxial</td>
+                    <td>@row.LatestLAxial</td>
+                    <td>@row.PatientComment</td>
+                    <td>@row.AllTreatName</td>
+                    <td>@row.PatientInfo.Mark</td>
+                    <td>@row.PatientInfo.SameID</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+
+    private PatientList[]? patientList;
+
+    [SupplyParameterFromForm]
+    private PatientSearch PatientSearchModel { get; set; } = default!;
+    private EditContext editContextPatientSearch { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync() {
+        PatientSearchModel ??= new();
+        PatientSearchModel.Gender = Gender.other;
+        PatientSearchModel.ExamDateMin = DateTime.Now.AddYears(-5);
+        PatientSearchModel.ExamDateMin = DateTime.Now;
+        editContextPatientSearch = new EditContext(new PatientSearch());
+    }
+
+    void SearchPatientListButtonClick() {
+        // 患者リストをDBから取得
+        Task.Run(() => GetSearchPatientListAsync());
+    }
+
+    ////////////////////////////////////////////////////////////////////
+    // todo: 患者リストを取得
+    // ID,名前,性別,年齢: PATIENT_LIST
+    // 最新測定日,最新眼軸長: EXAM_OPTAXIAL
+    // - ソートして先頭に来るデータを取得(右左ごと)
+    // - 右左の測定日が同じなら両方表示
+    // フラグ,治療方法,コメント: AXM_TABLE
+    ////////////////////////////////////////////////////////////////////
+    protected async Task GetSearchPatientListAsync() {
+        string content = $"api/DBPatientInfo/GetSearchPatientList/";
+        content += JsonSerializer.Serialize(PatientSearchModel);
+
+        patientList = await HttpClient.GetFromJsonAsync<PatientList[]>(content);
+
+        //画面を更新する
+        StateHasChanged();
+    }
+
+    public readonly string EmptyText = Convert.ToBase64String(Encoding.UTF8.GetBytes("Noi_Npu_Tva_Lue"));
+
+    // 文字列のnull&空文字チェック
+    private string CheckString(string? str) {
+        return string.IsNullOrEmpty(str) ? EmptyText : Convert.ToBase64String(Encoding.UTF8.GetBytes(str));
+    }
+
+    //患者情報
+    public class PatientInfo {
+        public bool Mark { get; set; }                      //お気に入り(仮)
+        public string ID { get; set; } = default!;
+        public string FamilyName { get; set; } = default!;  //患者姓
+        public string FirstName { get; set; } = default!;   //患者名
+        public Gender Gender { get; set; }                  //性別
+        public int Age { get; set; }                        //年齢
+        public DateTime? BirthDate { get; set; }            //生年月日
+        public string SameID { get; set; } = default!;      //同一ID
+        public int DeviceID { get; set; }                   //装置種別
+    }
+
+    //性別
+    public enum Gender {
+        none,
+        male,
+        female,
+        other, //未指定
+    }
+
+    //検索結果
+    public class PatientList {
+        public PatientInfo PatientInfo { get; set; } = default!;    //患者情報
+        public DateTime? LatestPicDate { get; set; }                 //最新撮影日
+        public double LatestRAxial { get; set; }                    //最新右眼軸長
+        public double LatestLAxial { get; set; }                    //最新左眼軸長
+        public string PatientComment { get; set; } = default!;      //患者コメント
+        public string AllTreatName { get; set; } = default!;        //治療名称一覧
+    }
+
+    //検索条件
+    public class PatientSearch() {
+        public string IdOrName { get; set; } = default!;            //IDまたは名前
+        public Gender Gender { get; set; }                          //性別
+        public int AgeMin { get; set; }                             //年齢下限
+        public int AgeMax { get; set; }                             //年齢上限
+        public double AxialMin { get; set; }                        //眼軸長下限
+        public double AxialMax { get; set; }                        //眼軸長上限
+        public bool IsExamDate { get; set; }                        //測定日検索の有無
+        public DateTime? ExamDateMin { get; set; }                  //最新測定日下限
+        public DateTime? ExamDateMax { get; set; }                  //最新測定日上限
+        public int[] TreatmentType { get; set; } = new int[5];      //治療方法(最大5つ)
+        public string PatientComment { get; set; } = default!;      //患者コメント
+        public bool IsMark { get; set; }                            //お気に入り患者のみ
+        public bool IsSameID { get; set; }                          //同一ID患者のみ
+    }
+}

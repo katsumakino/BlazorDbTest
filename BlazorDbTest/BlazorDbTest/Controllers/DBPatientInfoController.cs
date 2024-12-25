@@ -4,7 +4,11 @@ using Microsoft.AspNetCore.Mvc;
 using Npgsql;
 using System.Data;
 using System.Text;
+using System.Text.Json;
 using static BlazorDbTest.Controllers.CommonController;
+using static BlazorDbTest.Controllers.DBAxmCommentController;
+using static BlazorDbTest.Controllers.DBTreatmentController;
+using static BlazorDbTest.Controllers.DBAxialDataController;
 
 // todo: 関数・定義クラスの分離
 
@@ -232,6 +236,179 @@ namespace BlazorDbTest.Controllers {
             } catch {
             } finally {
                 sqlConnection.Close();
+            }
+
+            return DataSource;
+        }
+
+        [HttpGet("GetSearchPatientList/{conditions}")]
+        public List<PatientListTest.PatientList> GetSearchPatientList(string conditions) {
+            List<PatientListTest.PatientList> DataSource = new();
+
+            try {
+                if (conditions == null || conditions == string.Empty) return DataSource;
+                PatientListTest.PatientSearch patientSearch = JsonSerializer.Deserialize<PatientListTest.PatientSearch>(conditions);
+
+                // appsettings.jsonと接続
+                IConfigurationRoot configuration = new ConfigurationBuilder()
+                    .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
+                    .AddJsonFile("appsettings.json")
+                    .Build();
+
+                // appsettings.jsonからConnectionString情報取得
+                string? ConnectionString = configuration.GetConnectionString("db");
+
+                // PostgreSQL Server 通信接続
+                NpgsqlConnection sqlConnection = new(ConnectionString);
+
+                try {
+                    // PostgreSQL Server 通信接続
+                    sqlConnection.Open();
+
+                    int eye_id_r = Select_Eye_ID(sqlConnection, Const.strEyeType[Const.eEyeType.RIGHT]);
+                    int eye_id_l = Select_Eye_ID(sqlConnection, Const.strEyeType[Const.eEyeType.LEFT]);
+                    int commenttype_patient = Select_AxmCommentTypeId(sqlConnection, AXM_COMMENT_TYPE[(int)eAxmCommentType.Patient]);
+                    var tbl1 = "tbl1";  // PatientList
+                    var tbl2 = "tbl2";  // AxmPatientList
+                    var tbl3 = "tbl3";  // ExamList(Max探索)
+                    var tbl6 = "tbl6";  // AxmCommentList
+
+                    // クエリコマンド実行
+                    // todo: 綺麗に整理
+                    string Query = "WITH RankedExams AS (";
+                    Query += "SELECT *,";
+                    Query += "RANK() OVER (PARTITION BY ";
+                    Query += _col(COLNAME_ExamList[(int)eExamList.pt_uuid]);
+                    Query += " ORDER BY ";
+                    Query += _col(COLNAME_ExamList[(int)eExamList.exam_datetime]);
+                    Query += " DESC) AS rank ";
+                    Query += "FROM ";
+                    Query += _table(DB_TableNames[(int)eDbTable.EXAM_LIST]);
+                    Query += ") ";
+                    Query += "SELECT ";
+                    Query += "DISTINCT ON (";
+                    Query += tbl1;
+                    Query += _dotcol(COLNAME_PatientList[(int)ePatientList.pt_uuid]);
+                    Query += ") ";
+                    Query += tbl1;
+                    Query += _dotcol(COLNAME_PatientList[(int)ePatientList.pt_id]);
+                    Query += ", ";
+                    Query += tbl1;
+                    Query += _dotcol(COLNAME_PatientList[(int)ePatientList.pt_lastname]);
+                    Query += ", ";
+                    Query += tbl1;
+                    Query += _dotcol(COLNAME_PatientList[(int)ePatientList.pt_firstname]);
+                    Query += ", ";
+                    Query += tbl1;
+                    Query += _dotcol(COLNAME_PatientList[(int)ePatientList.gender_id]);
+                    Query += ", ";
+                    Query += tbl1;
+                    Query += _dotcol(COLNAME_PatientList[(int)ePatientList.pt_dob]);
+                    Query += ", ";
+                    Query += tbl2;
+                    Query += _dotcol(COLNAME_AxmPatientList[(int)eAxmPatientList.axm_flag]);
+                    Query += ", ";
+                    Query += tbl2;
+                    Query += _dotcol(COLNAME_AxmPatientList[(int)eAxmPatientList.axm_same_pt_id]);
+                    Query += ", ";
+                    Query += tbl3;
+                    Query += _dotcol(COLNAME_ExamList[(int)eExamList.exam_datetime]);
+                    Query += ", ";
+                    Query += tbl6;
+                    Query += _dotcol(COLNAME_AxmCommentList[(int)eAxmComment.description]);
+                    Query += " FROM (";
+                    Query += "(";
+                    Query += _table(DB_TableNames[(int)eDbTable.PATIENT_LIST]);
+                    Query += " ";
+                    Query += tbl1;
+                    Query += " LEFT JOIN ";
+                    Query += _table(DB_TableNames[(int)eDbTable.AXM_PATIENT_LIST]);
+                    Query += " ";
+                    Query += tbl2;
+                    Query += " ON ";
+                    Query += tbl1;
+                    Query += _dotcol(COLNAME_PatientList[(int)ePatientList.pt_uuid]);
+                    Query += " = ";
+                    Query += tbl2;
+                    Query += _dotcol(COLNAME_AxmPatientList[(int)eAxmPatientList.pt_uuid]);
+                    Query += ") ";
+                    Query += "LEFT JOIN ";
+                    Query += "RankedExams ";
+                    Query += tbl3;
+                    Query += " ON ";
+                    Query += tbl1;
+                    Query += _dotcol(COLNAME_PatientList[(int)ePatientList.pt_uuid]);
+                    Query += " = ";
+                    Query += tbl3;
+                    Query += _dotcol(COLNAME_ExamList[(int)eExamList.pt_uuid]);
+                    Query += " AND ";
+                    Query += tbl3;
+                    Query += _dotcol("rank");
+                    Query += " = 1) ";
+                    Query += "LEFT JOIN ";
+                    Query += _table(DB_TableNames[(int)eDbTable.AXM_COMMENT]);
+                    Query += " ";
+                    Query += tbl6;
+                    Query += " ON ";
+                    Query += tbl1;
+                    Query += _dotcol(COLNAME_PatientList[(int)ePatientList.pt_uuid]);
+                    Query += " = ";
+                    Query += tbl6;
+                    Query += _dotcol(COLNAME_AxmCommentList[(int)eAxmComment.pt_uuid]);
+                    Query += " WHERE (";
+                    Query += "(";
+                    Query += tbl6;
+                    Query += _dotcol(COLNAME_AxmCommentList[(int)eAxmComment.commenttype_id]);
+                    Query += " = ";
+                    Query += commenttype_patient;
+                    Query += " OR ";
+                    Query += tbl6;
+                    Query += _dotcol(COLNAME_AxmCommentList[(int)eAxmComment.commenttype_id]);
+                    Query += " IS NULL) ";
+                    // todo: 最新測定日1つのみ
+                    // todo: 検索条件の付与
+                    // todo: 表示設定の反映
+                    Query += ")";
+                    Query += ";";
+
+                    NpgsqlCommand Command = new(Query, sqlConnection);
+                    NpgsqlDataAdapter DataAdapter = new(Command);
+                    DataTable DataTable = new();
+                    DataAdapter.Fill(DataTable);
+
+                    // todo: 最新測定日の測定値取得
+                    // todo: 使用した治療方法の文字列取得
+
+                    DataSource = (from DataRow data in DataTable.Rows
+                                  select new PatientListTest.PatientList() {
+                                      PatientInfo = new PatientListTest.PatientInfo() {
+                                          ID = data[0].ToString() ?? string.Empty,
+                                          FamilyName = data[1].ToString() ?? string.Empty,
+                                          FirstName = data[2].ToString() ?? string.Empty,
+                                          Gender = (PatientListTest.Gender)Enum.ToObject(typeof(PatientListTest.Gender), data[3]),
+                                          Age = GetAge(_objectToDateTime(data[4]), DateTime.Today),
+                                          BirthDate = _objectToDateTime(data[4]),
+                                          Mark = (data[5] != DBNull.Value) && (bool)data[5],
+                                          SameID = data[6].ToString() ?? string.Empty,
+                                      },
+                                      LatestPicDate = _objectToDateTime(data[7]),
+                                      //LatestRAxial = (data[8] != DBNull.Value) ? Convert.ToDouble(data[8]) : -1,
+                                      //LatestLAxial = (data[9] != DBNull.Value) ? Convert.ToDouble(data[9]) : -1,
+                                      LatestRAxial = -1,
+                                      LatestLAxial = -1,
+                                      PatientComment = data[8].ToString() ?? string.Empty,
+                                      AllTreatName = string.Empty
+                                  }).ToList();
+                } catch {
+                } finally {
+                    // PostgreSQL Server 通信切断
+                    if (sqlConnection.State != ConnectionState.Closed) {
+                        sqlConnection.Close();
+                    }
+                }
+
+            } catch {
+
             }
 
             return DataSource;

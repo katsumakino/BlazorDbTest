@@ -400,6 +400,10 @@ namespace BlazorDbTest.Controllers {
             return "do update set \"" + colUpdatedAt + "\" = '" + dtUpdate.ToString("yyyy-MM-dd HH:mm:ss.FFFFFF") + "' ";
         }
 
+        public static string _dotcol(string aColumn) {
+            return "." + aColumn + " ";
+        }
+
         // null&空文字チェックして、string型に復元
         public static string CheckConvertString(string str) {
             return (str != Const.EmptyText) ? Encoding.UTF8.GetString(Convert.FromBase64String(str)) : string.Empty;
