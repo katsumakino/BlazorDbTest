@@ -272,6 +272,75 @@ namespace BlazorDbTest.Controllers {
             return num != 0;
         }
 
+        /// <summary>
+        /// 指定された範囲内の最新の眼軸長データを取得する
+        /// </summary>
+        /// <param name="pt_uuid"></param>
+        /// <param name="eye_id"></param>
+        /// <param name="min"></param>
+        /// <param name="max"></param>
+        /// <param name="sqlConnection"></param>
+        /// <returns></returns>
+        public static double GetLatestAxialData(string pt_uuid, int eye_id, DateTime? examdate, int min, int max, NpgsqlConnection sqlConnection ) {
+            double axial_mm = -1;
+            try {
+                // 実行するクエリコマンド定義
+                string Query = "SELECT * FROM ";
+                Query += CommonController._table(CommonController.DB_TableNames[(int)CommonController.eDbTable.EXAM_OPTAXIAL]);
+                Query += " WHERE ";
+                Query += " EXISTS( ";
+                Query += "SELECT * FROM ";
+                Query += CommonController._table(CommonController.DB_TableNames[(int)CommonController.eDbTable.EXAM_LIST]);
+                Query += " WHERE ";
+                Query += CommonController._table(CommonController.DB_TableNames[(int)CommonController.eDbTable.EXAM_OPTAXIAL]);
+                Query += ".";
+                Query += CommonController._col(COLNAME_ExamOptaxialList[(int)eExamOptAxial.exam_id]);
+                Query += " = ";
+                Query += CommonController._table(CommonController.DB_TableNames[(int)CommonController.eDbTable.EXAM_LIST]);
+                Query += ".";
+                Query += CommonController._col(CommonController.COLNAME_ExamList[(int)CommonController.eExamList.exam_id]);
+                Query += " AND ";
+                Query += CommonController._table(CommonController.DB_TableNames[(int)CommonController.eDbTable.EXAM_LIST]);
+                Query += ".";
+                Query += CommonController._col(CommonController.COLNAME_ExamList[(int)CommonController.eExamList.pt_uuid]);
+                Query += " = ";
+                Query += CommonController._val(pt_uuid);
+                Query += " )";
+                Query += " AND ";
+                Query += CommonController._col(COLNAME_ExamOptaxialList[(int)eExamOptAxial.eye_id]);
+                Query += " = ";
+                Query += eye_id;
+                Query += " AND ";
+                Query += CommonController._col(COLNAME_ExamOptaxialList[(int)eExamOptAxial.axial_mm]);
+                Query += " >= ";
+                Query += min;
+                Query += " AND ";
+                Query += CommonController._col(COLNAME_ExamOptaxialList[(int)eExamOptAxial.axial_mm]);
+                Query += " <= ";
+                Query += max;
+                // todo: 測定日を検索条件に使用(00:00:00～23:59:99に変換必要？)
+                //Query += " AND ";
+                //Query += CommonController._col(COLNAME_ExamOptaxialList[(int)eExamOptAxial.measured_at]);
+                //Query += " >= ";
+                //Query += examdate;
+                Query += " ORDER BY ";
+                Query += CommonController._col(COLNAME_ExamOptaxialList[(int)eExamOptAxial.measured_at]);
+                Query += " DESC LIMIT 1; ";
+
+                NpgsqlCommand Command = new(Query, sqlConnection);
+                NpgsqlDataAdapter DataAdapter = new(Command);
+                DataTable DataTable = new();
+                DataAdapter.Fill(DataTable);
+
+                if (DataTable.Rows.Count > 0) {
+                    axial_mm = Convert.ToDouble(DataTable.Rows[0][COLNAME_ExamOptaxialList[(int)eExamOptAxial.axial_mm]].ToString());
+                }
+            } catch {
+            } finally {
+            }
+            return axial_mm;
+        }
+
         public static string[] COLNAME_ExamOptaxialList = new string[27]
         {
             "exam_id", "examtype_id", "eye_id", "is_exam_data", "comment", "select_id", "target_eye_id", "fitting_id", "iol_eye_id", "is_meas_auto",

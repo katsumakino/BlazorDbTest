@@ -1,6 +1,7 @@
 ﻿using BlazorDbTest.Client.Pages;
 using Microsoft.AspNetCore.Mvc;
 using Npgsql;
+using System;
 using System.Data;
 using System.Text;
 using static BlazorDbTest.Controllers.CommonController;
@@ -404,6 +405,68 @@ namespace BlazorDbTest.Controllers {
             }
 
             return result != 0 ? result + 1 : 1;
+        }
+
+        /// <summary>
+        /// 治療方法の一覧を取得する関数
+        /// </summary>
+        /// <param name="pt_uuid"></param>
+        /// <param name="conditions"></param>
+        /// <param name="sqlConnection"></param>
+        /// <returns></returns>
+        public static string GetTreatmentListString(string pt_uuid, int[] conditions, NpgsqlConnection sqlConnection) {
+            string result = string.Empty;
+
+            string TreatmentQuery = "SELECT * FROM ";
+            TreatmentQuery += _table(DB_TableNames[(int)eDbTable.AXM_TREATMENT]);
+            TreatmentQuery += " WHERE ";
+            TreatmentQuery += _col(COLNAME_AxmTreatmentList[(int)eAxmTreatment.pt_uuid]);
+            TreatmentQuery += " = ";
+            TreatmentQuery += _val(pt_uuid);
+            TreatmentQuery += " ORDER BY ";
+            TreatmentQuery += _col(COLNAME_AxmTreatmentList[(int)eAxmTreatment.treatment_id]);
+
+            NpgsqlCommand TreatmentCommand = new(TreatmentQuery, sqlConnection);
+            NpgsqlDataAdapter TreatmentDataAdapter = new(TreatmentCommand);
+            DataTable TreatmentDataTable = new();
+            TreatmentDataAdapter.Fill(TreatmentDataTable);
+
+            for(int i=0;i< TreatmentDataTable.Rows.Count; i++) {
+                DataRow data = TreatmentDataTable.Rows[i];
+                // 治療名称取得
+                string treatmenttype_id = data[COLNAME_AxmTreatmentList[(int)eAxmTreatment.treatmenttype_id]].ToString() ?? string.Empty;
+                result += GetTreatmentName(treatmenttype_id, sqlConnection) + " ";
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// 治療方法の名称を取得する関数
+        /// </summary>
+        /// <param name="treatmenttype_id"></param>
+        /// <param name="sqlConnection"></param>
+        /// <returns></returns>
+        public static string GetTreatmentName(string treatmenttype_id, NpgsqlConnection sqlConnection) {
+            string result = string.Empty;
+
+            string TreatmentQuery = "SELECT * FROM ";
+            TreatmentQuery += _table(DB_TableNames[(int)eDbTable.AXM_TREATMENT_INFO]);
+            TreatmentQuery += " WHERE ";
+            TreatmentQuery += _col(COLNAME_AxmTreatmentInfoList[(int)eAxmTreatmentInfo.treatmenttype_id]);
+            TreatmentQuery += " = ";
+            TreatmentQuery += _val(treatmenttype_id);
+
+            NpgsqlCommand TreatmentCommand = new(TreatmentQuery, sqlConnection);
+            NpgsqlDataAdapter TreatmentDataAdapter = new(TreatmentCommand);
+            DataTable TreatmentDataTable = new();
+            TreatmentDataAdapter.Fill(TreatmentDataTable);
+
+            if (TreatmentDataTable.Rows.Count > 0) {
+                result = TreatmentDataTable.Rows[0][COLNAME_AxmTreatmentInfoList[(int)eAxmTreatmentInfo.treatment_name]].ToString() ?? string.Empty;
+            }
+
+            return result;
         }
 
         public static string[] COLNAME_AxmTreatmentInfoList = new string[(int)eAxmTreatmentInfo.MAX] {

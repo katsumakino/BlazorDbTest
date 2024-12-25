@@ -365,7 +365,7 @@ namespace BlazorDbTest.Controllers {
                     Query += tbl6;
                     Query += _dotcol(COLNAME_AxmCommentList[(int)eAxmComment.commenttype_id]);
                     Query += " IS NULL) ";
-                    // todo: 最新測定日1つのみ
+                    // todo: 最新測定日(OptAxial)1つのみ
                     // todo: 検索条件の付与
                     // todo: 表示設定の反映
                     Query += ")";
@@ -379,26 +379,51 @@ namespace BlazorDbTest.Controllers {
                     // todo: 最新測定日の測定値取得
                     // todo: 使用した治療方法の文字列取得
 
-                    DataSource = (from DataRow data in DataTable.Rows
-                                  select new PatientListTest.PatientList() {
-                                      PatientInfo = new PatientListTest.PatientInfo() {
-                                          ID = data[0].ToString() ?? string.Empty,
-                                          FamilyName = data[1].ToString() ?? string.Empty,
-                                          FirstName = data[2].ToString() ?? string.Empty,
-                                          Gender = (PatientListTest.Gender)Enum.ToObject(typeof(PatientListTest.Gender), data[3]),
-                                          Age = GetAge(_objectToDateTime(data[4]), DateTime.Today),
-                                          BirthDate = _objectToDateTime(data[4]),
-                                          Mark = (data[5] != DBNull.Value) && (bool)data[5],
-                                          SameID = data[6].ToString() ?? string.Empty,
-                                      },
-                                      LatestPicDate = _objectToDateTime(data[7]),
-                                      //LatestRAxial = (data[8] != DBNull.Value) ? Convert.ToDouble(data[8]) : -1,
-                                      //LatestLAxial = (data[9] != DBNull.Value) ? Convert.ToDouble(data[9]) : -1,
-                                      LatestRAxial = -1,
-                                      LatestLAxial = -1,
-                                      PatientComment = data[8].ToString() ?? string.Empty,
-                                      AllTreatName = string.Empty
-                                  }).ToList();
+                    for(int i = 0;i<DataTable.Rows.Count; i++) {
+                        DataRow data = DataTable.Rows[i];
+
+                        string pt_id = data[0].ToString() ?? string.Empty;
+                        DateTime? examdate = _objectToDateTime(data[7]);
+
+                        if (pt_id != null) {
+                            var pt_uuid = Select_PTUUID_by_PTID(sqlConnection, pt_id);
+                            double axial_r = -1;
+                            double axial_l = -1;
+                            string allTreatName = string.Empty;
+                            int[] aaa = new int[5];
+
+                            if (pt_uuid != null) {
+                                // 最新測定日の測定値取得
+                                axial_r = GetLatestAxialData(pt_uuid, eye_id_r, examdate, 0, 40, sqlConnection);
+                                axial_l = GetLatestAxialData(pt_uuid, eye_id_l, examdate, 0, 40, sqlConnection);
+
+                                // 使用した治療方法の文字列取得
+                                allTreatName = GetTreatmentListString(pt_uuid, aaa, sqlConnection);
+
+                                PatientListTest.PatientList list =
+                                    new PatientListTest.PatientList() {
+                                        PatientInfo = new PatientListTest.PatientInfo() {
+                                            ID = pt_id,
+                                            FamilyName = data[1].ToString() ?? string.Empty,
+                                            FirstName = data[2].ToString() ?? string.Empty,
+                                            Gender = (PatientListTest.Gender)Enum.ToObject(typeof(PatientListTest.Gender), data[3]),
+                                            Age = GetAge(_objectToDateTime(data[4]), DateTime.Today),
+                                            BirthDate = _objectToDateTime(data[4]),
+                                            Mark = (data[5] != DBNull.Value) && (bool)data[5],
+                                            SameID = data[6].ToString() ?? string.Empty,
+                                        },
+                                        LatestPicDate = _objectToDateTime(data[7]),
+                                        LatestRAxial = axial_r,
+                                        LatestLAxial = axial_l,
+                                        PatientComment = data[8].ToString() ?? string.Empty,
+                                        AllTreatName = allTreatName
+                                    };
+
+                                DataSource.Add(list);
+                            }
+                        }
+                    }
+
                 } catch {
                 } finally {
                     // PostgreSQL Server 通信切断
