@@ -271,10 +271,10 @@ namespace BlazorDbTest.Controllers {
                     int device_axm_id = Select_Device_ID(sqlConnection, "AxialManager2");
                     int exam_optaxial_id = Select_Examtype_ID(sqlConnection, Const.strMstDataType[Const.eMSTDATATYPE.OPTAXIAL]);
 
-                    var tbl1 = "tbl1";  // PatientList
-                    var tbl2 = "tbl2";  // AxmPatientList
-                    var tbl3 = "tbl3";  // ExamList(Max探索)
-                    var tbl6 = "tbl6";  // AxmCommentList
+                    var tblPatientList = "tblPatientList";          // PatientList
+                    var tblAxmPatientList = "tblAxmPatientList";    // AxmPatientList
+                    var tblExamList = "tblExamList";                // ExamList
+                    var tblAxmCommentList = "tblAxmCommentList";    // AxmCommentList
 
                     // クエリコマンド実行
                     // todo: 綺麗に整理(Bind文で書き直し)
@@ -290,92 +290,95 @@ namespace BlazorDbTest.Controllers {
                     Query += ") ";
                     Query += "SELECT ";
                     Query += "DISTINCT ON (";
-                    Query += tbl1;
+                    Query += tblPatientList;
                     Query += _dotcol(COLNAME_PatientList[(int)ePatientList.pt_uuid]);
                     Query += ") ";
-                    Query += tbl1;
+                    Query += tblPatientList;
+                    Query += _dotcol(COLNAME_PatientList[(int)ePatientList.pt_uuid]);
+                    Query += ", ";
+                    Query += tblPatientList;
                     Query += _dotcol(COLNAME_PatientList[(int)ePatientList.pt_id]);
                     Query += ", ";
-                    Query += tbl1;
+                    Query += tblPatientList;
                     Query += _dotcol(COLNAME_PatientList[(int)ePatientList.pt_lastname]);
                     Query += ", ";
-                    Query += tbl1;
+                    Query += tblPatientList;
                     Query += _dotcol(COLNAME_PatientList[(int)ePatientList.pt_firstname]);
                     Query += ", ";
-                    Query += tbl1;
+                    Query += tblPatientList;
                     Query += _dotcol(COLNAME_PatientList[(int)ePatientList.gender_id]);
                     Query += ", ";
-                    Query += tbl1;
+                    Query += tblPatientList;
                     Query += _dotcol(COLNAME_PatientList[(int)ePatientList.pt_dob]);
                     Query += ", ";
-                    Query += tbl2;
+                    Query += tblAxmPatientList;
                     Query += _dotcol(COLNAME_AxmPatientList[(int)eAxmPatientList.axm_flag]);
                     Query += ", ";
-                    Query += tbl2;
+                    Query += tblAxmPatientList;
                     Query += _dotcol(COLNAME_AxmPatientList[(int)eAxmPatientList.axm_same_pt_id]);
                     Query += ", ";
-                    Query += tbl3;
+                    Query += tblExamList;
                     Query += _dotcol(COLNAME_ExamList[(int)eExamList.exam_datetime]);
                     Query += ", ";
-                    Query += tbl6;
+                    Query += tblAxmCommentList;
                     Query += _dotcol(COLNAME_AxmCommentList[(int)eAxmComment.description]);
                     Query += ", ";
-                    Query += tbl3;
+                    Query += tblExamList;
                     Query += _dotcol(COLNAME_ExamList[(int)eExamList.examtype_id]);
                     Query += " FROM (";
                     Query += "(";
                     Query += _table(DB_TableNames[(int)eDbTable.PATIENT_LIST]);
                     Query += " ";
-                    Query += tbl1;
+                    Query += tblPatientList;
                     Query += " LEFT JOIN ";
                     Query += _table(DB_TableNames[(int)eDbTable.AXM_PATIENT_LIST]);
                     Query += " ";
-                    Query += tbl2;
+                    Query += tblAxmPatientList;
                     Query += " ON ";
-                    Query += tbl1;
+                    Query += tblPatientList;
                     Query += _dotcol(COLNAME_PatientList[(int)ePatientList.pt_uuid]);
                     Query += " = ";
-                    Query += tbl2;
+                    Query += tblAxmPatientList;
                     Query += _dotcol(COLNAME_AxmPatientList[(int)eAxmPatientList.pt_uuid]);
                     Query += ") ";
                     Query += "LEFT JOIN ";
                     Query += "RankedExams ";
-                    Query += tbl3;
+                    Query += tblExamList;
                     Query += " ON ";
-                    Query += tbl1;
+                    Query += tblPatientList;
                     Query += _dotcol(COLNAME_PatientList[(int)ePatientList.pt_uuid]);
                     Query += " = ";
-                    Query += tbl3;
+                    Query += tblExamList;
                     Query += _dotcol(COLNAME_ExamList[(int)eExamList.pt_uuid]);
                     Query += " AND ";
-                    Query += tbl3;
+                    Query += tblExamList;
                     Query += _dotcol("rank");
                     Query += " = 1) ";
                     Query += "LEFT JOIN ";
                     Query += _table(DB_TableNames[(int)eDbTable.AXM_COMMENT]);
                     Query += " ";
-                    Query += tbl6;
+                    Query += tblAxmCommentList;
                     Query += " ON ";
-                    Query += tbl1;
+                    Query += tblPatientList;
                     Query += _dotcol(COLNAME_PatientList[(int)ePatientList.pt_uuid]);
                     Query += " = ";
-                    Query += tbl6;
+                    Query += tblAxmCommentList;
                     Query += _dotcol(COLNAME_AxmCommentList[(int)eAxmComment.pt_uuid]);
                     Query += " WHERE (";
                     Query += "(";
                     // 患者コメントを表示
-                    Query += tbl6;
+                    Query += tblAxmCommentList;
                     Query += _dotcol(COLNAME_AxmCommentList[(int)eAxmComment.commenttype_id]);
                     Query += " = ";
                     Query += commenttype_patient;
                     Query += " OR ";
-                    Query += tbl6;
+                    Query += tblAxmCommentList;
                     Query += _dotcol(COLNAME_AxmCommentList[(int)eAxmComment.commenttype_id]);
                     Query += " IS NULL) ";
                     // 検査タイプは、OptAxialのみ
                     if(patientSearch.IsExamDate == true) {
                         Query += "AND (";
-                        Query += tbl3;
+                        Query += tblExamList;
                         Query += _dotcol(COLNAME_ExamList[(int)eExamList.examtype_id]);
                         Query += " = ";
                         Query += exam_optaxial_id;
@@ -383,12 +386,12 @@ namespace BlazorDbTest.Controllers {
                     } else {
                         // 測定日時を指定しないときは、NULLも含める
                         Query += "AND (";
-                        Query += tbl3;
+                        Query += tblExamList;
                         Query += _dotcol(COLNAME_ExamList[(int)eExamList.examtype_id]);
                         Query += " = ";
                         Query += exam_optaxial_id;
                         Query += " OR ";
-                        Query += tbl3;
+                        Query += tblExamList;
                         Query += _dotcol(COLNAME_ExamList[(int)eExamList.examtype_id]);
                         Query += " IS NULL";
                         Query += ") ";
@@ -396,17 +399,17 @@ namespace BlazorDbTest.Controllers {
                     // ID/名前の曖昧一致検索
                     if (patientSearch.IdOrName != string.Empty && patientSearch.IdOrName != null) {
                         Query += "AND (";
-                        Query += tbl1;
+                        Query += tblPatientList;
                         Query += _dotcol(COLNAME_PatientList[(int)ePatientList.pt_id]);
                         Query += " LIKE '%";
                         Query += patientSearch.IdOrName;
                         Query += "%' OR ";
-                        Query += tbl1;
+                        Query += tblPatientList;
                         Query += _dotcol(COLNAME_PatientList[(int)ePatientList.pt_lastname]);
                         Query += " LIKE '%";
                         Query += patientSearch.IdOrName;
                         Query += "%' OR ";
-                        Query += tbl1;
+                        Query += tblPatientList;
                         Query += _dotcol(COLNAME_PatientList[(int)ePatientList.pt_firstname]);
                         Query += " LIKE '%";
                         Query += patientSearch.IdOrName;
@@ -416,7 +419,7 @@ namespace BlazorDbTest.Controllers {
                     if ((patientSearch.Gender == PatientListTest.Gender.male 
                         || patientSearch.Gender == PatientListTest.Gender.female)) {
                         Query += "AND (";
-                        Query += tbl1;
+                        Query += tblPatientList;
                         Query += _dotcol(COLNAME_PatientList[(int)ePatientList.gender_id]);
                         Query += " = ";
                         Query += (int)patientSearch.Gender;
@@ -425,7 +428,7 @@ namespace BlazorDbTest.Controllers {
                     // 年齢範囲検索
                     if(patientSearch.IsAge == true) {
                         Query += "AND (";
-                        Query += tbl1;
+                        Query += tblPatientList;
                         Query += _dotcol(COLNAME_PatientList[(int)ePatientList.pt_dob]);
                         Query += " BETWEEN '";
                         Query += CalculateBirthDateFromAge(patientSearch.AgeMax, true);
@@ -436,7 +439,7 @@ namespace BlazorDbTest.Controllers {
                     // 最新測定日範囲検索
                     if(patientSearch.IsExamDate == true) {
                         Query += "AND (";
-                        Query += tbl3;
+                        Query += tblExamList;
                         Query += _dotcol(COLNAME_ExamList[(int)eExamList.exam_datetime]);
                         Query += " BETWEEN '";
                         Query += (patientSearch.ExamDateMin != null)? patientSearch.ExamDateMin : DateTime.Today;
@@ -447,7 +450,7 @@ namespace BlazorDbTest.Controllers {
                     // 患者コメント曖昧一致検索
                     if(patientSearch.PatientComment != string.Empty && patientSearch.PatientComment != null) {
                         Query += "AND (";
-                        Query += tbl6;
+                        Query += tblAxmCommentList;
                         Query += _dotcol(COLNAME_AxmCommentList[(int)eAxmComment.description]);
                         Query += " LIKE '%";
                         Query += patientSearch.PatientComment;
@@ -456,7 +459,7 @@ namespace BlazorDbTest.Controllers {
                     // フラグ検索
                     if(patientSearch.IsMark == true) {
                         Query += "AND (";
-                        Query += tbl2;
+                        Query += tblAxmPatientList;
                         Query += _dotcol(COLNAME_AxmPatientList[(int)eAxmPatientList.axm_flag]);
                         Query += " = ";
                         Query += patientSearch.IsMark;
@@ -465,7 +468,7 @@ namespace BlazorDbTest.Controllers {
                     // 同一患者ID有無検索
                     if (patientSearch.IsSameID == true) {
                         Query += "AND (";
-                        Query += tbl2;
+                        Query += tblAxmPatientList;
                         Query += _dotcol(COLNAME_AxmPatientList[(int)eAxmPatientList.is_axm_same_pt_id]);
                         Query += " = ";
                         Query += patientSearch.IsSameID;
@@ -475,7 +478,7 @@ namespace BlazorDbTest.Controllers {
                     if (patientSearch.IsExamDate == true
                         || patientSearch.IsAxial == true) {
                         Query += "AND (";
-                        Query += tbl3;
+                        Query += tblExamList;
                         Query += _dotcol(COLNAME_ExamList[(int)eExamList.device_id]);
                         Query += " = ";
                         Query += device_axm_id;
@@ -493,18 +496,18 @@ namespace BlazorDbTest.Controllers {
                     for(int i = 0;i<DataTable.Rows.Count; i++) {
                         DataRow data = DataTable.Rows[i];
 
-                        string pt_id = data[0].ToString() ?? string.Empty;
-                        DateOnly examdate = _objectToDateOnly(data[7]);
+                        string pt_id = data[(int)eSearchPatientList.pt_id].ToString() ?? string.Empty;
+                        DateOnly examdate = _objectToDateOnly(data[(int)eSearchPatientList.exam_datetime]);
 
                         if (pt_id != null) {
-                            var pt_uuid = Select_PTUUID_by_PTID(sqlConnection, pt_id);
+                            string pt_uuid = data[(int)eSearchPatientList.pt_uuid].ToString()?? string.Empty;
                             double axial_r = -1;
                             double axial_l = -1;
                             double axialMin = (patientSearch.IsAxial)? patientSearch.AxialMin : 0;
                             double axialMax = (patientSearch.IsAxial) ? patientSearch.AxialMax : 40;
                             string allTreatName = string.Empty;
 
-                            if (pt_uuid != null) {
+                            if (pt_uuid != null && pt_uuid != string.Empty) {
                                 // 最新測定日の測定値取得
                                 axial_r = GetLatestAxialData(pt_uuid, eye_id_r, examdate, axialMin, axialMax, sqlConnection);
                                 axial_l = GetLatestAxialData(pt_uuid, eye_id_l, examdate, axialMin, axialMax, sqlConnection);
@@ -526,18 +529,18 @@ namespace BlazorDbTest.Controllers {
                                     new PatientListTest.PatientList() {
                                         PatientInfo = new PatientListTest.PatientInfo() {
                                             ID = pt_id,
-                                            FamilyName = data[1].ToString() ?? string.Empty,
-                                            FirstName = data[2].ToString() ?? string.Empty,
-                                            Gender = (PatientListTest.Gender)Enum.ToObject(typeof(PatientListTest.Gender), data[3]),
-                                            Age = GetAge(_objectToDateTime(data[4]), DateTime.Today),
-                                            BirthDate = _objectToDateTime(data[4]),
-                                            Mark = (data[5] != DBNull.Value) && (bool)data[5],
-                                            SameID = data[6].ToString() ?? string.Empty,
+                                            FamilyName = data[(int)eSearchPatientList.pt_lastname].ToString() ?? string.Empty,
+                                            FirstName = data[(int)eSearchPatientList.pt_firstname].ToString() ?? string.Empty,
+                                            Gender = (PatientListTest.Gender)Enum.ToObject(typeof(PatientListTest.Gender), data[(int)eSearchPatientList.gender_id]),
+                                            Age = GetAge(_objectToDateTime(data[(int)eSearchPatientList.pt_dob]), DateTime.Today),
+                                            BirthDate = _objectToDateTime(data[(int)eSearchPatientList.pt_dob]),
+                                            Mark = (data[(int)eSearchPatientList.axm_flag] != DBNull.Value) && (bool)data[(int)eSearchPatientList.axm_flag],
+                                            SameID = data[(int)eSearchPatientList.axm_same_pt_id].ToString() ?? string.Empty,
                                         },
-                                        LatestPicDate = _objectToDateTime(data[7]),
+                                        LatestPicDate = _objectToDateTime(data[(int)eSearchPatientList.exam_datetime]),
                                         LatestRAxial = axial_r,
                                         LatestLAxial = axial_l,
-                                        PatientComment = data[8].ToString() ?? string.Empty,
+                                        PatientComment = data[(int)eSearchPatientList.description].ToString() ?? string.Empty,
                                         AllTreatName = allTreatName
                                     };
 
@@ -817,4 +820,19 @@ public class AxmPatientRec {
     public string axm_same_pt_id { get; set; } = "";
     public DateTime? updated_at { get; set; }
     public DateTime? created_at { get; set; }
+}
+
+public enum eSearchPatientList {
+    pt_uuid = 0,
+    pt_id,
+    pt_lastname,
+    pt_firstname,
+    gender_id,
+    pt_dob,
+    axm_flag,
+    axm_same_pt_id,
+    exam_datetime,
+    description,
+    examtype_id,
+    MAX
 }
