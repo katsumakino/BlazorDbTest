@@ -414,7 +414,7 @@ namespace BlazorDbTest.Controllers {
         /// <param name="conditions"></param>
         /// <param name="sqlConnection"></param>
         /// <returns></returns>
-        public static string GetTreatmentListString(string pt_uuid, int[] conditions, NpgsqlConnection sqlConnection) {
+        public static string GetTreatmentListString(string pt_uuid, int[] conditions, int count, NpgsqlConnection sqlConnection) {
             string result = string.Empty;
 
             string TreatmentQuery = "SELECT * FROM ";
@@ -423,6 +423,20 @@ namespace BlazorDbTest.Controllers {
             TreatmentQuery += _col(COLNAME_AxmTreatmentList[(int)eAxmTreatment.pt_uuid]);
             TreatmentQuery += " = ";
             TreatmentQuery += _val(pt_uuid);
+            if(count > 0) {
+                TreatmentQuery += " AND ";
+                TreatmentQuery += " (";
+                for (int i = 0; i < count; i++) {
+                    if (i != 0) {
+                        TreatmentQuery += " OR ";
+                    }
+
+                    TreatmentQuery += _col(COLNAME_AxmTreatmentList[(int)eAxmTreatment.treatmenttype_id]);
+                    TreatmentQuery += " = ";
+                    TreatmentQuery += conditions[i];
+                }
+                TreatmentQuery += ")";
+            }
             TreatmentQuery += " ORDER BY ";
             TreatmentQuery += _col(COLNAME_AxmTreatmentList[(int)eAxmTreatment.treatment_id]);
 

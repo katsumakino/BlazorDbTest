@@ -22,6 +22,7 @@
 </div>
 
 <div class="form-group">
+    <InputCheckbox @bind-Value="PatientSearchModel.IsAge" />
     <label>年齢:</label>
     <input type="number" @bind-value=PatientSearchModel.AgeMin />
     <label>　～　</label>
@@ -29,6 +30,7 @@
 </div>
 
 <div class="form-group">
+    <InputCheckbox @bind-Value="PatientSearchModel.IsAxial" />
     <label>眼軸長:</label>
     <input type="number" @bind-value=PatientSearchModel.AxialMin />
     <label>　～　</label>
@@ -50,6 +52,8 @@
     <input type="number" @bind-value=PatientSearchModel.TreatmentType[2] />
     <input type="number" @bind-value=PatientSearchModel.TreatmentType[3] />
     <input type="number" @bind-value=PatientSearchModel.TreatmentType[4] />
+    <label>件数:</label>
+    <input type="number" @bind-value=PatientSearchModel.TreatmentTypeCount />
 </div>
 
 <div class="form-group">
@@ -127,8 +131,13 @@
     protected override async Task OnInitializedAsync() {
         PatientSearchModel ??= new();
         PatientSearchModel.Gender = Gender.other;
-        PatientSearchModel.ExamDateMin = DateTime.Now.AddYears(-5);
+        PatientSearchModel.AgeMin = 3;
+        PatientSearchModel.AgeMax = 20;
+        PatientSearchModel.AxialMin = 0;
+        PatientSearchModel.AxialMax = 40;
         PatientSearchModel.ExamDateMin = DateTime.Now;
+        PatientSearchModel.ExamDateMax = DateTime.Now;
+        PatientSearchModel.TreatmentTypeCount = 0;
         editContextPatientSearch = new EditContext(new PatientSearch());
     }
 
@@ -197,14 +206,17 @@
     public class PatientSearch() {
         public string IdOrName { get; set; } = default!;            //IDまたは名前
         public Gender Gender { get; set; }                          //性別
+        public bool IsAge { get; set; }                             //年齢検索の有無
         public int AgeMin { get; set; }                             //年齢下限
         public int AgeMax { get; set; }                             //年齢上限
+        public bool IsAxial { get; set; }                           //眼軸長範囲検索の有無
         public double AxialMin { get; set; }                        //眼軸長下限
         public double AxialMax { get; set; }                        //眼軸長上限
         public bool IsExamDate { get; set; }                        //測定日検索の有無
         public DateTime? ExamDateMin { get; set; }                  //最新測定日下限
         public DateTime? ExamDateMax { get; set; }                  //最新測定日上限
         public int[] TreatmentType { get; set; } = new int[5];      //治療方法(最大5つ)
+        public int TreatmentTypeCount { get; set; }                 //治療方法検索条件数
         public string PatientComment { get; set; } = default!;      //患者コメント
         public bool IsMark { get; set; }                            //お気に入り患者のみ
         public bool IsSameID { get; set; }                          //同一ID患者のみ

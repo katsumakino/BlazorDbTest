@@ -281,7 +281,7 @@ namespace BlazorDbTest.Controllers {
         /// <param name="max"></param>
         /// <param name="sqlConnection"></param>
         /// <returns></returns>
-        public static double GetLatestAxialData(string pt_uuid, int eye_id, DateTime? examdate, int min, int max, NpgsqlConnection sqlConnection ) {
+        public static double GetLatestAxialData(string pt_uuid, int eye_id, DateOnly examdate, double min, double max, NpgsqlConnection sqlConnection ) {
             double axial_mm = -1;
             try {
                 // 実行するクエリコマンド定義
@@ -318,11 +318,6 @@ namespace BlazorDbTest.Controllers {
                 Query += CommonController._col(COLNAME_ExamOptaxialList[(int)eExamOptAxial.axial_mm]);
                 Query += " <= ";
                 Query += max;
-                // todo: 測定日を検索条件に使用(00:00:00～23:59:99に変換必要？)
-                //Query += " AND ";
-                //Query += CommonController._col(COLNAME_ExamOptaxialList[(int)eExamOptAxial.measured_at]);
-                //Query += " >= ";
-                //Query += examdate;
                 Query += " ORDER BY ";
                 Query += CommonController._col(COLNAME_ExamOptaxialList[(int)eExamOptAxial.measured_at]);
                 Query += " DESC LIMIT 1; ";
@@ -333,7 +328,10 @@ namespace BlazorDbTest.Controllers {
                 DataAdapter.Fill(DataTable);
 
                 if (DataTable.Rows.Count > 0) {
-                    axial_mm = Convert.ToDouble(DataTable.Rows[0][COLNAME_ExamOptaxialList[(int)eExamOptAxial.axial_mm]].ToString());
+                    // 測定日が最新測定日と一致するデータを取得
+                    if (CommonController._objectToDateOnly(DataTable.Rows[0][COLNAME_ExamOptaxialList[(int)eExamOptAxial.measured_at]]) == examdate) {
+                        axial_mm = Convert.ToDouble(DataTable.Rows[0][COLNAME_ExamOptaxialList[(int)eExamOptAxial.axial_mm]].ToString());
+                    }
                 }
             } catch {
             } finally {

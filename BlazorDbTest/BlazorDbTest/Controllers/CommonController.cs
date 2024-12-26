@@ -353,6 +353,17 @@ namespace BlazorDbTest.Controllers {
             return age;
         }
 
+        public static DateOnly CalculateBirthDateFromAge(int age, bool isMax = false) {
+            DateOnly today = DateOnly.FromDateTime(DateTime.Today);
+
+            if (isMax) {
+                return today.AddYears(-age - 1).AddDays(1);
+            } else {
+                return today.AddYears(-age);
+            }
+        }
+
+
         // todo: T/Fどちらをデフォルトとするか確認
         public static DateTime? _objectToDateTime(object oColumnRes, bool bisUTC = false) {
             if (!DateTime.TryParse(oColumnRes.ToString(), out var result)) {
@@ -360,6 +371,18 @@ namespace BlazorDbTest.Controllers {
             }
 
             return bisUTC ? result.ToUniversalTime() : result;
+        }
+
+        public static DateOnly _objectToDateOnly(object oColumnRes) {
+            if (oColumnRes == null || oColumnRes == DBNull.Value) {
+                return DateOnly.MinValue;   // 異常値セット
+            }
+
+            if (oColumnRes is DateTime dateTime) {
+                return DateOnly.FromDateTime(dateTime);
+            }
+
+            throw new InvalidCastException("The object is not a valid DateTime.");
         }
 
         public static int _objectToInt(object oColumnRes) {

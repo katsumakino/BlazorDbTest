@@ -192,8 +192,6 @@ namespace BlazorDbTest.Controllers {
 
         [HttpGet("GetPatientInfoList")]
         public List<DBTest.PatientInfo> GetDBPatientInfoList() {
-            // todo: 検索条件の付与
-
             // appsettings.jsonと接続
             IConfigurationRoot configuration = new ConfigurationBuilder()
                 .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
@@ -249,6 +247,8 @@ namespace BlazorDbTest.Controllers {
                 if (conditions == null || conditions == string.Empty) return DataSource;
                 PatientListTest.PatientSearch patientSearch = JsonSerializer.Deserialize<PatientListTest.PatientSearch>(conditions);
 
+                if (patientSearch == null) return DataSource;
+
                 // appsettings.jsonと接続
                 IConfigurationRoot configuration = new ConfigurationBuilder()
                     .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
@@ -268,13 +268,16 @@ namespace BlazorDbTest.Controllers {
                     int eye_id_r = Select_Eye_ID(sqlConnection, Const.strEyeType[Const.eEyeType.RIGHT]);
                     int eye_id_l = Select_Eye_ID(sqlConnection, Const.strEyeType[Const.eEyeType.LEFT]);
                     int commenttype_patient = Select_AxmCommentTypeId(sqlConnection, AXM_COMMENT_TYPE[(int)eAxmCommentType.Patient]);
+                    int device_axm_id = Select_Device_ID(sqlConnection, "AxialManager2");
+                    int exam_optaxial_id = Select_Examtype_ID(sqlConnection, Const.strMstDataType[Const.eMSTDATATYPE.OPTAXIAL]);
+
                     var tbl1 = "tbl1";  // PatientList
                     var tbl2 = "tbl2";  // AxmPatientList
                     var tbl3 = "tbl3";  // ExamList(Max探索)
                     var tbl6 = "tbl6";  // AxmCommentList
 
                     // クエリコマンド実行
-                    // todo: 綺麗に整理
+                    // todo: 綺麗に整理(Bind文で書き直し)
                     string Query = "WITH RankedExams AS (";
                     Query += "SELECT *,";
                     Query += "RANK() OVER (PARTITION BY ";
@@ -316,6 +319,9 @@ namespace BlazorDbTest.Controllers {
                     Query += ", ";
                     Query += tbl6;
                     Query += _dotcol(COLNAME_AxmCommentList[(int)eAxmComment.description]);
+                    Query += ", ";
+                    Query += tbl3;
+                    Query += _dotcol(COLNAME_ExamList[(int)eExamList.examtype_id]);
                     Query += " FROM (";
                     Query += "(";
                     Query += _table(DB_TableNames[(int)eDbTable.PATIENT_LIST]);
@@ -357,6 +363,7 @@ namespace BlazorDbTest.Controllers {
                     Query += _dotcol(COLNAME_AxmCommentList[(int)eAxmComment.pt_uuid]);
                     Query += " WHERE (";
                     Query += "(";
+                    // 患者コメントを表示
                     Query += tbl6;
                     Query += _dotcol(COLNAME_AxmCommentList[(int)eAxmComment.commenttype_id]);
                     Query += " = ";
@@ -365,8 +372,115 @@ namespace BlazorDbTest.Controllers {
                     Query += tbl6;
                     Query += _dotcol(COLNAME_AxmCommentList[(int)eAxmComment.commenttype_id]);
                     Query += " IS NULL) ";
-                    // todo: 最新測定日(OptAxial)1つのみ
-                    // todo: 検索条件の付与
+                    // 検査タイプは、OptAxialのみ
+                    if(patientSearch.IsExamDate == true) {
+                        Query += "AND (";
+                        Query += tbl3;
+                        Query += _dotcol(COLNAME_ExamList[(int)eExamList.examtype_id]);
+                        Query += " = ";
+                        Query += exam_optaxial_id;
+                        Query += ") ";
+                    } else {
+                        // 測定日時を指定しないときは、NULLも含める
+                        Query += "AND (";
+                        Query += tbl3;
+                        Query += _dotcol(COLNAME_ExamList[(int)eExamList.examtype_id]);
+                        Query += " = ";
+                        Query += exam_optaxial_id;
+                        Query += " OR ";
+                        Query += tbl3;
+                        Query += _dotcol(COLNAME_ExamList[(int)eExamList.examtype_id]);
+                        Query += " IS NULL";
+                        Query += ") ";
+                    }
+                    // ID/名前の曖昧一致検索
+                    if (patientSearch.IdOrName != string.Empty && patientSearch.IdOrName != null) {
+                        Query += "AND (";
+                        Query += tbl1;
+                        Query += _dotcol(COLNAME_PatientList[(int)ePatientList.pt_id]);
+                        Query += " LIKE '%";
+                        Query += patientSearch.IdOrName;
+                        Query += "%' OR ";
+                        Query += tbl1;
+                        Query += _dotcol(COLNAME_PatientList[(int)ePatientList.pt_lastname]);
+                        Query += " LIKE '%";
+                        Query += patientSearch.IdOrName;
+                        Query += "%' OR ";
+                        Query += tbl1;
+                        Query += _dotcol(COLNAME_PatientList[(int)ePatientList.pt_firstname]);
+                        Query += " LIKE '%";
+                        Query += patientSearch.IdOrName;
+                        Query += "%') ";
+                    }
+                    // 性別検索
+                    if ((patientSearch.Gender == PatientListTest.Gender.male 
+                        || patientSearch.Gender == PatientListTest.Gender.female)) {
+                        Query += "AND (";
+                        Query += tbl1;
+                        Query += _dotcol(COLNAME_PatientList[(int)ePatientList.gender_id]);
+                        Query += " = ";
+                        Query += (int)patientSearch.Gender;
+                        Query += ") ";
+                    }
+                    // 年齢範囲検索
+                    if(patientSearch.IsAge == true) {
+                        Query += "AND (";
+                        Query += tbl1;
+                        Query += _dotcol(COLNAME_PatientList[(int)ePatientList.pt_dob]);
+                        Query += " BETWEEN '";
+                        Query += CalculateBirthDateFromAge(patientSearch.AgeMax, true);
+                        Query += "' AND '";
+                        Query += CalculateBirthDateFromAge(patientSearch.AgeMin);
+                        Query += "') ";
+                    }
+                    // 最新測定日範囲検索
+                    if(patientSearch.IsExamDate == true) {
+                        Query += "AND (";
+                        Query += tbl3;
+                        Query += _dotcol(COLNAME_ExamList[(int)eExamList.exam_datetime]);
+                        Query += " BETWEEN '";
+                        Query += (patientSearch.ExamDateMin != null)? patientSearch.ExamDateMin : DateTime.Today;
+                        Query += "' AND '";
+                        Query += (patientSearch.ExamDateMax != null)? patientSearch.ExamDateMax : DateTime.Today;
+                        Query += "') ";
+                    }
+                    // 患者コメント曖昧一致検索
+                    if(patientSearch.PatientComment != string.Empty && patientSearch.PatientComment != null) {
+                        Query += "AND (";
+                        Query += tbl6;
+                        Query += _dotcol(COLNAME_AxmCommentList[(int)eAxmComment.description]);
+                        Query += " LIKE '%";
+                        Query += patientSearch.PatientComment;
+                        Query += "%') ";
+                    }
+                    // フラグ検索
+                    if(patientSearch.IsMark == true) {
+                        Query += "AND (";
+                        Query += tbl2;
+                        Query += _dotcol(COLNAME_AxmPatientList[(int)eAxmPatientList.axm_flag]);
+                        Query += " = ";
+                        Query += patientSearch.IsMark;
+                        Query += ") ";
+                    }
+                    // 同一患者ID有無検索
+                    if (patientSearch.IsSameID == true) {
+                        Query += "AND (";
+                        Query += tbl2;
+                        Query += _dotcol(COLNAME_AxmPatientList[(int)eAxmPatientList.is_axm_same_pt_id]);
+                        Query += " = ";
+                        Query += patientSearch.IsSameID;
+                        Query += ") ";
+                    }
+                    // ExamListの検索条件を使用するときのみ、装置情報の検索条件に付与
+                    if (patientSearch.IsExamDate == true
+                        || patientSearch.IsAxial == true) {
+                        Query += "AND (";
+                        Query += tbl3;
+                        Query += _dotcol(COLNAME_ExamList[(int)eExamList.device_id]);
+                        Query += " = ";
+                        Query += device_axm_id;
+                        Query += ") ";
+                    }
                     // todo: 表示設定の反映
                     Query += ")";
                     Query += ";";
@@ -376,29 +490,37 @@ namespace BlazorDbTest.Controllers {
                     DataTable DataTable = new();
                     DataAdapter.Fill(DataTable);
 
-                    // todo: 最新測定日の測定値取得
-                    // todo: 使用した治療方法の文字列取得
-
                     for(int i = 0;i<DataTable.Rows.Count; i++) {
                         DataRow data = DataTable.Rows[i];
 
                         string pt_id = data[0].ToString() ?? string.Empty;
-                        DateTime? examdate = _objectToDateTime(data[7]);
+                        DateOnly examdate = _objectToDateOnly(data[7]);
 
                         if (pt_id != null) {
                             var pt_uuid = Select_PTUUID_by_PTID(sqlConnection, pt_id);
                             double axial_r = -1;
                             double axial_l = -1;
+                            double axialMin = (patientSearch.IsAxial)? patientSearch.AxialMin : 0;
+                            double axialMax = (patientSearch.IsAxial) ? patientSearch.AxialMax : 40;
                             string allTreatName = string.Empty;
-                            int[] aaa = new int[5];
 
                             if (pt_uuid != null) {
                                 // 最新測定日の測定値取得
-                                axial_r = GetLatestAxialData(pt_uuid, eye_id_r, examdate, 0, 40, sqlConnection);
-                                axial_l = GetLatestAxialData(pt_uuid, eye_id_l, examdate, 0, 40, sqlConnection);
+                                axial_r = GetLatestAxialData(pt_uuid, eye_id_r, examdate, axialMin, axialMax, sqlConnection);
+                                axial_l = GetLatestAxialData(pt_uuid, eye_id_l, examdate, axialMin, axialMax, sqlConnection);
+
+                                // 眼軸長検索条件ありのとき、両眼測定値無しなら、リストに追加しない
+                                if (axial_r < 0 && axial_l < 0 && patientSearch.IsAxial == true) {
+                                    continue;
+                                }
 
                                 // 使用した治療方法の文字列取得
-                                allTreatName = GetTreatmentListString(pt_uuid, aaa, sqlConnection);
+                                allTreatName = GetTreatmentListString(pt_uuid, patientSearch.TreatmentType, patientSearch.TreatmentTypeCount, sqlConnection);
+
+                                // 治療方法の検索条件ありのとき、治療方法がない場合、リストに追加しない
+                                if (allTreatName == string.Empty && patientSearch.TreatmentTypeCount > 0) {
+                                    continue;
+                                }
 
                                 PatientListTest.PatientList list =
                                     new PatientListTest.PatientList() {
