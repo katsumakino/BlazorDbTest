@@ -4,7 +4,10 @@ using Npgsql;
 using System;
 using System.Data;
 using System.Text;
+using System.Text.Json;
+using System.Xml.Linq;
 using static BlazorDbTest.Controllers.CommonController;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace BlazorDbTest.Controllers {
 
@@ -13,63 +16,73 @@ namespace BlazorDbTest.Controllers {
     public class DBTreatmentController : ControllerBase {
 
         // 治療方法設定登録
-        [HttpGet("SetTreatmentMethod/{id}/{name}/{red}/{green}/{blue}/{alpha}/{rate}")]
-        public void SetTreatmentMethod(int id, string name, int red, int green, int blue, int alpha, int rate) {
-            if (name == null || name == string.Empty) return;
-
-            bool result = false;
-            // todo: 接続処理の共通化
-            // appsettings.jsonと接続
-            IConfigurationRoot configuration = new ConfigurationBuilder()
-                .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
-                .AddJsonFile("appsettings.json")
-                .Build();
-
-            // appsettings.jsonからConnectionString情報取得
-            string? ConnectionString = configuration.GetConnectionString("db");
-
-            // PostgreSQL Server 通信接続
-            NpgsqlConnection sqlConnection = new(ConnectionString);
-
+        [HttpGet("SetTreatmentMethod/{conditions}")]
+        public void SetTreatmentMethod(string conditions) {
             try {
+                if(conditions == null || conditions == string.Empty) return;
+
+                DBTest.TreatmentMethodSetting setting = JsonSerializer.Deserialize<DBTest.TreatmentMethodSetting>(conditions);
+                if (setting == null) return;
+
+                if (setting.TreatName == null || setting.TreatName == string.Empty) return;
+                if(setting.RGBAColor == null) return;
+
+                bool result = false;
+                // todo: 接続処理の共通化
+                // appsettings.jsonと接続
+                IConfigurationRoot configuration = new ConfigurationBuilder()
+                    .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
+                    .AddJsonFile("appsettings.json")
+                    .Build();
+
+                // appsettings.jsonからConnectionString情報取得
+                string? ConnectionString = configuration.GetConnectionString("db");
+
                 // PostgreSQL Server 通信接続
-                sqlConnection.Open();
+                NpgsqlConnection sqlConnection = new(ConnectionString);
 
-                // クエリコマンド実行
+                try {
+                    // PostgreSQL Server 通信接続
+                    sqlConnection.Open();
 
-                // IDが登録済みであるか確認
-                var type_id = Select_TreatmentTypeId_By_TreatmentInfo(sqlConnection, id);
-                if (type_id == -1) {
-                    // 新規登録なら、ID割り当て
-                    type_id = SelectMaxTreatmentTypeId(sqlConnection);
+                    // クエリコマンド実行
+
+                    // IDが登録済みであるか確認
+                    var type_id = Select_TreatmentTypeId_By_TreatmentInfo(sqlConnection, setting.ID);
+                    if (type_id == -1) {
+                        // 新規登録なら、ID割り当て
+                        type_id = SelectMaxTreatmentTypeId(sqlConnection);
+                    }
+
+                    // 更新日、作成日は揃える
+                    var dateNow = DateTime.Now;
+
+                    // DB登録
+                    result = InsertTreatmentInfo(new TreatmentInfoRec {
+                        treatmenttype_id = type_id,
+                        treatment_name = setting.TreatName,
+                        color_r = setting.RGBAColor.R,
+                        color_g = setting.RGBAColor.G,
+                        color_b = setting.RGBAColor.B,
+                        color_a = setting.RGBAColor.A,
+                        suppression_rate = setting.SuppresionRate,
+                        created_at = dateNow,
+                        updated_at = dateNow
+                    }, sqlConnection);
+
+                } catch {
+                } finally {
+                    if (!result) {
+                        // todo: Error通知
+                    }
+
+                    // PostgreSQL Server 通信切断
+                    if (sqlConnection.State != ConnectionState.Closed) {
+                        sqlConnection.Close();
+                    }
                 }
-
-                // 更新日、作成日は揃える
-                var dateNow = DateTime.Now;
-
-                // DB登録
-                result = InsertTreatmentInfo(new TreatmentInfoRec {
-                    treatmenttype_id = type_id,
-                    treatment_name = Encoding.UTF8.GetString(Convert.FromBase64String(name)),
-                    color_r = red,
-                    color_g = green,
-                    color_b = blue,
-                    color_a = alpha,
-                    suppression_rate = rate,
-                    created_at = dateNow,
-                    updated_at = dateNow
-                }, sqlConnection);
 
             } catch {
-            } finally {
-                if (!result) {
-                    // todo: Error通知
-                }
-
-                // PostgreSQL Server 通信切断
-                if (sqlConnection.State != ConnectionState.Closed) {
-                    sqlConnection.Close();
-                }
             }
 
             return;
@@ -130,71 +143,79 @@ namespace BlazorDbTest.Controllers {
         }
 
         // 治療状況登録
-        [HttpGet("SetTreatment/{pt_id}/{treatmenttype_id}/{start}/{end}")]
-        public void SetTreatment(string pt_id, int treatmenttype_id, string start, string end) {
-            if (start == null || start == string.Empty) return;
-
-            bool result = false;
-            // appsettings.jsonと接続
-            IConfigurationRoot configuration = new ConfigurationBuilder()
-                .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
-                .AddJsonFile("appsettings.json")
-                .Build();
-
-            // appsettings.jsonからConnectionString情報取得
-            string? ConnectionString = configuration.GetConnectionString("db");
-
-            // PostgreSQL Server 通信接続
-            NpgsqlConnection sqlConnection = new(ConnectionString);
-
+        [HttpGet("SetTreatment/{pt_id}/{conditions}")]
+        public void SetTreatment(string pt_id, string conditions) {
             try {
+                if (pt_id == null || pt_id == string.Empty) return;
+                if (conditions == null || conditions == string.Empty) return;
+
+                DBTest.TreatmentData treatmentData = JsonSerializer.Deserialize<DBTest.TreatmentData>(conditions);
+
+                if(treatmentData == null) return;
+
+                bool result = false;
+                // appsettings.jsonと接続
+                IConfigurationRoot configuration = new ConfigurationBuilder()
+                    .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
+                    .AddJsonFile("appsettings.json")
+                    .Build();
+
+                // appsettings.jsonからConnectionString情報取得
+                string? ConnectionString = configuration.GetConnectionString("db");
+
                 // PostgreSQL Server 通信接続
-                sqlConnection.Open();
+                NpgsqlConnection sqlConnection = new(ConnectionString);
 
-                // クエリコマンド実行
+                try {
+                    // PostgreSQL Server 通信接続
+                    sqlConnection.Open();
 
-                // 治療方法IDが登録済みであるか確認
-                var type_id = Select_TreatmentTypeId_By_TreatmentInfo(sqlConnection, treatmenttype_id);
-                // 治療方法IDが登録されていない場合は、エラーとして処理を終了する
-                if (type_id == -1) {
-                    return;
+                    // クエリコマンド実行
+
+                    // 治療方法IDが登録済みであるか確認
+                    var type_id = Select_TreatmentTypeId_By_TreatmentInfo(sqlConnection, treatmentData.TreatID);
+                    // 治療方法IDが登録されていない場合は、エラーとして処理を終了する
+                    if (type_id == -1) {
+                        return;
+                    }
+
+                    // 治療状況ID取得
+                    var traet_id = SelectMaxTreatmentId(sqlConnection);
+
+                    // 患者UUID取得
+                    var uuid = Select_PTUUID_by_PTID(sqlConnection, pt_id);
+                    if (uuid == string.Empty) {
+                        // 治療状況登録時は、必ず患者データが存在する
+                        return;
+                    }
+
+                    // 更新日、作成日は揃える
+                    var dateNow = DateTime.Now;
+
+                    // DB登録
+                    result = InsertTreatment(new TreatmentRec {
+                        treatment_id = traet_id,
+                        treatmenttype_id = type_id,
+                        pt_uuid = uuid,
+                        start_at = treatmentData.StartDateTime,
+                        end_at = treatmentData.EndDateTime,
+                        created_at = dateNow,
+                        updated_at = dateNow
+                    }, sqlConnection);
+
+                } catch {
+                } finally {
+
+                    if (!result) {
+                        // todo: Error通知
+                    }
+
+                    // PostgreSQL Server 通信切断
+                    if (sqlConnection.State != ConnectionState.Closed) {
+                        sqlConnection.Close();
+                    }
                 }
-
-                // 治療状況ID取得
-                var traet_id = SelectMaxTreatmentId(sqlConnection);
-
-                // 患者UUID取得
-                var uuid = Select_PTUUID_by_PTID(sqlConnection, Encoding.UTF8.GetString(Convert.FromBase64String(pt_id)));
-                if (uuid == string.Empty) {
-                    // 治療状況登録時は、必ず患者データが存在する
-                    return;
-                }
-
-                // 更新日、作成日は揃える
-                var dateNow = DateTime.Now;
-
-                // DB登録
-                result = InsertTreatment(new TreatmentRec {
-                    treatment_id = traet_id,
-                    treatmenttype_id = type_id,
-                    pt_uuid = uuid,
-                    start_at = DateTime.Parse(Encoding.UTF8.GetString(Convert.FromBase64String(start))),
-                    end_at = DateTime.Parse(Encoding.UTF8.GetString(Convert.FromBase64String(end))),
-                    created_at = dateNow,
-                    updated_at = dateNow
-                }, sqlConnection);
-
             } catch {
-            } finally {
-
-                if (!result) {
-                    // todo: Error通知
-                }
-
-                // PostgreSQL Server 通信切断
-                if (sqlConnection.State != ConnectionState.Closed) {
-                    sqlConnection.Close();
-                }
             }
 
             return;
@@ -224,7 +245,7 @@ namespace BlazorDbTest.Controllers {
 
                 // クエリコマンド実行
                 // UUIDの有無を確認
-                var uuid = Select_PTUUID_by_PTID(sqlConnection, Encoding.UTF8.GetString(Convert.FromBase64String(pt_id)));
+                var uuid = Select_PTUUID_by_PTID(sqlConnection, pt_id);
                 if (uuid == string.Empty) {
                     // 患者データが無ければ、測定データも存在しない
                     return DataSource;

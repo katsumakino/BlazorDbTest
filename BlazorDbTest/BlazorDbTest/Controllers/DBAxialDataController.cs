@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using Npgsql;
 using System.Data;
 using System.Text;
+using System.Text.Json;
+using static BlazorDbTest.Client.Pages.DBTest;
 
 namespace BlazorDbTest.Controllers {
 
@@ -12,80 +14,88 @@ namespace BlazorDbTest.Controllers {
     public class DBAxialDataController : ControllerBase {
 
         // 眼軸長測定値書込み
-        [HttpGet("SetOptAxial/{id}/{axial_r}/{axial_l}/{exam_datetime}")]
-        public void SetOptAxial(string id, double axial_r, double axial_l, string exam_datetime) {
-            if (id == null || id == string.Empty) return;
-
-            bool result = false;
-            // appsettings.jsonと接続
-            IConfigurationRoot configuration = new ConfigurationBuilder()
-                .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
-                .AddJsonFile("appsettings.json")
-                .Build();
-
-            // appsettings.jsonからConnectionString情報取得
-            string? ConnectionString = configuration.GetConnectionString("db");
-
-            // PostgreSQL Server 通信接続
-            NpgsqlConnection sqlConnection = new(ConnectionString);
-
+        [HttpGet("SetOptAxial/{conditions}/")]
+        public void SetOptAxial(string conditions) {
             try {
+                if (conditions == null || conditions == string.Empty) return;
+
+                DBTest.AxialList axialList = JsonSerializer.Deserialize<DBTest.AxialList>(conditions);
+
+                if(axialList == null) return;
+                if(axialList.PatientID == null || axialList.PatientID == string.Empty) return;
+
+                bool result = false;
+                // appsettings.jsonと接続
+                IConfigurationRoot configuration = new ConfigurationBuilder()
+                    .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
+                    .AddJsonFile("appsettings.json")
+                    .Build();
+
+                // appsettings.jsonからConnectionString情報取得
+                string? ConnectionString = configuration.GetConnectionString("db");
+
                 // PostgreSQL Server 通信接続
-                sqlConnection.Open();
+                NpgsqlConnection sqlConnection = new(ConnectionString);
 
-                // クエリコマンド実行
-                // UUIDの有無を確認(true:update / false:insert)
-                var uuid = CommonController.Select_PTUUID_by_PTID(sqlConnection, Encoding.UTF8.GetString(Convert.FromBase64String(id)));
-                if (uuid == string.Empty) {
-                    // AxMからの測定データ登録時は、必ず患者データが存在する
-                    return;
-                } else {
-                    // EXAM_LISTに保存(右眼測定値)
-                    var exam_id_r = CommonController.RegisterExamList(uuid, 
-                        Common.Const.strMstDataType[Common.Const.eMSTDATATYPE.OPTAXIAL], 
-                        Common.Const.eEyeType.RIGHT, 
-                        DateTime.Parse(Encoding.UTF8.GetString(Convert.FromBase64String(exam_datetime))), 
-                        sqlConnection);
-                    // EXAM_OPTAXIALに保存(右眼測定値)
-                    var rec_optaxial_r = MakeOptaxialRec(exam_id_r, 
-                        Common.Const.strEyeType[Common.Const.eEyeType.RIGHT], 
-                        sqlConnection);
-                    rec_optaxial_r.axial_mm = axial_r;
-                    // todo: 表示設定の計算方法をセットする
-                    rec_optaxial_r.target_eye_id = CommonController.Select_TargetEyeId_By_TargetEyeType(sqlConnection, "immersion");
-                    rec_optaxial_r.measured_at = DateTime.Parse(Encoding.UTF8.GetString(Convert.FromBase64String(exam_datetime)));
+                try {
+                    // PostgreSQL Server 通信接続
+                    sqlConnection.Open();
 
-                    // DB登録
-                    result = Insert(rec_optaxial_r, sqlConnection);
+                    // クエリコマンド実行
+                    // UUIDの有無を確認(true:update / false:insert)
+                    var uuid = CommonController.Select_PTUUID_by_PTID(sqlConnection, axialList.PatientID);
+                    if (uuid == string.Empty) {
+                        // AxMからの測定データ登録時は、必ず患者データが存在する
+                        return;
+                    } else {
+                        // EXAM_LISTに保存(右眼測定値)
+                        var exam_id_r = CommonController.RegisterExamList(uuid,
+                            Common.Const.strMstDataType[Common.Const.eMSTDATATYPE.OPTAXIAL],
+                            Common.Const.eEyeType.RIGHT,
+                            axialList.ExamDateTime,
+                            sqlConnection);
+                        // EXAM_OPTAXIALに保存(右眼測定値)
+                        var rec_optaxial_r = MakeOptaxialRec(exam_id_r,
+                            Common.Const.strEyeType[Common.Const.eEyeType.RIGHT],
+                            sqlConnection);
+                        rec_optaxial_r.axial_mm = axialList.RAxial;
+                        // todo: 表示設定の計算方法をセットする
+                        rec_optaxial_r.target_eye_id = CommonController.Select_TargetEyeId_By_TargetEyeType(sqlConnection, "immersion");
+                        rec_optaxial_r.measured_at = axialList.ExamDateTime;
 
-                    // EXAM_LISTに保存(左眼測定値)
-                    var exam_id_l = CommonController.RegisterExamList(uuid,
-                        Common.Const.strMstDataType[Common.Const.eMSTDATATYPE.OPTAXIAL],
-                        Common.Const.eEyeType.LEFT,
-                        DateTime.Parse(Encoding.UTF8.GetString(Convert.FromBase64String(exam_datetime))),
-                        sqlConnection);
-                    // EXAM_OPTAXIALに保存(左眼測定値)
-                    var rec_optaxial_l = MakeOptaxialRec(exam_id_l,
-                        Common.Const.strEyeType[Common.Const.eEyeType.LEFT],
-                        sqlConnection);
-                    rec_optaxial_l.axial_mm = axial_l;
-                    // todo: 表示設定の計算方法をセットする
-                    rec_optaxial_l.target_eye_id = CommonController.Select_TargetEyeId_By_TargetEyeType(sqlConnection, "immersion");
-                    rec_optaxial_l.measured_at = DateTime.Parse(Encoding.UTF8.GetString(Convert.FromBase64String(exam_datetime)));
+                        // DB登録
+                        result = Insert(rec_optaxial_r, sqlConnection);
 
-                    // DB登録
-                    result &= Insert(rec_optaxial_l, sqlConnection);
+                        // EXAM_LISTに保存(左眼測定値)
+                        var exam_id_l = CommonController.RegisterExamList(uuid,
+                            Common.Const.strMstDataType[Common.Const.eMSTDATATYPE.OPTAXIAL],
+                            Common.Const.eEyeType.LEFT,
+                            axialList.ExamDateTime,
+                            sqlConnection);
+                        // EXAM_OPTAXIALに保存(左眼測定値)
+                        var rec_optaxial_l = MakeOptaxialRec(exam_id_l,
+                            Common.Const.strEyeType[Common.Const.eEyeType.LEFT],
+                            sqlConnection);
+                        rec_optaxial_l.axial_mm = axialList.LAxial;
+                        // todo: 表示設定の計算方法をセットする
+                        rec_optaxial_l.target_eye_id = CommonController.Select_TargetEyeId_By_TargetEyeType(sqlConnection, "immersion");
+                        rec_optaxial_l.measured_at = axialList.ExamDateTime;
+
+                        // DB登録
+                        result &= Insert(rec_optaxial_l, sqlConnection);
+                    }
+                } catch {
+                } finally {
+                    if (!result) {
+                        // todo: Error通知
+                    }
+
+                    // PostgreSQL Server 通信切断
+                    if (sqlConnection.State != ConnectionState.Closed) {
+                        sqlConnection.Close();
+                    }
                 }
             } catch {
-            } finally {
-                if (!result) {
-                    // todo: Error通知
-                }
-
-                // PostgreSQL Server 通信切断
-                if (sqlConnection.State != ConnectionState.Closed) {
-                    sqlConnection.Close();
-                }
             }
 
             return;
@@ -115,7 +125,7 @@ namespace BlazorDbTest.Controllers {
 
                 // クエリコマンド実行
                 // UUIDの有無を確認(true:update / false:insert)
-                var uuid = CommonController.Select_PTUUID_by_PTID(sqlConnection, Encoding.UTF8.GetString(Convert.FromBase64String(patientId)));
+                var uuid = CommonController.Select_PTUUID_by_PTID(sqlConnection, patientId);
                 if (uuid == string.Empty) {
                     // 患者データが無ければ、測定データも存在しない
                     return DataSource;

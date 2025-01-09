@@ -1,6 +1,7 @@
 ﻿@page "/dbtest"
 @* HttpClient を受け取る *@
 @inject HttpClient HttpClient
+@using System.Text.Json;
 
 <PageTitle>DB Test</PageTitle>
 
@@ -404,19 +405,7 @@
     /// <returns></returns>
     protected async Task SetPatientInfoAsync() {
         string content = $"api/DBPatientInfo/SetPatientInfo/";
-        content += CheckString(PatientInfoModel.ID);
-        content += "/";
-        content += CheckString(PatientInfoModel.FamilyName);
-        content += "/";
-        content += CheckString(PatientInfoModel.FirstName);
-        content += "/";
-        content += PatientInfoModel.Gender;
-        content += "/";
-        content += CheckString(PatientInfoModel.BirthDate?.ToString());
-        content += "/";
-        content += PatientInfoModel.Mark;
-        content += "/";
-        content += CheckString(PatientInfoModel.SameID);
+        content += JsonSerializer.Serialize(PatientInfoModel);
 
         await HttpClient.GetAsync(content);
 
@@ -457,14 +446,10 @@
     /// </summary>
     /// <returns></returns>
     protected async Task SetAxialDataAsync() {
+        AxialModel.PatientID = PatientInfoModel.ID;
+
         string content = $"api/DBAxialData/SetOptAxial/";
-        content += Convert.ToBase64String(Encoding.UTF8.GetBytes(PatientInfoModel.ID));
-        content += "/";
-        content += AxialModel.RAxial;
-        content += "/";
-        content += AxialModel.LAxial;
-        content += "/";
-        content += Convert.ToBase64String(Encoding.UTF8.GetBytes(AxialModel.ExamDateTime.ToString()));
+        content += JsonSerializer.Serialize(AxialModel);
 
         await HttpClient.GetAsync(content);
     }
@@ -475,7 +460,7 @@
     /// <returns></returns>
     protected async Task GetAxialListAsync() {
         string content = $"api/DBAxialData/GetOptAxialList/";
-        content += Convert.ToBase64String(Encoding.UTF8.GetBytes(PatientInfoModel.ID));
+        content += PatientInfoModel.ID;
 
         AxialData[] ?axialDataList = await HttpClient.GetFromJsonAsync<AxialData[]>(content);
 
@@ -587,19 +572,7 @@
     /// <returns></returns>
     protected async Task SetTreatmentMethodAsync() {
         string content = $"api/DBTreatment/SetTreatmentMethod/";
-        content += TreatmentMethodModel.ID;
-        content += "/";
-        content += Convert.ToBase64String(Encoding.UTF8.GetBytes(TreatmentMethodModel.TreatName));
-        content += "/";
-        content += TreatmentMethodModel.RGBAColor.R;
-        content += "/";
-        content += TreatmentMethodModel.RGBAColor.G;
-        content += "/";
-        content += TreatmentMethodModel.RGBAColor.B;
-        content += "/";
-        content += TreatmentMethodModel.RGBAColor.A;
-        content += "/";
-        content += TreatmentMethodModel.SuppresionRate;
+        content += JsonSerializer.Serialize(TreatmentMethodModel);
 
         await HttpClient.GetAsync(content);
     }
@@ -621,14 +594,12 @@
     /// </summary>
     /// <returns></returns>
     protected async Task SetTreatmentDataAsync() {
+        TreatmentModel.TreatID = TreatmentMethodModel.ID;
+
         string content = $"api/DBTreatment/SetTreatment/";
-        content += Convert.ToBase64String(Encoding.UTF8.GetBytes(PatientInfoModel.ID));
+        content += PatientInfoModel.ID;
         content += "/";
-        content += TreatmentMethodModel.ID;
-        content += "/";
-        content += Convert.ToBase64String(Encoding.UTF8.GetBytes(TreatmentModel.StartDateTime.ToString()));
-        content += "/";
-        content += Convert.ToBase64String(Encoding.UTF8.GetBytes(TreatmentModel.EndDateTime.ToString()));
+        content += JsonSerializer.Serialize(TreatmentModel);
 
         await HttpClient.GetAsync(content);
     }
@@ -639,7 +610,7 @@
     /// <returns></returns>
     protected async Task GetTreatmentDataListAsync() {
         string content = $"api/DBTreatment/GetTreatmentList/";
-        content += Convert.ToBase64String(Encoding.UTF8.GetBytes(PatientInfoModel.ID));
+        content += PatientInfoModel.ID;
 
         treatmentList = await HttpClient.GetFromJsonAsync<TreatmentData[]>(content);
 
@@ -653,15 +624,9 @@
     /// <returns></returns>
     protected async Task SetAxmCommentListAsync() {
         string content = $"api/DBAxmComment/SetAxmComment/";
-        content += CheckString(PatientInfoModel.ID);
+        content += PatientInfoModel.ID;
         content += "/";
-        content += AxmCommentModel.CommentType;
-        content += "/";
-        content += CheckString(AxmCommentModel.Description);
-        content += "/";
-        content += (AxmCommentModel.CommentType == AxmCommentType.ExamDate) 
-        ? CheckString(AxmCommentModel.ExamDateTime.ToString()) : CheckString("");
-
+        content += JsonSerializer.Serialize(AxmCommentModel);
         await HttpClient.GetAsync(content);
     }
 
@@ -671,7 +636,7 @@
     /// <returns></returns>
     protected async Task GetAxmCommentListAsync() {
         string content = $"api/DBAxmComment/GetDBAxmCommentList/";
-        content += CheckString(PatientInfoModel.ID);
+        content += PatientInfoModel.ID;
 
         axmCommentList = await HttpClient.GetFromJsonAsync<AxmComment[]>(content);
 
@@ -686,11 +651,6 @@
         }
         return (DateTime)input.Value.Date;
     }
-
-    // 文字列のnull&空文字チェック
-    private string CheckString(string? str) {
-        return string.IsNullOrEmpty(str) ? EmptyText : Convert.ToBase64String(Encoding.UTF8.GetBytes(str));
-	}
 
     //患者情報
     public class PatientInfo {

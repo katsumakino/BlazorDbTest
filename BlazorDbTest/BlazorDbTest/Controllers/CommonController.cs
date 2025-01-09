@@ -427,11 +427,6 @@ namespace BlazorDbTest.Controllers {
             return "." + aColumn + " ";
         }
 
-        // null&空文字チェックして、string型に復元
-        public static string CheckConvertString(string str) {
-            return (str != Const.EmptyText) ? Encoding.UTF8.GetString(Convert.FromBase64String(str)) : string.Empty;
-        }
-
         // todo:
         public static string[] DB_TableNames =
         [

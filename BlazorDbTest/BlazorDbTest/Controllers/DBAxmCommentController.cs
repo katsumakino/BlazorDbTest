@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Npgsql;
 using System.Data;
 using System.Text;
+using System.Text.Json;
 using static BlazorDbTest.Controllers.CommonController;
 using static BlazorDbTest.Controllers.DBTreatmentController;
 
@@ -13,67 +14,71 @@ namespace BlazorDbTest.Controllers {
     public class DBAxmCommentController : ControllerBase {
 
         // コメント登録
-        [HttpGet("SetAxmComment/{pt_id}/{comment_type}/{description}/{measured_at}")]
-        public void SetAxmComment(string pt_id, DBTest.AxmCommentType comment_type, string description, string measured_at) {
-            var pt_id_ = CheckConvertString(pt_id);
-            if (pt_id_ == null || pt_id_ == string.Empty) return;
-
-            var description_ = CheckConvertString(description);
-            var measured_at_ = CheckConvertString(measured_at);
-
-            bool result = false;
-            // appsettings.jsonと接続
-            IConfigurationRoot configuration = new ConfigurationBuilder()
-                .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
-                .AddJsonFile("appsettings.json")
-                .Build();
-
-            // appsettings.jsonからConnectionString情報取得
-            string? ConnectionString = configuration.GetConnectionString("db");
-
-            // PostgreSQL Server 通信接続
-            NpgsqlConnection sqlConnection = new(ConnectionString);
-
+        [HttpGet("SetAxmComment/{pt_id}/{conditions}")]
+        public void SetAxmComment(string pt_id, string conditions) {
             try {
+                if (pt_id == null || pt_id == string.Empty) return;
+                if (conditions == null || conditions == string.Empty) return;
+
+                DBTest.AxmComment comment = JsonSerializer.Deserialize<DBTest.AxmComment>(conditions);
+
+                if(comment == null) return;
+
+                bool result = false;
+                // appsettings.jsonと接続
+                IConfigurationRoot configuration = new ConfigurationBuilder()
+                    .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
+                    .AddJsonFile("appsettings.json")
+                    .Build();
+
+                // appsettings.jsonからConnectionString情報取得
+                string? ConnectionString = configuration.GetConnectionString("db");
+
                 // PostgreSQL Server 通信接続
-                sqlConnection.Open();
+                NpgsqlConnection sqlConnection = new(ConnectionString);
 
-                // クエリコマンド実行
+                try {
+                    // PostgreSQL Server 通信接続
+                    sqlConnection.Open();
 
-                // UUIDの有無を確認(true:update / false:insert)
-                var uuid = Select_PTUUID_by_PTID(sqlConnection, pt_id_);
-                if (uuid == string.Empty) {
-                    // コメント登録時は、必ず患者データが存在する
-                    return;
+                    // クエリコマンド実行
+
+                    // UUIDの有無を確認(true:update / false:insert)
+                    var uuid = Select_PTUUID_by_PTID(sqlConnection, pt_id);
+                    if (uuid == string.Empty) {
+                        // コメント登録時は、必ず患者データが存在する
+                        return;
+                    }
+
+                    // コメントデータID取得
+                    var comment_id = SelectMaxCommentId(sqlConnection);
+
+                    // 更新日、作成日は揃える
+                    var dateNow = DateTime.Now;
+
+                    // DB登録
+                    result = InsertAxmComment(new AxmCommentRec {
+                        comment_id = comment_id,
+                        commenttype_id = Select_AxmCommentTypeId(sqlConnection, AXM_COMMENT_TYPE[(int)comment.CommentType]),
+                        pt_uuid = uuid,
+                        description = comment.Description,
+                        measured_at = (comment.CommentType == DBTest.AxmCommentType.ExamDate) ? comment.ExamDateTime : null,
+                        created_at = dateNow,
+                        updated_at = dateNow
+                    }, sqlConnection);
+
+                } catch {
+                } finally {
+                    if (!result) {
+                        // todo: Error通知
+                    }
+
+                    // PostgreSQL Server 通信切断
+                    if (sqlConnection.State != ConnectionState.Closed) {
+                        sqlConnection.Close();
+                    }
                 }
-
-                // コメントデータID取得
-                var comment_id = SelectMaxCommentId(sqlConnection);
-
-                // 更新日、作成日は揃える
-                var dateNow = DateTime.Now;
-
-                // DB登録
-                result = InsertAxmComment(new AxmCommentRec {
-                    comment_id = comment_id,
-                    commenttype_id = Select_AxmCommentTypeId(sqlConnection, AXM_COMMENT_TYPE[(int)comment_type]),
-                    pt_uuid = uuid,
-                    description = description_,
-                    measured_at = (measured_at_ != string.Empty) ? DateTime.Parse(measured_at_) : null,
-                    created_at = dateNow,
-                    updated_at = dateNow
-                }, sqlConnection);
-
             } catch {
-            } finally {
-                if (!result) {
-                    // todo: Error通知
-                }
-
-                // PostgreSQL Server 通信切断
-                if (sqlConnection.State != ConnectionState.Closed) {
-                    sqlConnection.Close();
-                }
             }
 
             return;
@@ -83,8 +88,7 @@ namespace BlazorDbTest.Controllers {
         [HttpGet("GetDBAxmCommentList/{pt_id}")]
         public List<DBTest.AxmComment> GetDBAxmCommentList(string pt_id) {
             List<DBTest.AxmComment> DataSource = new();
-            var pt_id_ = CheckConvertString(pt_id);
-            if (pt_id_ == null || pt_id_ == string.Empty) return DataSource;
+            if (pt_id == null || pt_id == string.Empty) return DataSource;
 
             // appsettings.jsonと接続
             IConfigurationRoot configuration = new ConfigurationBuilder()
@@ -104,7 +108,7 @@ namespace BlazorDbTest.Controllers {
 
                 // クエリコマンド実行
                 // UUIDの有無を確認
-                var uuid = Select_PTUUID_by_PTID(sqlConnection, pt_id_);
+                var uuid = Select_PTUUID_by_PTID(sqlConnection, pt_id);
                 if (uuid == string.Empty) {
                     // 患者データが無ければ、測定データも存在しない
                     return DataSource;

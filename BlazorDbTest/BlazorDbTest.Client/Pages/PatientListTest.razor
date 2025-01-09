@@ -164,13 +164,6 @@
         StateHasChanged();
     }
 
-    public readonly string EmptyText = Convert.ToBase64String(Encoding.UTF8.GetBytes("Noi_Npu_Tva_Lue"));
-
-    // 文字列のnull&空文字チェック
-    private string CheckString(string? str) {
-        return string.IsNullOrEmpty(str) ? EmptyText : Convert.ToBase64String(Encoding.UTF8.GetBytes(str));
-    }
-
     //患者情報
     public class PatientInfo {
         public bool Mark { get; set; }                      //お気に入り(仮)

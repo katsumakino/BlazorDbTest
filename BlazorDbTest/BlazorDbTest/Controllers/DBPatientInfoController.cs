@@ -19,60 +19,92 @@ namespace BlazorDbTest.Controllers {
     public class DBPatientInfoController : ControllerBase {
 
         // 患者情報書込み
-        [HttpGet("SetPatientInfo/{id}/{lastname}/{firstname}/{gender}/{dob}/{mark}/{sameId}")]
-        public void SetPatientInfo(string id, string lastname, string firstname, DBTest.Gender gender, string dob, bool mark, string sameId) {
-            var id_ = CheckConvertString(id);
-            if (id_ == null || id_ == string.Empty) return;
-
-            var lastname_ = CheckConvertString(lastname);
-            var firstname_ = CheckConvertString(firstname);
-            var dob_ = CheckConvertString(dob);
-            var sameId_ = CheckConvertString(sameId);
-
-            bool result = false;
-            // appsettings.jsonと接続
-            IConfigurationRoot configuration = new ConfigurationBuilder()
-                .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
-                .AddJsonFile("appsettings.json")
-                .Build();
-
-            // appsettings.jsonからConnectionString情報取得
-            string? ConnectionString = configuration.GetConnectionString("db");
-
-            // PostgreSQL Server 通信接続
-            NpgsqlConnection sqlConnection = new(ConnectionString);
-
+        [HttpGet("SetPatientInfo/{conditions}")]
+        public void SetPatientInfo(string conditions) {
             try {
+                if (conditions == null || conditions == string.Empty) return;
+
+                DBTest.PatientInfo patientInfo = JsonSerializer.Deserialize<DBTest.PatientInfo>(conditions);
+                if (patientInfo == null) return;
+
+                if (patientInfo.ID == null || patientInfo.ID == string.Empty) return;
+
+                bool result = false;
+                // appsettings.jsonと接続
+                IConfigurationRoot configuration = new ConfigurationBuilder()
+                    .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
+                    .AddJsonFile("appsettings.json")
+                    .Build();
+
+                // appsettings.jsonからConnectionString情報取得
+                string? ConnectionString = configuration.GetConnectionString("db");
+
                 // PostgreSQL Server 通信接続
-                sqlConnection.Open();
+                NpgsqlConnection sqlConnection = new(ConnectionString);
 
-                // UUIDの有無を確認(true:update / false:insert)
-                var uuid = Select_PTUUID_by_PTID(sqlConnection, id_);
-                if (uuid == string.Empty) {
-                    // Insert
-                    DateTime dateTime = DateTime.Now;
-                    PatientRec patientRec = new() {
-                        pt_id = id_,
-                        pt_lastname = lastname_,
-                        pt_firstname = firstname_,
-                        gender_id = Select_GenderId(sqlConnection, GENDER_TYPE[(int)gender]),
-                        pt_dob = DateTime.Parse(dob_),
-                        pt_description = string.Empty,
-                        pt_updated_at = dateTime,
-                        pt_created_at = dateTime
-                    };
+                try {
+                    // PostgreSQL Server 通信接続
+                    sqlConnection.Open();
 
-                    result = Insert(sqlConnection, patientRec);
+                    // UUIDの有無を確認(true:update / false:insert)
+                    var uuid = Select_PTUUID_by_PTID(sqlConnection, patientInfo.ID);
+                    if (uuid == string.Empty) {
+                        // Insert
+                        DateTime dateTime = DateTime.Now;
+                        PatientRec patientRec = new() {
+                            pt_id = patientInfo.ID,
+                            pt_lastname = patientInfo.FamilyName,
+                            pt_firstname = patientInfo.FirstName,
+                            gender_id = Select_GenderId(sqlConnection, GENDER_TYPE[(int)patientInfo.Gender]),
+                            pt_dob = patientInfo.BirthDate,
+                            pt_description = string.Empty,
+                            pt_updated_at = dateTime,
+                            pt_created_at = dateTime
+                        };
 
-                    // todo: AXM用患者情報テーブルにも登録
-                    uuid = Select_PTUUID_by_PTID(sqlConnection, id_);
-                    if (uuid != string.Empty) {
+                        result = Insert(sqlConnection, patientRec);
+
+                        // AXM用患者情報テーブルにも登録
+                        uuid = Select_PTUUID_by_PTID(sqlConnection, patientInfo.ID);
+                        if (uuid != string.Empty) {
+                            AxmPatientRec axmPatientRec = new() {
+                                pt_uuid = uuid,
+                                axm_pt_id = SelectMaxAxmPatientId(sqlConnection),
+                                axm_flag = patientInfo.Mark,
+                                is_axm_same_pt_id = (patientInfo.SameID != string.Empty),
+                                axm_same_pt_id = patientInfo.SameID,
+                                updated_at = dateTime,
+                                created_at = dateTime
+                            };
+
+                            var axm_pt_id_ = Select_AxmPatientID_by_PK(sqlConnection, uuid);
+                            if (axm_pt_id_ != -1) axmPatientRec.axm_pt_id = axm_pt_id_;
+
+                            result &= InsertAxmPatient(sqlConnection, axmPatientRec);
+                        }
+                    } else {
+                        // Update
+                        // 装置出力データ取込時は、入力あり→なしにはしない(アプリ上での編集時は可能)
+                        DateTime dateTime = DateTime.Now;
+                        PatientRec patientRec = new() {
+                            pt_uuid = uuid,
+                            pt_id = patientInfo.ID,
+                            pt_lastname = patientInfo.FamilyName,
+                            pt_firstname = patientInfo.FirstName,
+                            gender_id = Select_GenderId(sqlConnection, GENDER_TYPE[(int)patientInfo.Gender]),
+                            pt_dob = patientInfo.BirthDate,
+                            pt_updated_at = dateTime
+                        };
+
+                        result = Update(sqlConnection, patientRec);
+
+                        // AXM用患者情報テーブルにも更新
                         AxmPatientRec axmPatientRec = new() {
                             pt_uuid = uuid,
                             axm_pt_id = SelectMaxAxmPatientId(sqlConnection),
-                            axm_flag = mark,
-                            is_axm_same_pt_id = (sameId_ != string.Empty),
-                            axm_same_pt_id = sameId_,
+                            axm_flag = patientInfo.Mark,
+                            is_axm_same_pt_id = (patientInfo.SameID != string.Empty),
+                            axm_same_pt_id = patientInfo.SameID,
                             updated_at = dateTime,
                             created_at = dateTime
                         };
@@ -82,48 +114,19 @@ namespace BlazorDbTest.Controllers {
 
                         result &= InsertAxmPatient(sqlConnection, axmPatientRec);
                     }
-                } else {
-                    // Update
-                    // 装置出力データ取込時は、入力あり→なしにはしない(アプリ上での編集時は可能)
-                    DateTime dateTime = DateTime.Now;
-                    PatientRec patientRec = new() {
-                        pt_uuid = uuid,
-                        pt_id = id_,
-                        pt_lastname = lastname_,
-                        pt_firstname = firstname_,
-                        gender_id = Select_GenderId(sqlConnection, GENDER_TYPE[(int)gender]),
-                        pt_dob = DateTime.Parse(dob_),
-                        pt_updated_at = dateTime
-                    };
+                } catch {
+                } finally {
+                    if (!result) {
+                        // todo: Error通知
+                    }
 
-                    result = Update(sqlConnection, patientRec);
-
-                    // AXM用患者情報テーブルにも更新
-                    AxmPatientRec axmPatientRec = new() {
-                        pt_uuid = uuid,
-                        axm_pt_id = SelectMaxAxmPatientId(sqlConnection),
-                        axm_flag = mark,
-                        is_axm_same_pt_id = (sameId_ != string.Empty),
-                        axm_same_pt_id = sameId_,
-                        updated_at = dateTime,
-                        created_at = dateTime
-                    };
-
-                    var axm_pt_id_ = Select_AxmPatientID_by_PK(sqlConnection, uuid);
-                    if (axm_pt_id_ != -1) axmPatientRec.axm_pt_id = axm_pt_id_;
-
-                    result &= InsertAxmPatient(sqlConnection, axmPatientRec);
+                    // PostgreSQL Server 通信切断
+                    if (sqlConnection.State != ConnectionState.Closed) {
+                        sqlConnection.Close();
+                    }
                 }
+
             } catch {
-            } finally {
-                if (!result) {
-                    // todo: Error通知
-                }
-
-                // PostgreSQL Server 通信切断
-                if (sqlConnection.State != ConnectionState.Closed) {
-                    sqlConnection.Close();
-                }
             }
 
             return;
@@ -385,6 +388,7 @@ namespace BlazorDbTest.Controllers {
                         Query += ") ";
                     } else {
                         // 測定日時を指定しないときは、NULLも含める
+                        // todo: 装置種別も確認
                         Query += "AND (";
                         Query += tblExamList;
                         Query += _dotcol(COLNAME_ExamList[(int)eExamList.examtype_id]);
