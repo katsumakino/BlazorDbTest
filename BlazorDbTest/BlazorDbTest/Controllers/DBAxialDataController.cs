@@ -103,8 +103,8 @@ namespace BlazorDbTest.Controllers {
 
         // 眼軸長測定値書込み
         [HttpGet("GetOptAxialList/{patientId}")]
-        public List<DBTest.AxialData> GetOptAxialList(string patientId) {
-            List<DBTest.AxialData> DataSource = new();
+        public List<DBTest.AxialList> GetOptAxialList(string patientId) {
+            List<DBTest.AxialList> DataSource = new();
             if (patientId == null || patientId == string.Empty) return DataSource;
 
             // appsettings.jsonと接続
@@ -160,8 +160,9 @@ namespace BlazorDbTest.Controllers {
                     NpgsqlDataAdapter DataAdapter = new(Command);
                     DataTable DataTable = new();
                     DataAdapter.Fill(DataTable);
+                    List<DBTest.AxialData> AxialDataSource = new();
 
-                    DataSource = (from DataRow data in DataTable.Rows
+                    AxialDataSource = (from DataRow data in DataTable.Rows
                                   select new DBTest.AxialData() {
                                       ID = data[COLNAME_ExamOptaxialList[(int)eExamOptAxial.exam_id]].ToString() ?? string.Empty,
                                       Axial = Convert.ToDouble(data[COLNAME_ExamOptaxialList[(int)eExamOptAxial.axial_mm]].ToString()),
@@ -169,6 +170,8 @@ namespace BlazorDbTest.Controllers {
                                       DeviceID = 2,     // todo: 
                                       ExamDateTime = (DateTime)data[COLNAME_ExamOptaxialList[(int)eExamOptAxial.measured_at]],
                                   }).ToList();
+
+                    DataSource = SetAxialList(patientId, AxialDataSource.ToArray());
                 }
             } catch {
             } finally {
@@ -179,6 +182,98 @@ namespace BlazorDbTest.Controllers {
             }
 
             return DataSource;
+        }
+
+        /// <summary>
+        /// DBから取得したデータを下記ルールに則りリストへセット
+        /// ・1測定日1データ(右左)とする
+        /// ・同じ測定日のデータがある場合、装置種別AxMのデータを優先する
+        /// ・同じ測定日のデータは、測定時間が新しいものを採用する
+        /// ・装置種別AxMのデータは、1測定日に1つしか登録できない
+        /// </summary>
+        /// <param name="axialDataList"></param>
+        public List<AxialList> SetAxialList(string pt_id, AxialData[] axialDataList) {
+            List<AxialList> list = new List<AxialList>();
+            if (axialDataList != null) {
+                try {
+                    for (int i = 0; i < axialDataList.Length; i++) {
+                        bool isExist = false;
+                        for (int j = 0; j < list.Count; j++) {
+                            if (CommonController._objectToDateOnly(list[j].ExamDateTime) 
+                                == CommonController._objectToDateOnly(axialDataList[i].ExamDateTime)) {
+
+                                if (axialDataList[i].EyeId == EyeType.right) {
+                                    // 装置種別AxMのデータを優先する
+                                    // 装置種別AxMのデータは、1測定日に1つしか登録できない
+                                    if (!list[j].IsRManualInput) {
+                                        if (list[j].RAxial == 0.0) {
+                                            // 右眼かつ同じ測定日の右眼が0のとき
+                                            list[j].RExamID = axialDataList[i].ID;
+                                            list[j].RAxial = axialDataList[i].Axial;
+                                            list[j].IsRManualInput = (axialDataList[i].DeviceID == 2);  // todo:
+                                            isExist = true;
+                                            break;
+                                        } else if (list[j].ExamDateTime < axialDataList[i].ExamDateTime) {
+                                            // 右眼かつ同じ測定時間が新しい
+                                            list[j].RExamID = axialDataList[i].ID;
+                                            list[j].RAxial = axialDataList[i].Axial;
+                                            list[j].IsRManualInput = (axialDataList[i].DeviceID == 2);  // todo:
+                                            list[j].ExamDateTime = axialDataList[i].ExamDateTime;
+                                            isExist = true;
+                                            break;
+                                        }
+                                    }
+                                } else if (axialDataList[i].EyeId == EyeType.left) {
+                                    if (!list[j].IsLManualInput) {
+                                        if (list[j].LAxial == 0.0) {
+                                            // 左眼かつ同じ測定日の左眼が0のとき
+                                            list[j].LExamID = axialDataList[i].ID;
+                                            list[j].LAxial = axialDataList[i].Axial;
+                                            list[j].IsLManualInput = (axialDataList[i].DeviceID == 2);  // todo:
+                                            isExist = true;
+                                            break;
+                                        } else if (list[j].ExamDateTime < axialDataList[i].ExamDateTime) {
+                                            // 左眼かつ同じ測定時間が新しい
+                                            list[j].LExamID = axialDataList[i].ID;
+                                            list[j].LAxial = axialDataList[i].Axial;
+                                            list[j].IsLManualInput = (axialDataList[i].DeviceID == 2);  // todo:
+                                            list[j].ExamDateTime = axialDataList[i].ExamDateTime;
+                                            isExist = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // 同じ測定日のデータがないとき追加
+                        if (!isExist) {
+                            AxialList var = new AxialList() {
+                                PatientID = pt_id,
+                                RExamID = string.Empty,
+                                LExamID = string.Empty,
+                                RAxial = 0.0,
+                                LAxial = 0.0,
+                                ExamDateTime = axialDataList[i].ExamDateTime,
+                                IsRManualInput = false,
+                                IsLManualInput = false,
+                            };
+                            if (axialDataList[i].EyeId == EyeType.right) {
+                                var.RExamID = axialDataList[i].ID;
+                                var.RAxial = axialDataList[i].Axial;
+                                var.IsRManualInput = (axialDataList[i].DeviceID == 2);  // todo:
+                            } else if (axialDataList[i].EyeId == EyeType.left) {
+                                var.LExamID = axialDataList[i].ID;
+                                var.LAxial = axialDataList[i].Axial;
+                                var.IsLManualInput = (axialDataList[i].DeviceID == 2);  // todo:
+                            }
+                            list.Add(var);
+                        }
+                    }
+                } catch {
+                }
+            }
+            return list;
         }
 
         public static ExamOptaxialRec MakeOptaxialRec(int examId, string posEye, NpgsqlConnection sqlConnection) {
