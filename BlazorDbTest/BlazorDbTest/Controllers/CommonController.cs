@@ -6,6 +6,62 @@ using System.Reflection;
 using System.Text;
 
 namespace BlazorDbTest.Controllers {
+
+    /// <summary>
+    /// DB接続クラス
+    /// </summary>
+    public class DBAccess {
+        private static DBAccess instance;
+
+        private static NpgsqlConnection sqlConnection = null;
+
+        private DBAccess() {
+        }
+
+        public static DBAccess GetInstance() {
+            if (instance == null) {
+                instance = new DBAccess();
+            }
+
+            return instance;
+        }
+
+        /// <summary>
+        /// DB接続
+        /// </summary>
+        /// <returns></returns>
+        public NpgsqlConnection GetSqlConnection() {
+            try {
+                if (sqlConnection == null || sqlConnection.State != ConnectionState.Open) {
+                    // appsettings.jsonと接続
+                    IConfigurationRoot configuration = new ConfigurationBuilder()
+                        .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
+                        .AddJsonFile("appsettings.json")
+                        .Build();
+
+                    // appsettings.jsonからConnectionString情報取得
+                    string? ConnectionString = configuration.GetConnectionString("db");
+
+                    // PostgreSQL Server 通信接続
+                    sqlConnection = new(ConnectionString);
+
+                    sqlConnection.Open();
+                }
+            } catch {
+            }
+            return sqlConnection;
+        }
+
+        /// <summary>
+        /// DB切断
+        /// </summary>
+        public void CloseSqlConnection() {
+            if (sqlConnection.State != ConnectionState.Closed) {
+                sqlConnection.Close();
+            }
+        }
+    }
+    
     public class CommonController {
 
         // 患者UUID取得

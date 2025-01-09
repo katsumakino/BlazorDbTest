@@ -25,21 +25,11 @@ namespace BlazorDbTest.Controllers {
                 if(comment == null) return;
 
                 bool result = false;
-                // appsettings.jsonと接続
-                IConfigurationRoot configuration = new ConfigurationBuilder()
-                    .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
-                    .AddJsonFile("appsettings.json")
-                    .Build();
-
-                // appsettings.jsonからConnectionString情報取得
-                string? ConnectionString = configuration.GetConnectionString("db");
-
-                // PostgreSQL Server 通信接続
-                NpgsqlConnection sqlConnection = new(ConnectionString);
+                DBAccess dbAccess = DBAccess.GetInstance();
 
                 try {
                     // PostgreSQL Server 通信接続
-                    sqlConnection.Open();
+                    NpgsqlConnection sqlConnection = dbAccess.GetSqlConnection();
 
                     // クエリコマンド実行
 
@@ -74,9 +64,7 @@ namespace BlazorDbTest.Controllers {
                     }
 
                     // PostgreSQL Server 通信切断
-                    if (sqlConnection.State != ConnectionState.Closed) {
-                        sqlConnection.Close();
-                    }
+                    dbAccess.CloseSqlConnection();
                 }
             } catch {
             }
@@ -90,21 +78,11 @@ namespace BlazorDbTest.Controllers {
             List<DBTest.AxmComment> DataSource = new();
             if (pt_id == null || pt_id == string.Empty) return DataSource;
 
-            // appsettings.jsonと接続
-            IConfigurationRoot configuration = new ConfigurationBuilder()
-                .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
-                .AddJsonFile("appsettings.json")
-                .Build();
-
-            // appsettings.jsonからConnectionString情報取得
-            string? ConnectionString = configuration.GetConnectionString("db");
-
-            // PostgreSQL Server 通信接続
-            NpgsqlConnection sqlConnection = new(ConnectionString);
+            DBAccess dbAccess = DBAccess.GetInstance();
 
             try {
                 // PostgreSQL Server 通信接続
-                sqlConnection.Open();
+                NpgsqlConnection sqlConnection = dbAccess.GetSqlConnection();
 
                 // クエリコマンド実行
                 // UUIDの有無を確認
@@ -139,9 +117,7 @@ namespace BlazorDbTest.Controllers {
             } catch {
             } finally {
                 // PostgreSQL Server 通信切断
-                if (sqlConnection.State != ConnectionState.Closed) {
-                    sqlConnection.Close();
-                }
+                dbAccess.CloseSqlConnection();
             }
 
             return DataSource;

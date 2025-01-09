@@ -1,6 +1,7 @@
 ﻿using BlazorDbTest.Client.Pages;
 using BlazorDbTest.Common;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore.Update.Internal;
 using Npgsql;
 using System.Data;
 using System.Text;
@@ -30,21 +31,11 @@ namespace BlazorDbTest.Controllers {
                 if (patientInfo.ID == null || patientInfo.ID == string.Empty) return;
 
                 bool result = false;
-                // appsettings.jsonと接続
-                IConfigurationRoot configuration = new ConfigurationBuilder()
-                    .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
-                    .AddJsonFile("appsettings.json")
-                    .Build();
-
-                // appsettings.jsonからConnectionString情報取得
-                string? ConnectionString = configuration.GetConnectionString("db");
-
-                // PostgreSQL Server 通信接続
-                NpgsqlConnection sqlConnection = new(ConnectionString);
+                DBAccess dbAccess = DBAccess.GetInstance();
 
                 try {
                     // PostgreSQL Server 通信接続
-                    sqlConnection.Open();
+                    NpgsqlConnection sqlConnection = dbAccess.GetSqlConnection();
 
                     // UUIDの有無を確認(true:update / false:insert)
                     var uuid = Select_PTUUID_by_PTID(sqlConnection, patientInfo.ID);
@@ -121,9 +112,7 @@ namespace BlazorDbTest.Controllers {
                     }
 
                     // PostgreSQL Server 通信切断
-                    if (sqlConnection.State != ConnectionState.Closed) {
-                        sqlConnection.Close();
-                    }
+                    dbAccess.CloseSqlConnection();
                 }
 
             } catch {
@@ -135,22 +124,13 @@ namespace BlazorDbTest.Controllers {
         // 患者情報取得
         [HttpGet("GetPatientInfo/{patientId}")]
         public DBTest.PatientInfo GetDBPatientInfo(string patientId) {
-            // appsettings.jsonと接続
-            IConfigurationRoot configuration = new ConfigurationBuilder()
-                .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
-                .AddJsonFile("appsettings.json")
-                .Build();
-
-            // appsettings.jsonからConnectionString情報取得
-            string? ConnectionString = configuration.GetConnectionString("db");
-
-            // PostgreSQL Server 通信接続
-            NpgsqlConnection sqlConnection = new(ConnectionString);
+            DBAccess dbAccess = DBAccess.GetInstance();
 
             DBTest.PatientInfo DataSource = new();
 
             try {
-                sqlConnection.Open();
+                // PostgreSQL Server 通信接続
+                NpgsqlConnection sqlConnection = dbAccess.GetSqlConnection();
 
                 // 実行するクエリコマンド定義
                 string Query = "SELECT * FROM ";
@@ -185,9 +165,7 @@ namespace BlazorDbTest.Controllers {
             } catch {
             } finally {
                 // PostgreSQL Server 通信切断
-                if (sqlConnection.State != ConnectionState.Closed) {
-                    sqlConnection.Close();
-                }
+                dbAccess.CloseSqlConnection();
             }
 
             return DataSource;
@@ -195,14 +173,7 @@ namespace BlazorDbTest.Controllers {
 
         [HttpGet("GetPatientInfoList")]
         public List<DBTest.PatientInfo> GetDBPatientInfoList() {
-            // appsettings.jsonと接続
-            IConfigurationRoot configuration = new ConfigurationBuilder()
-                .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
-                .AddJsonFile("appsettings.json")
-                .Build();
-
-            // appsettings.jsonからConnectionString情報取得
-            string? ConnectionString = configuration.GetConnectionString("db");
+            DBAccess dbAccess = DBAccess.GetInstance();
 
             // 実行するクエリコマンド定義
             string Query = "SELECT * FROM ";
@@ -210,12 +181,12 @@ namespace BlazorDbTest.Controllers {
             Query += " ORDER BY ";
             Query += _col(COLNAME_PatientList[(int)ePatientList.updated_at]);
 
-            NpgsqlConnection sqlConnection = new(ConnectionString);
-
             List<DBTest.PatientInfo> DataSource = new();
 
             try {
-                sqlConnection.Open();
+                // PostgreSQL Server 通信接続
+                NpgsqlConnection sqlConnection = dbAccess.GetSqlConnection();
+
                 //Using NpgsqlCommand and Query create connection with database
                 NpgsqlCommand Command = new(Query, sqlConnection);
                 //Using NpgsqlDataAdapter execute the NpgsqlCommand 
@@ -236,7 +207,8 @@ namespace BlazorDbTest.Controllers {
                               }).ToList();
             } catch {
             } finally {
-                sqlConnection.Close();
+                // PostgreSQL Server 通信切断
+                dbAccess.CloseSqlConnection();
             }
 
             return DataSource;
@@ -245,28 +217,17 @@ namespace BlazorDbTest.Controllers {
         [HttpGet("GetSearchPatientList/{conditions}")]
         public List<PatientListTest.PatientList> GetSearchPatientList(string conditions) {
             List<PatientListTest.PatientList> DataSource = new();
-
+            
             try {
                 if (conditions == null || conditions == string.Empty) return DataSource;
                 PatientListTest.PatientSearch patientSearch = JsonSerializer.Deserialize<PatientListTest.PatientSearch>(conditions);
 
                 if (patientSearch == null) return DataSource;
 
-                // appsettings.jsonと接続
-                IConfigurationRoot configuration = new ConfigurationBuilder()
-                    .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
-                    .AddJsonFile("appsettings.json")
-                    .Build();
-
-                // appsettings.jsonからConnectionString情報取得
-                string? ConnectionString = configuration.GetConnectionString("db");
-
-                // PostgreSQL Server 通信接続
-                NpgsqlConnection sqlConnection = new(ConnectionString);
-
+                DBAccess dbAccess = DBAccess.GetInstance();
                 try {
                     // PostgreSQL Server 通信接続
-                    sqlConnection.Open();
+                    NpgsqlConnection sqlConnection = dbAccess.GetSqlConnection();
 
                     int eye_id_r = Select_Eye_ID(sqlConnection, Const.strEyeType[Const.eEyeType.RIGHT]);
                     int eye_id_l = Select_Eye_ID(sqlConnection, Const.strEyeType[Const.eEyeType.LEFT]);
@@ -459,11 +420,8 @@ namespace BlazorDbTest.Controllers {
                 } catch {
                 } finally {
                     // PostgreSQL Server 通信切断
-                    if (sqlConnection.State != ConnectionState.Closed) {
-                        sqlConnection.Close();
-                    }
+                    dbAccess.CloseSqlConnection();
                 }
-
             } catch {
 
             }
