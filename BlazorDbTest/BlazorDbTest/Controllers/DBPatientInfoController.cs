@@ -1,14 +1,14 @@
-﻿using BlazorDbTest.Common;
-using BlazorDbTest.Client.Pages;
+﻿using BlazorDbTest.Client.Pages;
+using BlazorDbTest.Common;
 using Microsoft.AspNetCore.Mvc;
 using Npgsql;
 using System.Data;
 using System.Text;
 using System.Text.Json;
 using static BlazorDbTest.Controllers.CommonController;
+using static BlazorDbTest.Controllers.DBAxialDataController;
 using static BlazorDbTest.Controllers.DBAxmCommentController;
 using static BlazorDbTest.Controllers.DBTreatmentController;
-using static BlazorDbTest.Controllers.DBAxialDataController;
 
 // todo: 関数・定義クラスの分離
 
@@ -280,234 +280,137 @@ namespace BlazorDbTest.Controllers {
                     var tblAxmCommentList = "tblAxmCommentList";    // AxmCommentList
 
                     // クエリコマンド実行
-                    // todo: 綺麗に整理(Bind文で書き直し)
-                    string Query = "WITH RankedExams AS (";
-                    Query += "SELECT *,";
-                    Query += "RANK() OVER (PARTITION BY ";
-                    Query += _col(COLNAME_ExamList[(int)eExamList.pt_uuid]);
-                    Query += " ORDER BY ";
-                    Query += _col(COLNAME_ExamList[(int)eExamList.exam_datetime]);
-                    Query += " DESC) AS rank ";
-                    Query += "FROM ";
-                    Query += _table(DB_TableNames[(int)eDbTable.EXAM_LIST]);
-                    Query += ") ";
-                    Query += "SELECT ";
-                    Query += "DISTINCT ON (";
-                    Query += tblPatientList;
-                    Query += _dotcol(COLNAME_PatientList[(int)ePatientList.pt_uuid]);
-                    Query += ") ";
-                    Query += tblPatientList;
-                    Query += _dotcol(COLNAME_PatientList[(int)ePatientList.pt_uuid]);
-                    Query += ", ";
-                    Query += tblPatientList;
-                    Query += _dotcol(COLNAME_PatientList[(int)ePatientList.pt_id]);
-                    Query += ", ";
-                    Query += tblPatientList;
-                    Query += _dotcol(COLNAME_PatientList[(int)ePatientList.pt_lastname]);
-                    Query += ", ";
-                    Query += tblPatientList;
-                    Query += _dotcol(COLNAME_PatientList[(int)ePatientList.pt_firstname]);
-                    Query += ", ";
-                    Query += tblPatientList;
-                    Query += _dotcol(COLNAME_PatientList[(int)ePatientList.gender_id]);
-                    Query += ", ";
-                    Query += tblPatientList;
-                    Query += _dotcol(COLNAME_PatientList[(int)ePatientList.pt_dob]);
-                    Query += ", ";
-                    Query += tblAxmPatientList;
-                    Query += _dotcol(COLNAME_AxmPatientList[(int)eAxmPatientList.axm_flag]);
-                    Query += ", ";
-                    Query += tblAxmPatientList;
-                    Query += _dotcol(COLNAME_AxmPatientList[(int)eAxmPatientList.axm_same_pt_id]);
-                    Query += ", ";
-                    Query += tblExamList;
-                    Query += _dotcol(COLNAME_ExamList[(int)eExamList.exam_datetime]);
-                    Query += ", ";
-                    Query += tblAxmCommentList;
-                    Query += _dotcol(COLNAME_AxmCommentList[(int)eAxmComment.description]);
-                    Query += ", ";
-                    Query += tblExamList;
-                    Query += _dotcol(COLNAME_ExamList[(int)eExamList.examtype_id]);
+                    string Query1 = "WITH RankedExams AS (SELECT *,RANK() OVER (PARTITION BY {0} ORDER BY {1} DESC) AS rank FROM {2}) ";
+                    string Query = string.Format(Query1, _col(COLNAME_ExamList[(int)eExamList.pt_uuid])
+                        , _col(COLNAME_ExamList[(int)eExamList.exam_datetime])
+                        , _table(DB_TableNames[(int)eDbTable.EXAM_LIST]));
+                    string Query2 = "SELECT DISTINCT ON({0}{1}) ";
+                    Query += string.Format(Query2, tblPatientList, _dotcol(COLNAME_PatientList[(int)ePatientList.pt_uuid]));
+                    for (int i = (int)ePatientList.pt_uuid; i < (int)eSearchPatientList.MAX; i++) {
+                        switch (i) {
+                            case (int)eSearchPatientList.pt_uuid:
+                            case (int)eSearchPatientList.pt_id:
+                            case (int)eSearchPatientList.pt_lastname:
+                            case (int)eSearchPatientList.pt_firstname:
+                            case (int)eSearchPatientList.gender_id:
+                            case (int)eSearchPatientList.pt_dob:
+                                Query += tblPatientList;
+                                break;
+                            case (int)eSearchPatientList.axm_flag:
+                            case (int)eSearchPatientList.axm_same_pt_id:
+                                Query += tblAxmPatientList;
+                                break;
+                            case (int)eSearchPatientList.exam_datetime:
+                            case (int)eSearchPatientList.examtype_id:
+                                Query += tblExamList;
+                                break;
+                            case (int)eSearchPatientList.description:
+                                Query += tblAxmCommentList;
+                                break;
+                            default:
+                                continue;
+                        }
+                        Query += _dotcol(COLNAME_SearchPatientList[i]);
+                        if (i != (int)eSearchPatientList.MAX - 1) Query += ", ";
+                    }
+                    string Query3 = " LEFT JOIN {0} {1} ON {2}{3} = {1}{4}";
                     Query += " FROM (";
                     Query += "(";
                     Query += _table(DB_TableNames[(int)eDbTable.PATIENT_LIST]);
                     Query += " ";
                     Query += tblPatientList;
-                    Query += " LEFT JOIN ";
-                    Query += _table(DB_TableNames[(int)eDbTable.AXM_PATIENT_LIST]);
-                    Query += " ";
-                    Query += tblAxmPatientList;
-                    Query += " ON ";
-                    Query += tblPatientList;
-                    Query += _dotcol(COLNAME_PatientList[(int)ePatientList.pt_uuid]);
-                    Query += " = ";
-                    Query += tblAxmPatientList;
-                    Query += _dotcol(COLNAME_AxmPatientList[(int)eAxmPatientList.pt_uuid]);
+                    Query += string.Format(Query3, _table(DB_TableNames[(int)eDbTable.AXM_PATIENT_LIST]), tblAxmPatientList
+                                               , tblPatientList, _dotcol(COLNAME_PatientList[(int)ePatientList.pt_uuid])
+                                               , _dotcol(COLNAME_AxmPatientList[(int)eAxmPatientList.pt_uuid]));
                     Query += ") ";
-                    Query += "LEFT JOIN ";
-                    Query += "RankedExams ";
-                    Query += tblExamList;
-                    Query += " ON ";
-                    Query += tblPatientList;
-                    Query += _dotcol(COLNAME_PatientList[(int)ePatientList.pt_uuid]);
-                    Query += " = ";
-                    Query += tblExamList;
-                    Query += _dotcol(COLNAME_ExamList[(int)eExamList.pt_uuid]);
+                    Query += string.Format(Query3, "RankedExams", tblExamList
+                                                 , tblPatientList, _dotcol(COLNAME_PatientList[(int)ePatientList.pt_uuid])
+                                                 , _dotcol(COLNAME_ExamList[(int)eExamList.pt_uuid]));
                     Query += " AND ";
                     Query += tblExamList;
                     Query += _dotcol("rank");
                     Query += " = 1) ";
-                    Query += "LEFT JOIN ";
-                    Query += _table(DB_TableNames[(int)eDbTable.AXM_COMMENT]);
-                    Query += " ";
-                    Query += tblAxmCommentList;
-                    Query += " ON ";
-                    Query += tblPatientList;
-                    Query += _dotcol(COLNAME_PatientList[(int)ePatientList.pt_uuid]);
-                    Query += " = ";
-                    Query += tblAxmCommentList;
-                    Query += _dotcol(COLNAME_AxmCommentList[(int)eAxmComment.pt_uuid]);
+                    Query += string.Format(Query3, _table(DB_TableNames[(int)eDbTable.AXM_COMMENT]), tblAxmCommentList
+                                                 , tblPatientList, _dotcol(COLNAME_PatientList[(int)ePatientList.pt_uuid])
+                                                 , _dotcol(COLNAME_AxmCommentList[(int)eAxmComment.pt_uuid]));
+                    // 検索条件設定
                     Query += " WHERE (";
-                    Query += "(";
                     // 患者コメントを表示
-                    Query += tblAxmCommentList;
-                    Query += _dotcol(COLNAME_AxmCommentList[(int)eAxmComment.commenttype_id]);
-                    Query += " = ";
-                    Query += commenttype_patient;
-                    Query += " OR ";
-                    Query += tblAxmCommentList;
-                    Query += _dotcol(COLNAME_AxmCommentList[(int)eAxmComment.commenttype_id]);
-                    Query += " IS NULL) ";
+                    string Query4 = "({0}{1} = {2} OR {0}{1} IS NULL) ";
+                    Query += string.Format(Query4, tblAxmCommentList, _dotcol(COLNAME_AxmCommentList[(int)eAxmComment.commenttype_id]), commenttype_patient);
                     // 検査タイプは、OptAxialのみ
-                    if(patientSearch.IsExamDate == true) {
-                        Query += "AND (";
-                        Query += tblExamList;
-                        Query += _dotcol(COLNAME_ExamList[(int)eExamList.examtype_id]);
-                        Query += " = ";
-                        Query += exam_optaxial_id;
-                        Query += ") ";
+                    string Query5 = "AND ({0}{1} = {2})";
+                    if (patientSearch.IsExamDate == true) {
+                        Query += string.Format(Query5, tblExamList, _dotcol(COLNAME_ExamList[(int)eExamList.examtype_id]), exam_optaxial_id);
                     } else {
                         // 測定日時を指定しないときは、NULLも含める
                         // todo: 装置種別も確認
-                        Query += "AND (";
-                        Query += tblExamList;
-                        Query += _dotcol(COLNAME_ExamList[(int)eExamList.examtype_id]);
-                        Query += " = ";
-                        Query += exam_optaxial_id;
-                        Query += " OR ";
-                        Query += tblExamList;
-                        Query += _dotcol(COLNAME_ExamList[(int)eExamList.examtype_id]);
-                        Query += " IS NULL";
-                        Query += ") ";
+                        Query += "AND ";
+                        Query += string.Format(Query4, tblExamList, _dotcol(COLNAME_ExamList[(int)eExamList.examtype_id]), exam_optaxial_id);
                     }
                     // ID/名前の曖昧一致検索
+                    string Query6 = "{0}{1} LIKE '%{2}%'";
                     if (patientSearch.IdOrName != string.Empty && patientSearch.IdOrName != null) {
                         Query += "AND (";
-                        Query += tblPatientList;
-                        Query += _dotcol(COLNAME_PatientList[(int)ePatientList.pt_id]);
-                        Query += " LIKE '%";
-                        Query += patientSearch.IdOrName;
-                        Query += "%' OR ";
-                        Query += tblPatientList;
-                        Query += _dotcol(COLNAME_PatientList[(int)ePatientList.pt_lastname]);
-                        Query += " LIKE '%";
-                        Query += patientSearch.IdOrName;
-                        Query += "%' OR ";
-                        Query += tblPatientList;
-                        Query += _dotcol(COLNAME_PatientList[(int)ePatientList.pt_firstname]);
-                        Query += " LIKE '%";
-                        Query += patientSearch.IdOrName;
-                        Query += "%') ";
+                        for (int i = (int)ePatientList.pt_id; i <= (int)ePatientList.pt_firstname; i++) {
+                            Query += string.Format(Query6, tblPatientList, _dotcol(COLNAME_PatientList[i]), patientSearch.IdOrName);
+                            if (i != (int)ePatientList.pt_firstname) Query += " OR ";
+                        }
+                        Query += ")";
                     }
                     // 性別検索
-                    if ((patientSearch.Gender == PatientListTest.Gender.male 
+                    if ((patientSearch.Gender == PatientListTest.Gender.male
                         || patientSearch.Gender == PatientListTest.Gender.female)) {
-                        Query += "AND (";
-                        Query += tblPatientList;
-                        Query += _dotcol(COLNAME_PatientList[(int)ePatientList.gender_id]);
-                        Query += " = ";
-                        Query += (int)patientSearch.Gender;
-                        Query += ") ";
+                        Query += string.Format(Query5, tblPatientList, _dotcol(COLNAME_PatientList[(int)ePatientList.gender_id]), (int)patientSearch.Gender);
                     }
                     // 年齢範囲検索
-                    if(patientSearch.IsAge == true) {
-                        Query += "AND (";
-                        Query += tblPatientList;
-                        Query += _dotcol(COLNAME_PatientList[(int)ePatientList.pt_dob]);
-                        Query += " BETWEEN '";
-                        Query += CalculateBirthDateFromAge(patientSearch.AgeMax, true);
-                        Query += "' AND '";
-                        Query += CalculateBirthDateFromAge(patientSearch.AgeMin);
-                        Query += "') ";
+                    string Query7 = "AND ({0}{1} BETWEEN '{2}' AND '{3}')";
+                    if (patientSearch.IsAge == true) {
+                        Query += string.Format(Query7, tblPatientList, _dotcol(COLNAME_PatientList[(int)ePatientList.pt_dob])
+                                                     , CalculateBirthDateFromAge(patientSearch.AgeMax, true), CalculateBirthDateFromAge(patientSearch.AgeMin));
                     }
                     // 最新測定日範囲検索
-                    if(patientSearch.IsExamDate == true) {
-                        Query += "AND (";
-                        Query += tblExamList;
-                        Query += _dotcol(COLNAME_ExamList[(int)eExamList.exam_datetime]);
-                        Query += " BETWEEN '";
-                        Query += (patientSearch.ExamDateMin != null)? patientSearch.ExamDateMin : DateTime.Today;
-                        Query += "' AND '";
-                        Query += (patientSearch.ExamDateMax != null)? patientSearch.ExamDateMax : DateTime.Today;
-                        Query += "') ";
+                    if (patientSearch.IsExamDate == true) {
+                        Query += string.Format(Query7, tblExamList, _dotcol(COLNAME_ExamList[(int)eExamList.exam_datetime])
+                                                     , (patientSearch.ExamDateMin != null) ? patientSearch.ExamDateMin : DateTime.Today
+                                                     , (patientSearch.ExamDateMax != null) ? patientSearch.ExamDateMax : DateTime.Today);
                     }
                     // 患者コメント曖昧一致検索
-                    if(patientSearch.PatientComment != string.Empty && patientSearch.PatientComment != null) {
-                        Query += "AND (";
-                        Query += tblAxmCommentList;
-                        Query += _dotcol(COLNAME_AxmCommentList[(int)eAxmComment.description]);
-                        Query += " LIKE '%";
-                        Query += patientSearch.PatientComment;
-                        Query += "%') ";
+                    if (patientSearch.PatientComment != string.Empty && patientSearch.PatientComment != null) {
+                        Query += "AND ";
+                        Query += string.Format(Query6, tblAxmCommentList, _dotcol(COLNAME_AxmCommentList[(int)eAxmComment.description]), patientSearch.PatientComment);
                     }
                     // フラグ検索
-                    if(patientSearch.IsMark == true) {
-                        Query += "AND (";
-                        Query += tblAxmPatientList;
-                        Query += _dotcol(COLNAME_AxmPatientList[(int)eAxmPatientList.axm_flag]);
-                        Query += " = ";
-                        Query += patientSearch.IsMark;
-                        Query += ") ";
+                    if (patientSearch.IsMark == true) {
+                        Query += string.Format(Query5, tblAxmPatientList, _dotcol(COLNAME_AxmPatientList[(int)eAxmPatientList.axm_flag]), patientSearch.IsMark);
                     }
                     // 同一患者ID有無検索
                     if (patientSearch.IsSameID == true) {
-                        Query += "AND (";
-                        Query += tblAxmPatientList;
-                        Query += _dotcol(COLNAME_AxmPatientList[(int)eAxmPatientList.is_axm_same_pt_id]);
-                        Query += " = ";
-                        Query += patientSearch.IsSameID;
-                        Query += ") ";
+                        Query += string.Format(Query5, tblAxmPatientList, _dotcol(COLNAME_AxmPatientList[(int)eAxmPatientList.is_axm_same_pt_id]), patientSearch.IsSameID);
                     }
                     // ExamListの検索条件を使用するときのみ、装置情報の検索条件に付与
-                    if (patientSearch.IsExamDate == true
-                        || patientSearch.IsAxial == true) {
-                        Query += "AND (";
-                        Query += tblExamList;
-                        Query += _dotcol(COLNAME_ExamList[(int)eExamList.device_id]);
-                        Query += " = ";
-                        Query += device_axm_id;
-                        Query += ") ";
+                    if (patientSearch.IsExamDate == true || patientSearch.IsAxial == true) {
+                        Query += string.Format(Query5, tblExamList, _dotcol(COLNAME_ExamList[(int)eExamList.device_id]), device_axm_id);
                     }
                     // todo: 表示設定の反映
-                    Query += ")";
-                    Query += ";";
+                    Query += ");";
 
                     NpgsqlCommand Command = new(Query, sqlConnection);
                     NpgsqlDataAdapter DataAdapter = new(Command);
                     DataTable DataTable = new();
                     DataAdapter.Fill(DataTable);
 
-                    for(int i = 0;i<DataTable.Rows.Count; i++) {
+                    for (int i = 0; i < DataTable.Rows.Count; i++) {
                         DataRow data = DataTable.Rows[i];
 
                         string pt_id = data[(int)eSearchPatientList.pt_id].ToString() ?? string.Empty;
                         DateOnly examdate = _objectToDateOnly(data[(int)eSearchPatientList.exam_datetime]);
 
                         if (pt_id != null) {
-                            string pt_uuid = data[(int)eSearchPatientList.pt_uuid].ToString()?? string.Empty;
+                            string pt_uuid = data[(int)eSearchPatientList.pt_uuid].ToString() ?? string.Empty;
                             double axial_r = -1;
                             double axial_l = -1;
-                            double axialMin = (patientSearch.IsAxial)? patientSearch.AxialMin : 0;
+                            double axialMin = (patientSearch.IsAxial) ? patientSearch.AxialMin : 0;
                             double axialMax = (patientSearch.IsAxial) ? patientSearch.AxialMax : 40;
                             string allTreatName = string.Empty;
 
@@ -801,6 +704,20 @@ namespace BlazorDbTest.Controllers {
         }
 
         public static string[] GENDER_TYPE = ["", "male", "female", "other"];
+
+        public static string[] COLNAME_SearchPatientList = {
+            COLNAME_PatientList[(int)ePatientList.pt_uuid],
+            COLNAME_PatientList[(int)ePatientList.pt_id],
+            COLNAME_PatientList[(int)ePatientList.pt_lastname],
+            COLNAME_PatientList[(int)ePatientList.pt_firstname],
+            COLNAME_PatientList[(int)ePatientList.gender_id],
+            COLNAME_PatientList[(int)ePatientList.pt_dob],
+            COLNAME_AxmPatientList[(int)eAxmPatientList.axm_flag],
+            COLNAME_AxmPatientList[(int)eAxmPatientList.axm_same_pt_id],
+            COLNAME_ExamList[(int)eExamList.exam_datetime],
+            COLNAME_AxmCommentList[(int)eAxmComment.description],
+            COLNAME_ExamList[(int)eExamList.examtype_id]
+        };
     }
 }
 
