@@ -1,4 +1,7 @@
 ﻿@page "/counter"
+@inject HttpClient HttpClient
+@inject IJSRuntime JS
+@using System.Text.Json;
 
 <PageTitle>Counter</PageTitle>
 
@@ -9,10 +12,41 @@
 <button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
 
 @code {
-    private int currentCount = 0;
+  private int currentCount = 0;
+  private LogInfo logInfo = new LogInfo();
 
-    private void IncrementCount()
-    {
-        currentCount++;
-    }
+  private void IncrementCount()
+  {
+    currentCount++;
+
+    Task.Run(() => WriteLogAsync());
+  }
+
+  protected async Task WriteLogAsync() {
+    logInfo.Message = "Clicked: " + currentCount;
+    logInfo.Type = "EVENT";
+    logInfo.ErrLevel = "W";
+
+    string url = $"api/Log/WriteLog/";
+
+    if(logInfo.ErrLevel == "W") {
+      var screenshotDataUrl = await JS.InvokeAsync<string>("captureScreenshot");
+      var base64Data = screenshotDataUrl.Split(',')[1];
+      logInfo.Screenshot = base64Data;
+    } else {
+      logInfo.Screenshot = string.Empty;
+    }    
+    
+    var conditions = JsonSerializer.Serialize(logInfo);
+    var content = new StringContent(conditions, System.Text.Encoding.UTF8, "application/json");
+
+    var response = await HttpClient.PostAsync(url, content);
+  }
+
+  public class LogInfo {
+    public string Message { get; set; } = default!;
+    public string Type { get; set; } = default!;
+    public string ErrLevel { get; set; } = default!;
+    public string Screenshot { get; set; } = default!;
+  }
 }
