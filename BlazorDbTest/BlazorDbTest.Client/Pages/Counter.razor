@@ -2,6 +2,7 @@
 @inject HttpClient HttpClient
 @inject IJSRuntime JS
 @using System.Text.Json;
+@using System.Runtime.CompilerServices;
 
 <PageTitle>Counter</PageTitle>
 
@@ -25,7 +26,7 @@
   protected async Task WriteLogAsync() {
     logInfo.Message = "Clicked: " + currentCount;
     logInfo.Type = "EVENT";
-    logInfo.ErrLevel = "W";
+    logInfo.ErrLevel = "I";
 
     string url = $"api/Log/WriteLog/";
 
@@ -36,17 +37,27 @@
     } else {
       logInfo.Screenshot = string.Empty;
     }    
-    
+
+    logInfo.SourcePosition = GetCallerFIlePath();
+
     var conditions = JsonSerializer.Serialize(logInfo);
     var content = new StringContent(conditions, System.Text.Encoding.UTF8, "application/json");
 
     var response = await HttpClient.PostAsync(url, content);
   }
 
+  // ファイル名とソースコードの実行位置を取得する関数(ログ記録用) 
+  public static string GetCallerFIlePath([CallerFilePath] string path = "", [CallerLineNumber] int lineNumber = 0) {
+    return $"{path}:{lineNumber}";
+  }
+
   public class LogInfo {
-    public string Message { get; set; } = default!;
     public string Type { get; set; } = default!;
+    public string Message { get; set; } = default!;
     public string ErrLevel { get; set; } = default!;
+    public string SourcePosition { get; set; } = default!;
+    public string SubMessage { get; set; } = default!;
+    public string IPAddress { get; set; } = default!;
     public string Screenshot { get; set; } = default!;
   }
 }

@@ -1,5 +1,7 @@
 ﻿using BlazorDbTest.Client.Pages;
 using Microsoft.AspNetCore.Mvc;
+using System.Net.Sockets;
+using System.Net;
 using System.Text.Json;
 using static BlazorDbTest.Client.Pages.Counter;
 
@@ -10,9 +12,9 @@ namespace BlazorDbTest.Controllers {
 
     private string logFilePathBase = $"logs_{DateTime.Now:yyyyMMdd}.txt";
     private string logFilePath = "";
-    private string logDirTopPath = @"C:/test/";
+    private string logDirTopPath = @"C:/test/log/";
     private string logDirPathBase = $"_{DateTime.Now:yyyyMMdd}";
-    private string errLogDirTopPath = @"C:/testErr/";
+    private string errLogDirTopPath = @"C:/test/testErr/";
     private string errLogDirPathBase = $"_{DateTime.Now:yyyyMMdd_HHmmss}";
     private Common.FIleUtilities utilities = new Common.FIleUtilities();
 
@@ -21,6 +23,8 @@ namespace BlazorDbTest.Controllers {
       if (conditions == null) return;
 
       try {
+        conditions.IPAddress = GetClientIpAddress();
+
         Log(conditions);
 
         // エラーレベルが高い場合は、エラーログを作成する
@@ -34,7 +38,7 @@ namespace BlazorDbTest.Controllers {
     private void Log(Counter.LogInfo info) {
       CreateLogFile();
       using (StreamWriter writer = new StreamWriter(logFilePath, append: true)) {
-        writer.WriteLineAsync($"{DateTime.Now:HH:mm:ss}, {info.Type}, {info.Message}");
+        writer.WriteLineAsync($"{DateTime.Now:HH:mm:ss}, {info.Type}, {info.IPAddress}, {info.Message}, {info.SourcePosition}\n{info.SubMessage}");
       }
     }
 
@@ -64,6 +68,7 @@ namespace BlazorDbTest.Controllers {
       }
     }
 
+    // エラーログを作成する
     private async void ErrorLog(string errImg) {
       try {
         // エラーログファイルを作成する
@@ -82,6 +87,48 @@ namespace BlazorDbTest.Controllers {
         await System.IO.File.WriteAllBytesAsync(filePath, imageBytes);
       } catch {
       }
+    }
+
+    // ローカルIPアドレス(Server側)を取得
+    public static async Task<string> GetLocalIPAddress() {
+      string localIP = "NULL";
+      try {
+        var host = await Dns.GetHostEntryAsync(Dns.GetHostName());
+        foreach (var ip in host.AddressList) {
+          if (ip.AddressFamily == AddressFamily.InterNetwork) {
+            localIP = ip.ToString();
+            break;
+          }
+        }
+      } catch (Exception ex) {
+        Console.WriteLine($"Error: {ex.Message}");
+      }
+      return localIP;
+    }
+
+    // クライアントのIPアドレスを取得
+    private string GetClientIpAddress() {
+      var remoteIpAddress = HttpContext.Connection.RemoteIpAddress;
+      string nullMessage = "IP NOT FOUND";
+      if (remoteIpAddress == null) {
+        return nullMessage;
+      }
+
+      // IPv4 アドレスを取得
+      if (remoteIpAddress.AddressFamily == AddressFamily.InterNetwork) {
+        return remoteIpAddress.ToString();
+      }
+
+      // IPv6 アドレスを IPv4 に変換
+      if (remoteIpAddress.AddressFamily == AddressFamily.InterNetworkV6) {
+        var ipv4Address = Dns.GetHostEntry(remoteIpAddress).AddressList
+          .FirstOrDefault(ip => ip.AddressFamily == AddressFamily.InterNetwork);
+        if (ipv4Address != null) {
+          return ipv4Address.ToString();
+        }
+      }
+
+      return nullMessage;
     }
   }
 }
