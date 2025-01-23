@@ -10,12 +10,14 @@ namespace BlazorDbTest.Controllers {
   [Route("api/[controller]")]
   public class LogController : ControllerBase {
 
-    private string logFilePathBase = $"logs_{DateTime.Now:yyyyMMdd}.txt";
+    private string logFilePathBase = $"logs_{DateTime.Now:yyyyMMdd}";
     private string logFilePath = "";
     private string logDirTopPath = @"C:/test/log/";
     private string logDirPathBase = $"_{DateTime.Now:yyyyMMdd}";
     private string errLogDirTopPath = @"C:/test/testErr/";
     private string errLogDirPathBase = $"_{DateTime.Now:yyyyMMdd_HHmmss}";
+    private const int maxFileSize = 1024 * 1024 * 10; // 10MB
+    private const int maxFileCount = 30;
     private Common.FIleUtilities utilities = new Common.FIleUtilities();
 
     [HttpPost("WriteLog")]
@@ -31,19 +33,25 @@ namespace BlazorDbTest.Controllers {
         if (conditions.ErrLevel == "W") {
           ErrorLog(conditions.Screenshot);
         }
-      } catch {
+      } catch { 
       }
     }
 
     private void Log(Counter.LogInfo info) {
-      CreateLogFile();
-      using (StreamWriter writer = new StreamWriter(logFilePath, append: true)) {
-        writer.WriteLineAsync($"{DateTime.Now:HH:mm:ss}, {info.Type}, {info.IPAddress}, {info.Message}, {info.SourcePosition}\n{info.SubMessage}");
+      try {
+        CreateLogFile();
+        using (StreamWriter writer = new StreamWriter(logFilePath, append: true)) {
+          writer.WriteLineAsync($"{DateTime.Now:HH:mm:ss}, {info.Type}, {info.IPAddress}, {info.Message}, {info.SourcePosition}");
+          if(!string.IsNullOrEmpty(info.SubMessage)) {
+            writer.WriteLineAsync($"{info.SubMessage}");
+          }
+        }
+      } catch { 
       }
     }
 
     // ログファイルを作成する
-    private void CreateLogFile() {
+    private void CreateLogFile(int num = 0) {
       // フォルダ作成
       var dirPath = logDirTopPath;
       dirPath += logDirPathBase;
@@ -51,10 +59,18 @@ namespace BlazorDbTest.Controllers {
       CheckLogFolder();
 
       // ログファイル名に日付を付与
-      logFilePath = dirPath + "/" + logFilePathBase;
+      logFilePath = dirPath + "/" + logFilePathBase + "_" + num.ToString() + ".txt";
 
-      // ログファイルが存在しない場合は作成
-      utilities.CreateFile(logFilePath);
+      // ログファイルが10MBを超えた場合は、新しいファイルを作成
+      if (utilities.FileExists(logFilePath)) {
+        var fileInfo = new FileInfo(logFilePath);
+        if (fileInfo.Length > maxFileSize) {
+          CreateLogFile(num + 1);
+        }
+      } else {
+        // ログファイルが存在しない場合は作成
+        utilities.CreateFile(logFilePath);
+      }
     }
 
     // ログフォルダの整理
@@ -62,7 +78,7 @@ namespace BlazorDbTest.Controllers {
       // ログフォルダが30日分を超えた場合は、古いフォルダを削除する
       var dirPath = logDirTopPath;
       var dirs = Directory.GetDirectories(dirPath);
-      if (dirs.Length > 30) {
+      if (dirs.Length > maxFileCount) {
         // 一番古いフォルダ(名前を昇順ソートした際に一番上に来るもの)を削除
         Directory.Delete(dirs[0], true);
       }
