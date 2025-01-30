@@ -31,9 +31,7 @@
     string url = $"api/Log/WriteLog/";
 
     if(logInfo.ErrLevel == "W") {
-      var screenshotDataUrl = await JS.InvokeAsync<string>("captureScreenshot");
-      var base64Data = screenshotDataUrl.Split(',')[1];
-      logInfo.Screenshot = base64Data;
+      logInfo.Screenshot = await GetScreenshotUrl();
     } else {
       logInfo.Screenshot = string.Empty;
     }    
@@ -49,6 +47,13 @@
   // ファイル名とソースコードの実行位置を取得する関数(ログ記録用) 
   public static string GetCallerFIlePath([CallerFilePath] string path = "", [CallerLineNumber] int lineNumber = 0) {
     return $"{path}:{lineNumber}";
+  }
+
+  // スクリーンショットを取得する関数
+  private async Task<string> GetScreenshotUrl() {
+    var screenshotDataUrl = await JS.InvokeAsync<string>("captureScreenshot");
+    var base64Data = screenshotDataUrl.Split(',')[1];
+    return base64Data;
   }
 
   public class LogInfo {

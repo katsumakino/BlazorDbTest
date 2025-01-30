@@ -127,6 +127,7 @@ namespace BlazorDbTest.Controllers {
             DBAccess dbAccess = DBAccess.GetInstance();
 
             DBTest.PatientInfo DataSource = new();
+            if (patientId == null || patientId == string.Empty) return DataSource;
 
             try {
                 // PostgreSQL Server 通信接続
@@ -138,7 +139,7 @@ namespace BlazorDbTest.Controllers {
                 Query += " WHERE ";
                 Query += _col(COLNAME_PatientList[(int)ePatientList.pt_id]);
                 Query += " = ";
-                Query += _val(Encoding.UTF8.GetString(Convert.FromBase64String(patientId)));
+                Query += _val(patientId);
 
                 //Using NpgsqlCommand and Query create connection with database
                 NpgsqlCommand Command = new(Query, sqlConnection);

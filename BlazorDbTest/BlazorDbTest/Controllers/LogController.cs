@@ -93,7 +93,7 @@ namespace BlazorDbTest.Controllers {
         utilities.CreateDir(dirPath);
 
         // 当日のログファイルをコピーしてフォルダに保存
-        var errLogFilePath = dirPath + "/" + logFilePathBase;
+        var errLogFilePath = dirPath + "/" + utilities.ExtractFileName(logFilePath);
         utilities.CopyFile(logFilePath, errLogFilePath, false);
 
         // エラーダイアログ画像を作成し保存
