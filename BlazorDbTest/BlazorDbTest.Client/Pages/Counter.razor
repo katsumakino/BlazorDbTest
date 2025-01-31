@@ -26,7 +26,7 @@
   protected async Task WriteLogAsync() {
     logInfo.Message = "Clicked: " + currentCount;
     logInfo.Type = "EVENT";
-    logInfo.ErrLevel = "I";
+    logInfo.ErrLevel = "W";
 
     string url = $"api/Log/WriteLog/";
 
@@ -57,12 +57,12 @@
   }
 
   public class LogInfo {
-    public string Type { get; set; } = default!;
-    public string Message { get; set; } = default!;
-    public string ErrLevel { get; set; } = default!;
-    public string SourcePosition { get; set; } = default!;
-    public string SubMessage { get; set; } = default!;
-    public string IPAddress { get; set; } = default!;
-    public string Screenshot { get; set; } = default!;
+    public string Type { get; set; } = default!;            // [種別]
+    public string Message { get; set; } = default!;         // [メッセージ]
+    public string ErrLevel { get; set; } = default!;        // [エラーレベル]
+    public string SourcePosition { get; set; } = default!;  // [ソース位置]
+    public string SubMessage { get; set; } = default!;      // [備考]
+    public string IPAddress { get; set; } = default!;       // [IPアドレス]
+    public string Screenshot { get; set; } = default!;      // [スクリーンショット]
   }
 }

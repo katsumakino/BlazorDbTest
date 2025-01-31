@@ -12,9 +12,9 @@ namespace BlazorDbTest.Controllers {
 
     private string logFilePathBase = $"logs_{DateTime.Now:yyyyMMdd}";
     private string logFilePath = "";
-    private string logDirTopPath = @"C:/test/log/";
+    private string logDirTopPath = @"C:/TomeyApp/AxialManager2/Log/";
     private string logDirPathBase = $"_{DateTime.Now:yyyyMMdd}";
-    private string errLogDirTopPath = @"C:/test/testErr/";
+    private string errLogDirTopPath = @"C:/TomeyApp/AxialManager2/ErrLog/";
     private string errLogDirPathBase = $"_{DateTime.Now:yyyyMMdd_HHmmss}";
     private const int maxFileSize = 1024 * 1024 * 10; // 10MB
     private const int maxFileCount = 30;
