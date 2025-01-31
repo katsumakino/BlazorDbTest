@@ -122,12 +122,12 @@ namespace BlazorDbTest.Controllers {
         }
 
         // 患者情報取得
-        [HttpGet("GetPatientInfo/{patientId}")]
-        public DBTest.PatientInfo GetDBPatientInfo(string patientId) {
+        [HttpGet("GetPatientInfo/{uuid}")]
+        public DBTest.PatientInfo GetDBPatientInfo(string uuid) {
             DBAccess dbAccess = DBAccess.GetInstance();
 
             DBTest.PatientInfo DataSource = new();
-            if (patientId == null || patientId == string.Empty) return DataSource;
+            if (uuid == null || uuid == string.Empty) return DataSource;
 
             try {
                 // PostgreSQL Server 通信接続
@@ -137,9 +137,9 @@ namespace BlazorDbTest.Controllers {
                 string Query = "SELECT * FROM ";
                 Query += _table(DB_TableNames[(int)eDbTable.PATIENT_LIST]);
                 Query += " WHERE ";
-                Query += _col(COLNAME_PatientList[(int)ePatientList.pt_id]);
+                Query += _col(COLNAME_PatientList[(int)ePatientList.pt_uuid]);
                 Query += " = ";
-                Query += _val(patientId);
+                Query += _val(uuid);
 
                 //Using NpgsqlCommand and Query create connection with database
                 NpgsqlCommand Command = new(Query, sqlConnection);
@@ -405,6 +405,7 @@ namespace BlazorDbTest.Controllers {
                                             BirthDate = _objectToDateTime(data[(int)eSearchPatientList.pt_dob]),
                                             Mark = (data[(int)eSearchPatientList.axm_flag] != DBNull.Value) && (bool)data[(int)eSearchPatientList.axm_flag],
                                             SameID = data[(int)eSearchPatientList.axm_same_pt_id].ToString() ?? string.Empty,
+                                            UUID = pt_uuid
                                         },
                                         LatestPicDate = _objectToDateTime(data[(int)eSearchPatientList.exam_datetime]),
                                         LatestRAxial = axial_r,

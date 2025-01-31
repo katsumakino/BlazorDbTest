@@ -47,6 +47,10 @@
     <label>Same ID:</label>
     <InputText @bind-Value="PatientInfoModel.SameID" autocomplete=off />
 </div>
+<div class="part-group">
+  <label>UUID:</label>
+  <InputText @bind-Value="PatientInfoModel.UUID" autocomplete=off />
+</div>
 <div>
     <button @onclick="PatientInfoButtonClick">Register</button>
 </div>
@@ -415,6 +419,15 @@
         StateHasChanged();
     }
 
+  protected async Task GetPatientInfoAsync() {
+    string content = $"api/DBPatientInfo/GetPatientInfo/";
+    content += PatientInfoModel.UUID;
+    PatientInfo info = await HttpClient.GetFromJsonAsync<PatientInfo>(content);
+
+    //画面を更新する
+    StateHasChanged();
+  }
+
     /// <summary>
     /// DBから患者情報を取得
     /// </summary>
@@ -564,6 +577,8 @@
         public int Age { get; set; }                        //年齢
         public DateTime? BirthDate { get; set; }            //生年月日
         public string SameID { get; set; } = default!;      //同一ID
+        public int DeviceID { get; set; }                   //装置種別
+        public string UUID { get; set; } = default!;        //UUID
     }
 
     //性別

@@ -96,6 +96,7 @@
                 <th>All Treatment Type</th>
                 <th>Mark</th>
                 <th>Same ID</th>
+                <th>UUID</th>
             </tr>
         </thead>
         <tbody>
@@ -114,6 +115,7 @@
                     <td>@row.AllTreatName</td>
                     <td>@row.PatientInfo.Mark</td>
                     <td>@row.PatientInfo.SameID</td>
+                    <td>@row.PatientInfo.UUID</td>
                 </tr>
             }
         </tbody>
@@ -175,6 +177,7 @@
         public DateTime? BirthDate { get; set; }            //生年月日
         public string SameID { get; set; } = default!;      //同一ID
         public int DeviceID { get; set; }                   //装置種別
+        public string UUID { get; set; } = default!;        //UUID
     }
 
     //性別
