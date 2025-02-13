@@ -244,7 +244,7 @@ namespace BlazorDbTest.Controllers {
                     // クエリコマンド実行
                     string Query1 = "WITH RankedExams AS (SELECT *,RANK() OVER (PARTITION BY {0} ORDER BY {1} DESC) AS rank FROM {2}) ";
                     string Query = string.Format(Query1, _col(COLNAME_ExamList[(int)eExamList.pt_uuid])
-                        , _col(COLNAME_ExamList[(int)eExamList.exam_datetime])
+                        , _col(COLNAME_ExamList[(int)eExamList.measured_at])
                         , _table(DB_TableNames[(int)eDbTable.EXAM_LIST]));
                     string Query2 = "SELECT DISTINCT ON({0}{1}) ";
                     Query += string.Format(Query2, tblPatientList, _dotcol(COLNAME_PatientList[(int)ePatientList.pt_uuid]));
@@ -333,7 +333,7 @@ namespace BlazorDbTest.Controllers {
                     }
                     // 最新測定日範囲検索
                     if (patientSearch.IsExamDate == true) {
-                        Query += string.Format(Query7, tblExamList, _dotcol(COLNAME_ExamList[(int)eExamList.exam_datetime])
+                        Query += string.Format(Query7, tblExamList, _dotcol(COLNAME_ExamList[(int)eExamList.measured_at])
                                                      , (patientSearch.ExamDateMin != null) ? patientSearch.ExamDateMin : DateTime.Today
                                                      , (patientSearch.ExamDateMax != null) ? patientSearch.ExamDateMax : DateTime.Today);
                     }
@@ -674,7 +674,7 @@ namespace BlazorDbTest.Controllers {
             COLNAME_PatientList[(int)ePatientList.pt_dob],
             COLNAME_AxmPatientList[(int)eAxmPatientList.axm_flag],
             COLNAME_AxmPatientList[(int)eAxmPatientList.axm_same_pt_id],
-            COLNAME_ExamList[(int)eExamList.exam_datetime],
+            COLNAME_ExamList[(int)eExamList.measured_at],
             COLNAME_AxmCommentList[(int)eAxmComment.description],
             COLNAME_ExamList[(int)eExamList.examtype_id]
         };

@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Net.Sockets;
 using System.Net;
-using System.Text.Json;
 using static BlazorDbTest.Client.Pages.Counter;
 
 namespace BlazorDbTest.Controllers {
@@ -25,7 +24,13 @@ namespace BlazorDbTest.Controllers {
       if (conditions == null) return;
 
       try {
-        conditions.IPAddress = GetClientIpAddress();
+        if (System.OperatingSystem.IsBrowser()) {
+          // Client側のIPアドレスを取得
+          conditions.IPAddress = GetClientIpAddress();
+        } else {
+          // Server側のIPアドレスを取得
+          conditions.IPAddress = GetLocalIPAddress().Result;
+        }
 
         Log(conditions);
 
@@ -37,7 +42,7 @@ namespace BlazorDbTest.Controllers {
       }
     }
 
-    private void Log(Counter.LogInfo info) {
+      private void Log(Counter.LogInfo info) {
       try {
         CreateLogFile();
         using (StreamWriter writer = new StreamWriter(logFilePath, append: true)) {
@@ -101,12 +106,12 @@ namespace BlazorDbTest.Controllers {
         var filePath = dirPath + "/" + filePathBase;
         var imageBytes = Convert.FromBase64String(errImg);
         await System.IO.File.WriteAllBytesAsync(filePath, imageBytes);
-      } catch {
+			} catch {
       }
     }
 
-    // ローカルIPアドレス(Server側)を取得
-    public static async Task<string> GetLocalIPAddress() {
+		// ローカルIPアドレス(Server側)を取得
+		public static async Task<string> GetLocalIPAddress() {
       string localIP = "NULL";
       try {
         var host = await Dns.GetHostEntryAsync(Dns.GetHostName());

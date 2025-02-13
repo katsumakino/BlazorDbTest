@@ -123,10 +123,10 @@ namespace BlazorDbTest.Controllers {
                 examrec.exam_operator_firstname = string.Empty;
 
                 // デバイスID
-                examrec.device_id = Select_Device_ID(sqlConnection, "AxialManager2");
+                examrec.device_id = Select_Device_ID(sqlConnection, "AXM2");
 
                 // 検査日時
-                examrec.exam_datetime = exam_datetime;
+                examrec.measured_at = exam_datetime;
 
                 // レコード更新日、作成日
                 var dateNow = DateTime.Now;
@@ -135,7 +135,7 @@ namespace BlazorDbTest.Controllers {
 
                 // todo: ↓の条件に装置種別=AxMも追加
                 // 検査タイプID、検査眼ID、検査日時で検索し該当するものがあればExamIDを変更
-                retExamId = Select_ExamID_by_PK_and_ExamDateTime(sqlConnection, examrec.examtype_id, examrec.eye_id, (DateTime)examrec.exam_datetime);
+                retExamId = Select_ExamID_by_PK_and_ExamDateTime(sqlConnection, examrec.examtype_id, examrec.eye_id, (DateTime)examrec.measured_at, examrec.device_id);
                 if (retExamId != -1) { examrec.exam_id = retExamId; } else { retExamId = examrec.exam_id; }
 
                 // Insert(Upsert)実施
@@ -183,7 +183,7 @@ namespace BlazorDbTest.Controllers {
                 npgsqlCommand.Parameters.AddWithValue(COLNAME_ExamList[(int)eExamList.exam_operator_lastname], aExamRec.exam_operator_lastname);
                 npgsqlCommand.Parameters.AddWithValue(COLNAME_ExamList[(int)eExamList.exam_operator_firstname], aExamRec.exam_operator_firstname);
                 npgsqlCommand.Parameters.AddWithValue(COLNAME_ExamList[(int)eExamList.device_id], aExamRec.device_id);
-                npgsqlCommand.Parameters.AddWithValue(COLNAME_ExamList[(int)eExamList.exam_datetime], _DateTimeToObject(aExamRec.exam_datetime));
+                npgsqlCommand.Parameters.AddWithValue(COLNAME_ExamList[(int)eExamList.measured_at], _DateTimeToObject(aExamRec.measured_at));
                 npgsqlCommand.Parameters.AddWithValue(COLNAME_ExamList[(int)eExamList.updated_at], _DateTimeToObject(aExamRec.updated_at));
                 npgsqlCommand.Parameters.AddWithValue(COLNAME_ExamList[(int)eExamList.created_at], _DateTimeToObject(aExamRec.created_at));
                 num = npgsqlCommand.ExecuteNonQuery();
@@ -277,7 +277,7 @@ namespace BlazorDbTest.Controllers {
             return result;
         }
 
-        public static int Select_ExamID_by_PK_and_ExamDateTime(NpgsqlConnection sqlConnection, int examtypeId, int eyeId, DateTime dtExam) {
+        public static int Select_ExamID_by_PK_and_ExamDateTime(NpgsqlConnection sqlConnection, int examtypeId, int eyeId, DateTime dtExam, int deviceId) {
             int result = -1;
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.Append("select ");
@@ -293,9 +293,13 @@ namespace BlazorDbTest.Controllers {
             stringBuilder.Append("= ");
             stringBuilder.Append(_val(eyeId.ToString()));
             stringBuilder.Append(" and ");
-            stringBuilder.Append(_col(COLNAME_ExamList[(int)eExamList.exam_datetime]));
+            stringBuilder.Append(_col(COLNAME_ExamList[(int)eExamList.measured_at]));
             stringBuilder.Append("= ");
             stringBuilder.Append(_val(dtExam.ToString("yyyy-MM-dd HH:mm:ss")));
+            stringBuilder.Append(" and ");
+            stringBuilder.Append(_col(COLNAME_ExamList[(int)eExamList.device_id]));
+            stringBuilder.Append("= ");
+            stringBuilder.Append(_val(deviceId.ToString()));
             stringBuilder.Append(";");
             using NpgsqlCommand npgsqlCommand = new NpgsqlCommand(stringBuilder.ToString(), sqlConnection);
             using NpgsqlDataReader npgsqlDataReader = npgsqlCommand.ExecuteReader();
@@ -447,6 +451,45 @@ namespace BlazorDbTest.Controllers {
             return result;
         }
 
+        public static double? _objectToDouble(object oColumnRes) {
+            double result = 0.0;
+            if (oColumnRes == null) {
+                return null;
+            }
+
+            if (!double.TryParse(oColumnRes.ToString(), out result)) {
+                return null;
+            }
+
+            return result;
+        }
+
+        public static List<double?> _objectToDoubleList(object oColumnRes) {
+            List<double?> list = new List<double?>();
+            
+            if (oColumnRes is float[] floatArray) {
+                foreach (float num in floatArray) {
+                    double? num2 = _objectToDouble((double)num);
+                    if (!num2.HasValue) {
+                        list.Add(null);
+                    } else {
+                        list.Add(Math.Round(num2.Value, 2));
+                    }
+                }
+            } else if (oColumnRes is double?[] doubleArray) {
+                foreach (double? num in doubleArray) {
+                    double? num2 = _objectToDouble(num);
+                    if (!num2.HasValue) {
+                        list.Add(null);
+                    } else {
+                        list.Add(Math.Round(num2.Value, 2));
+                    }
+                }
+            }
+
+            return list;
+        }
+
         public static string _col(string aColumn) {
             return " \"" + aColumn + "\" ";
         }
@@ -493,7 +536,7 @@ namespace BlazorDbTest.Controllers {
         ];
 
         public static string[] COLNAME_PatientList = ["pt_uuid", "pt_id", "pt_lastname", "pt_firstname", "gender_id", "pt_dob", "pt_description", "updated_at", "created_at"];
-        public static string[] COLNAME_ExamList = ["exam_id", "examtype_id", "eye_id", "pt_uuid", "exam_operator_lastname", "exam_operator_firstname", "device_id", "exam_datetime", "updated_at", "created_at"];
+        public static string[] COLNAME_ExamList = ["exam_id", "examtype_id", "eye_id", "pt_uuid", "exam_operator_lastname", "exam_operator_firstname", "device_id", "measured_at", "updated_at", "created_at"];
         public static string[] COLNAME_MstGendersList = ["gender_id", "gender_type", "updated_at", "created_at"];
         public static string[] COLNAME_MstExamTypesList = ["examtype_id", "examtype_type", "updated_at", "created_at"];
         public static string[] COLNAME_MstEyesList = ["eye_id", "eye_type", "updated_at", "created_at"];
@@ -568,7 +611,7 @@ namespace BlazorDbTest.Controllers {
             exam_operator_lastname,
             exam_operator_firstname,
             device_id,
-            exam_datetime,
+            measured_at,
             updated_at,
             created_at,
             MAX
@@ -603,7 +646,7 @@ namespace BlazorDbTest.Controllers {
 
             public int device_id { get; set; }
 
-            public DateTime? exam_datetime { get; set; }
+            public DateTime? measured_at { get; set; }
 
             public DateTime? updated_at { get; set; }
 

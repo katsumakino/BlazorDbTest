@@ -3,6 +3,7 @@
 @inject IJSRuntime JS
 @using System.Text.Json;
 @using System.Runtime.CompilerServices;
+@using BlazorDbTest.Common;
 
 <PageTitle>Counter</PageTitle>
 
@@ -26,34 +27,29 @@
   protected async Task WriteLogAsync() {
     logInfo.Message = "Clicked: " + currentCount;
     logInfo.Type = "EVENT";
-    logInfo.ErrLevel = "W";
+    logInfo.ErrLevel = "I";
 
     string url = $"api/Log/WriteLog/";
 
     if(logInfo.ErrLevel == "W") {
-      logInfo.Screenshot = await GetScreenshotUrl();
+      logInfo.Screenshot = await LogCommon.GetScreenshotUrl(JS);
     } else {
       logInfo.Screenshot = string.Empty;
     }    
 
-    logInfo.SourcePosition = GetCallerFIlePath();
+    logInfo.SourcePosition = LogCommon.GetCallerFIlePath();
 
     var conditions = JsonSerializer.Serialize(logInfo);
     var content = new StringContent(conditions, System.Text.Encoding.UTF8, "application/json");
 
-    var response = await HttpClient.PostAsync(url, content);
-  }
-
-  // ファイル名とソースコードの実行位置を取得する関数(ログ記録用) 
-  public static string GetCallerFIlePath([CallerFilePath] string path = "", [CallerLineNumber] int lineNumber = 0) {
-    return $"{path}:{lineNumber}";
-  }
-
-  // スクリーンショットを取得する関数
-  private async Task<string> GetScreenshotUrl() {
-    var screenshotDataUrl = await JS.InvokeAsync<string>("captureScreenshot");
-    var base64Data = screenshotDataUrl.Split(',')[1];
-    return base64Data;
+    try {
+      var response = await HttpClient.PostAsync(url, content);
+      response.EnsureSuccessStatusCode(); // ステータスコードが成功かどうかを確認
+    } catch (HttpRequestException ex) {
+      Console.Error.WriteLine($"Request error: {ex.Message}");
+    } catch (InvalidOperationException ex) {
+      Console.Error.WriteLine($"Invalid operation: {ex.Message}");
+    }
   }
 
   public class LogInfo {

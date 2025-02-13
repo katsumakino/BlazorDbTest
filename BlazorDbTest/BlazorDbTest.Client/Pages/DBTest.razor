@@ -301,123 +301,123 @@
 }
 
 @code {
-    public readonly string EmptyText = Convert.ToBase64String(Encoding.UTF8.GetBytes("Noi_Npu_Tva_Lue"));   // todo: Common定義
+  public readonly string EmptyText = Convert.ToBase64String(Encoding.UTF8.GetBytes("Noi_Npu_Tva_Lue"));   // todo: Common定義
 
-    private PatientInfo[]? patientList;
-    private AxialList[]? axialList;
-    private TreatmentData[]? treatmentList;
-    private TreatmentMethodSetting[]? treatmentMethodList;
-    private AxmComment[]? axmCommentList;
-    private string MinDate = new DateTime(1990, 1, 1).ToString("yyyy-MM-dd");
-    private string? messagetext;
+  private PatientInfo[]? patientList;
+  private AxialList[]? axialList;
+  private TreatmentData[]? treatmentList;
+  private TreatmentMethodSetting[]? treatmentMethodList;
+  private AxmComment[]? axmCommentList;
+  private string MinDate = new DateTime(1990, 1, 1).ToString("yyyy-MM-dd");
+  private string? messagetext;
 
-    [SupplyParameterFromForm]
-    private PatientInfo PatientInfoModel { get; set; } = default!;
-    private AxialList AxialModel { get; set; } = default!;
-    private TreatmentData TreatmentModel { get; set; } = default!;
-    private TreatmentMethodSetting TreatmentMethodModel { get; set; } = default!;
-    private AxmComment AxmCommentModel { get; set; } = default!;
-    private EditContext editContextPatientInfo { get; set; } = default!;
-    private EditContext editContextAxmPatientList { get; set; } = default!;
-    private EditContext editContextAxial { get; set; } = default!;
-    private EditContext editContextTreatmentMethod { get; set; } = default!;
-    private EditContext editContextTreatment { get; set; } = default!;
-    private EditContext editContextAxmComment { get; set; } = default!;
-    private ValidationMessageStore ValidationMessageStore { get; set; } = default!;
+  [SupplyParameterFromForm]
+  private PatientInfo PatientInfoModel { get; set; } = default!;
+  private AxialList AxialModel { get; set; } = default!;
+  private TreatmentData TreatmentModel { get; set; } = default!;
+  private TreatmentMethodSetting TreatmentMethodModel { get; set; } = default!;
+  private AxmComment AxmCommentModel { get; set; } = default!;
+  private EditContext editContextPatientInfo { get; set; } = default!;
+  private EditContext editContextAxmPatientList { get; set; } = default!;
+  private EditContext editContextAxial { get; set; } = default!;
+  private EditContext editContextTreatmentMethod { get; set; } = default!;
+  private EditContext editContextTreatment { get; set; } = default!;
+  private EditContext editContextAxmComment { get; set; } = default!;
+  private ValidationMessageStore ValidationMessageStore { get; set; } = default!;
 
-    protected override async Task OnInitializedAsync() {
-        PatientInfoModel ??= new();
-        PatientInfoModel.Gender = Gender.other;
-        PatientInfoModel.BirthDate = DateTime.Today;
-        editContextPatientInfo = new(PatientInfoModel);
+  protected override async Task OnInitializedAsync() {
+    PatientInfoModel ??= new();
+    PatientInfoModel.Gender = Gender.other;
+    PatientInfoModel.BirthDate = DateTime.Today;
+    editContextPatientInfo = new(PatientInfoModel);
 
-        AxialModel ??= new();
-        AxialModel.ExamDateTime = DateTime.Now;
-        editContextAxial = new(AxialModel);
+    AxialModel ??= new();
+    AxialModel.ExamDateTime = DateTime.Now;
+    editContextAxial = new(AxialModel);
 
-        TreatmentMethodModel ??= new();
-        TreatmentMethodModel.RGBAColor = new();
-        editContextTreatmentMethod = new(TreatmentMethodModel);
+    TreatmentMethodModel ??= new();
+    TreatmentMethodModel.RGBAColor = new();
+    editContextTreatmentMethod = new(TreatmentMethodModel);
 
-        TreatmentModel ??= new();
-        TreatmentModel.StartDateTime = DateTime.Now;
-        TreatmentModel.EndDateTime = DateTime.Now;
-        editContextTreatment = new(TreatmentModel);
+    TreatmentModel ??= new();
+    TreatmentModel.StartDateTime = DateTime.Now;
+    TreatmentModel.EndDateTime = DateTime.Now;
+    editContextTreatment = new(TreatmentModel);
 
-        AxmCommentModel ??= new();
-        AxmCommentModel.CommentType = AxmCommentType.none;
-        AxmCommentModel.ExamDateTime = DateTime.Now;
-        editContextAxmComment = new(AxmCommentModel);
+    AxmCommentModel ??= new();
+    AxmCommentModel.CommentType = AxmCommentType.none;
+    AxmCommentModel.ExamDateTime = DateTime.Now;
+    editContextAxmComment = new(AxmCommentModel);
 
-        // API を呼び出してデータを取得
-        patientList = await HttpClient.GetFromJsonAsync<PatientInfo[]>("api/DBPatientInfo/GetPatientInfoList");
-    }
+    // API を呼び出してデータを取得
+    patientList = await HttpClient.GetFromJsonAsync<PatientInfo[]>("api/DBPatientInfo/GetPatientInfoList");
+  }
 
-    void PatientInfoButtonClick() {
-        // 患者情報をDBに書込み
-        Task.Run(() => SetPatientInfoAsync());
-    }
+  void PatientInfoButtonClick() {
+    // 患者情報をDBに書込み
+    Task.Run(() => SetPatientInfoAsync());
+  }
 
-    void AxialButtonClick() {
-        // 眼軸長測定値をDBに書込み
-        Task.Run(() => SetAxialDataAsync());
-    }
+  void AxialButtonClick() {
+    // 眼軸長測定値をDBに書込み
+    Task.Run(() => SetAxialDataAsync());
+  }
 
-    void TreatmentMethodButtonClick() {
-        // 治療方法データをDBに書込み
-        Task.Run(() => SetTreatmentMethodAsync());
-    }
+  void TreatmentMethodButtonClick() {
+    // 治療方法データをDBに書込み
+    Task.Run(() => SetTreatmentMethodAsync());
+  }
 
-    void TreatmentButtonClick() {
-        // 治療状況データをDBに書込み
-        Task.Run(() => SetTreatmentDataAsync());
-    }
+  void TreatmentButtonClick() {
+    // 治療状況データをDBに書込み
+    Task.Run(() => SetTreatmentDataAsync());
+  }
 
-    void AxmCommentButtonClick() {
-        // 治療状況リスト更新
-        Task.Run(() => SetAxmCommentListAsync());
-    }
+  void AxmCommentButtonClick() {
+    // 治療状況リスト更新
+    Task.Run(() => SetAxmCommentListAsync());
+  }
 
-    void UpdatePatientListButtonClick() {
-        // 患者情報リスト更新
-        Task.Run(() => GetPatientListAsync());
-    }
+  void UpdatePatientListButtonClick() {
+    // 患者情報リスト更新
+    Task.Run(() => GetPatientListAsync());
+  }
 
-    void UpdateAxialListButtonClick() {
-        // 眼軸長測定値リスト更新
-        Task.Run(() => GetAxialListAsync());
-    }
+  void UpdateAxialListButtonClick() {
+    // 眼軸長測定値リスト更新
+    Task.Run(() => GetAxialListAsync());
+  }
 
-    void UpdateTreatmentMethodListButtonClick() {
-        // 治療方法リスト更新
-        Task.Run(() => GetTreatmentMethodListAsync());
-    }
+  void UpdateTreatmentMethodListButtonClick() {
+    // 治療方法リスト更新
+    Task.Run(() => GetTreatmentMethodListAsync());
+  }
 
-    void UpdateTreatmentListButtonClick() {
-        // 治療状況リスト更新
-        Task.Run(() => GetTreatmentDataListAsync());
-    }
+  void UpdateTreatmentListButtonClick() {
+    // 治療状況リスト更新
+    Task.Run(() => GetTreatmentDataListAsync());
+  }
 
-    void UpdateAxmCommentListButtonClick() {
-        // 治療状況リスト更新
-        Task.Run(() => GetAxmCommentListAsync());
-    }
+  void UpdateAxmCommentListButtonClick() {
+    // 治療状況リスト更新
+    Task.Run(() => GetAxmCommentListAsync());
+  }
 
-    /// <summary>
-    /// DBへ患者情報を書込み
-    /// </summary>
-    /// <returns></returns>
-    protected async Task SetPatientInfoAsync() {
-        string content = $"api/DBPatientInfo/SetPatientInfo/";
-        content += JsonSerializer.Serialize(PatientInfoModel);
+  /// <summary>
+  /// DBへ患者情報を書込み
+  /// </summary>
+  /// <returns></returns>
+  protected async Task SetPatientInfoAsync() {
+    string content = $"api/DBPatientInfo/SetPatientInfo/";
+    content += JsonSerializer.Serialize(PatientInfoModel);
 
-        await HttpClient.GetAsync(content);
+    await HttpClient.GetAsync(content);
 
-        patientList = await HttpClient.GetFromJsonAsync<PatientInfo[]>("api/DBPatientInfo/GetPatientInfoList");
+    patientList = await HttpClient.GetFromJsonAsync<PatientInfo[]>("api/DBPatientInfo/GetPatientInfoList");
 
-        //画面を更新する
-        StateHasChanged();
-    }
+    //画面を更新する
+    StateHasChanged();
+  }
 
   protected async Task GetPatientInfoAsync() {
     string content = $"api/DBPatientInfo/GetPatientInfo/";
@@ -428,197 +428,197 @@
     StateHasChanged();
   }
 
-    /// <summary>
-    /// DBから患者情報を取得
-    /// </summary>
-    /// <returns></returns>
-    protected async Task GetPatientListAsync() {
-        patientList = await HttpClient.GetFromJsonAsync<PatientInfo[]>("api/DBPatientInfo/GetPatientInfoList");
+  /// <summary>
+  /// DBから患者情報を取得
+  /// </summary>
+  /// <returns></returns>
+  protected async Task GetPatientListAsync() {
+    patientList = await HttpClient.GetFromJsonAsync<PatientInfo[]>("api/DBPatientInfo/GetPatientInfoList");
 
-        //画面を更新する
-        StateHasChanged();
+    //画面を更新する
+    StateHasChanged();
+  }
+
+  ////////////////////////////////////////////////////////////////////
+  // todo: 患者リストを取得
+  // ID,名前,性別,年齢: PATIENT_LIST
+  // 最新測定日,最新眼軸長: EXAM_OPTAXIAL
+  // - ソートして先頭に来るデータを取得(右左ごと)
+  // - 右左の測定日が同じなら両方表示
+  // フラグ,治療方法,コメント: AXM_TABLE
+  ////////////////////////////////////////////////////////////////////
+  protected async Task GetPatientDataListAsync() {
+    // todo:
+
+    //画面を更新する
+    StateHasChanged();
+  }
+
+  /// <summary>
+  /// DBへ眼軸長測定値を書込み
+  /// </summary>
+  /// <returns></returns>
+  protected async Task SetAxialDataAsync() {
+    AxialModel.PatientID = PatientInfoModel.ID;
+
+    string content = $"api/DBAxialData/SetOptAxial/";
+    content += JsonSerializer.Serialize(AxialModel);
+
+    await HttpClient.GetAsync(content);
+  }
+
+  /// <summary>
+  /// DBから眼軸長測定値を取得
+  /// </summary>
+  /// <returns></returns>
+  protected async Task GetAxialListAsync() {
+    string content = $"api/DBAxialData/GetOptAxialList/";
+    content += PatientInfoModel.ID;
+
+    axialList = await HttpClient.GetFromJsonAsync<AxialList[]>(content);
+
+    //画面を更新する
+    StateHasChanged();
+  }
+
+  /// <summary>
+  /// DBへ治療方法を書込み
+  /// </summary>
+  /// <returns></returns>
+  protected async Task SetTreatmentMethodAsync() {
+    string content = $"api/DBTreatment/SetTreatmentMethod/";
+    content += JsonSerializer.Serialize(TreatmentMethodModel);
+
+    await HttpClient.GetAsync(content);
+  }
+
+  /// <summary>
+  /// DBから治療方法を取得
+  /// </summary>
+  /// <returns></returns>
+  protected async Task GetTreatmentMethodListAsync() {
+    string content = $"api/DBTreatment/GetTreatmentMethodList";
+    treatmentMethodList = await HttpClient.GetFromJsonAsync<TreatmentMethodSetting[]>(content);
+
+    //画面を更新する
+    StateHasChanged();
+  }
+
+  /// <summary>
+  /// DBへ治療方法を書込み
+  /// </summary>
+  /// <returns></returns>
+  protected async Task SetTreatmentDataAsync() {
+    TreatmentModel.TreatID = TreatmentMethodModel.ID;
+
+    string content = $"api/DBTreatment/SetTreatment/";
+    content += PatientInfoModel.ID;
+    content += "/";
+    content += JsonSerializer.Serialize(TreatmentModel);
+
+    await HttpClient.GetAsync(content);
+  }
+
+  /// <summary>
+  /// DBから治療方法を取得
+  /// </summary>
+  /// <returns></returns>
+  protected async Task GetTreatmentDataListAsync() {
+    string content = $"api/DBTreatment/GetTreatmentList/";
+    content += PatientInfoModel.ID;
+
+    treatmentList = await HttpClient.GetFromJsonAsync<TreatmentData[]>(content);
+
+    //画面を更新する
+    StateHasChanged();
+  }
+
+  /// <summary>
+  /// DBへコメントを登録
+  /// </summary>
+  /// <returns></returns>
+  protected async Task SetAxmCommentListAsync() {
+    string content = $"api/DBAxmComment/SetAxmComment/";
+    content += PatientInfoModel.ID;
+    content += "/";
+    content += JsonSerializer.Serialize(AxmCommentModel);
+    await HttpClient.GetAsync(content);
+  }
+
+  /// <summary>
+  /// DBからコメントを取得
+  /// </summary>
+  /// <returns></returns>
+  protected async Task GetAxmCommentListAsync() {
+    string content = $"api/DBAxmComment/GetDBAxmCommentList/";
+    content += PatientInfoModel.ID;
+
+    axmCommentList = await HttpClient.GetFromJsonAsync<AxmComment[]>(content);
+
+    //画面を更新する
+    StateHasChanged();
+  }
+
+  // 測定日時の日付部分のみ取得
+  private DateTime _DateTimeToDate(DateTime? input) {
+    if (input == null) {
+      return DateTime.MinValue;
     }
+    return (DateTime)input.Value.Date;
+  }
 
-    ////////////////////////////////////////////////////////////////////
-    // todo: 患者リストを取得
-    // ID,名前,性別,年齢: PATIENT_LIST
-    // 最新測定日,最新眼軸長: EXAM_OPTAXIAL
-    // - ソートして先頭に来るデータを取得(右左ごと)
-    // - 右左の測定日が同じなら両方表示
-    // フラグ,治療方法,コメント: AXM_TABLE
-    ////////////////////////////////////////////////////////////////////
-    protected async Task GetPatientDataListAsync() {
-        // todo:
+  //患者情報
+  public class PatientInfo {
+    public bool Mark { get; set; }                      //お気に入り(仮)
+    public string ID { get; set; } = default!;
+    public string FamilyName { get; set; } = default!;  //患者姓
+    public string FirstName { get; set; } = default!;   //患者名
+    public Gender Gender { get; set; }                  //性別
+    public int Age { get; set; }                        //年齢
+    public DateTime? BirthDate { get; set; }            //生年月日
+    public string SameID { get; set; } = default!;      //同一ID
+    public int DeviceID { get; set; }                   //装置種別
+    public string UUID { get; set; } = default!;        //UUID
+  }
 
-        //画面を更新する
-        StateHasChanged();
-    }
+  //性別
+  public enum Gender {
+    none,
+    male,
+    female,
+    other, //未指定
+  }
 
-    /// <summary>
-    /// DBへ眼軸長測定値を書込み
-    /// </summary>
-    /// <returns></returns>
-    protected async Task SetAxialDataAsync() {
-        AxialModel.PatientID = PatientInfoModel.ID;
+  //検索結果
+  class PatientSerch {
+    public PatientInfo PatientInfo { get; set; } = default!;    //患者情報
+    public DateTime LatestPicDate { get; set; }                 //最新撮影日
+    public double LatestRAxial { get; set; }                    //最新右眼軸長
+    public double LatestLAxial { get; set; }                    //最新左眼軸長
+    public string PatientComment { get; set; } = default!;      //患者コメント
+    public string AllTreatName { get; set; } = default!;        //治療名称一覧
+  }
 
-        string content = $"api/DBAxialData/SetOptAxial/";
-        content += JsonSerializer.Serialize(AxialModel);
+  //眼軸長(データ表示/書込に使用するもの)
+  public class AxialList {
+    public string PatientID { get; set; } = default!;   //患者ID
+    public string RExamID { get; set; } = default!;     //右測定データID
+    public string LExamID { get; set; } = default!;     //左測定データID
+    public double RAxial { get; set; }                  //右眼軸長
+    public double LAxial { get; set; }                  //左眼軸長
+    public DateTime? ExamDateTime { get; set; }         //測定日
+    public bool IsRManualInput { get; set; }            //右眼手入力フラグ
+    public bool IsLManualInput { get; set; }            //左眼手入力フラグ
+  }
 
-        await HttpClient.GetAsync(content);
-    }
-
-    /// <summary>
-    /// DBから眼軸長測定値を取得
-    /// </summary>
-    /// <returns></returns>
-    protected async Task GetAxialListAsync() {
-        string content = $"api/DBAxialData/GetOptAxialList/";
-        content += PatientInfoModel.ID;
-
-        axialList = await HttpClient.GetFromJsonAsync<AxialList[]>(content);
-
-        //画面を更新する
-        StateHasChanged();
-    }
-
-    /// <summary>
-    /// DBへ治療方法を書込み
-    /// </summary>
-    /// <returns></returns>
-    protected async Task SetTreatmentMethodAsync() {
-        string content = $"api/DBTreatment/SetTreatmentMethod/";
-        content += JsonSerializer.Serialize(TreatmentMethodModel);
-
-        await HttpClient.GetAsync(content);
-    }
-
-    /// <summary>
-    /// DBから治療方法を取得
-    /// </summary>
-    /// <returns></returns>
-    protected async Task GetTreatmentMethodListAsync() {
-        string content = $"api/DBTreatment/GetTreatmentMethodList";
-        treatmentMethodList = await HttpClient.GetFromJsonAsync<TreatmentMethodSetting[]>(content);
-
-        //画面を更新する
-        StateHasChanged();
-    }
-
-    /// <summary>
-    /// DBへ治療方法を書込み
-    /// </summary>
-    /// <returns></returns>
-    protected async Task SetTreatmentDataAsync() {
-        TreatmentModel.TreatID = TreatmentMethodModel.ID;
-
-        string content = $"api/DBTreatment/SetTreatment/";
-        content += PatientInfoModel.ID;
-        content += "/";
-        content += JsonSerializer.Serialize(TreatmentModel);
-
-        await HttpClient.GetAsync(content);
-    }
-
-    /// <summary>
-    /// DBから治療方法を取得
-    /// </summary>
-    /// <returns></returns>
-    protected async Task GetTreatmentDataListAsync() {
-        string content = $"api/DBTreatment/GetTreatmentList/";
-        content += PatientInfoModel.ID;
-
-        treatmentList = await HttpClient.GetFromJsonAsync<TreatmentData[]>(content);
-
-        //画面を更新する
-        StateHasChanged();
-    }
-
-    /// <summary>
-    /// DBへコメントを登録
-    /// </summary>
-    /// <returns></returns>
-    protected async Task SetAxmCommentListAsync() {
-        string content = $"api/DBAxmComment/SetAxmComment/";
-        content += PatientInfoModel.ID;
-        content += "/";
-        content += JsonSerializer.Serialize(AxmCommentModel);
-        await HttpClient.GetAsync(content);
-    }
-
-    /// <summary>
-    /// DBからコメントを取得
-    /// </summary>
-    /// <returns></returns>
-    protected async Task GetAxmCommentListAsync() {
-        string content = $"api/DBAxmComment/GetDBAxmCommentList/";
-        content += PatientInfoModel.ID;
-
-        axmCommentList = await HttpClient.GetFromJsonAsync<AxmComment[]>(content);
-
-        //画面を更新する
-        StateHasChanged();
-    }
-
-    // 測定日時の日付部分のみ取得
-    private DateTime _DateTimeToDate(DateTime? input) {
-        if (input == null) {
-            return DateTime.MinValue;
-        }
-        return (DateTime)input.Value.Date;
-    }
-
-    //患者情報
-    public class PatientInfo {
-        public bool Mark { get; set; }                      //お気に入り(仮)
-        public string ID { get; set; } = default!;
-        public string FamilyName { get; set; } = default!;  //患者姓
-        public string FirstName { get; set; } = default!;   //患者名
-        public Gender Gender { get; set; }                  //性別
-        public int Age { get; set; }                        //年齢
-        public DateTime? BirthDate { get; set; }            //生年月日
-        public string SameID { get; set; } = default!;      //同一ID
-        public int DeviceID { get; set; }                   //装置種別
-        public string UUID { get; set; } = default!;        //UUID
-    }
-
-    //性別
-    public enum Gender {
-        none,
-        male,
-        female,
-        other, //未指定
-    }
-
-    //検索結果
-    class PatientSerch {
-        public PatientInfo PatientInfo { get; set; } = default!;    //患者情報
-        public DateTime LatestPicDate { get; set; }                 //最新撮影日
-        public double LatestRAxial { get; set; }                    //最新右眼軸長
-        public double LatestLAxial { get; set; }                    //最新左眼軸長
-        public string PatientComment { get; set; } = default!;      //患者コメント
-        public string AllTreatName { get; set; } = default!;        //治療名称一覧
-    }
-
-    //眼軸長(データ表示/書込に使用するもの)
-    public class AxialList {
-        public string PatientID { get; set; } = default!;   //患者ID
-        public string RExamID { get; set; } = default!;     //右測定データID
-        public string LExamID { get; set; } = default!;     //左測定データID
-        public double RAxial { get; set; }                  //右眼軸長
-        public double LAxial { get; set; }                  //左眼軸長
-        public DateTime? ExamDateTime { get; set; }         //測定日
-        public bool IsRManualInput { get; set; }            //右眼手入力フラグ
-        public bool IsLManualInput { get; set; }            //左眼手入力フラグ
-    }
-
-    // DBから取得する眼軸長データ
-    public class AxialData {
-        public string ID { get; set; } = default!;          //測定データID
-        public double Axial { get; set; }                   //眼軸長
-        public EyeType EyeId { get; set; }                  //左右眼情報
-        public int DeviceID { get; set; }                   //測定装置ID
-        public DateTime? ExamDateTime { get; set; }         //測定日時
-    }
+  // DBから取得する眼軸長データ
+  public class AxialData {
+    public string ID { get; set; } = default!;              //測定データID
+    public List<double?> Axial { get; set; } = new List<double?>();    //眼軸長
+    public EyeType EyeId { get; set; }                      //左右眼情報
+    public int DeviceID { get; set; }                       //測定装置ID
+    public DateTime? ExamDateTime { get; set; }             //測定日時
+  }
 
     // todo: 古い定義を使用しているため、修正が必要
     public enum EyeType {
