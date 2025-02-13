@@ -72,6 +72,49 @@
     public DateTime? ExamDateTime { get; set; }                     //測定日時
   }
 
+  // ↓ここから
+
+  public class KrtList {
+    public string PatientID { get; set; } = default!;   //患者ID
+    public string RExamID { get; set; } = default!;     //右測定データID
+    public string LExamID { get; set; } = default!;     //左測定データID
+    public double RK1_mm { get; set; }                  //右角膜曲率半径(弱主経線)[mm]
+    public double RK1_d { get; set; }                   //右角膜曲率屈折力(弱主経線)[D]
+    public double RK2_mm { get; set; }                  //右角膜曲率平均(強主経線)[mm]
+    public double RK2_d { get; set; }                   //右角膜曲率屈折力(強主経線)[D]
+    public double RAveK_mm { get; set; }                //右平均角膜曲率半径[mm]
+    public double RAveK_d { get; set; }                 //右平均角膜曲率屈折力[D]
+    public double RCyl_d { get; set; }                  //右乱視度数[D]
+    public double LK1_mm { get; set; }                  //左角膜曲率半径(弱主経線)[mm]
+    public double LK1_d { get; set; }                   //左角膜曲率屈折力(弱主経線)[D]
+    public double LK2_mm { get; set; }                  //左角膜曲率平均(強主経線)[mm]
+    public double LK2_d { get; set; }                   //左角膜曲率屈折力(強主経線)[D]
+    public double LAveK_mm { get; set; }                //左平均角膜曲率半径[mm]
+    public double LAveK_d { get; set; }                 //左平均角膜曲率屈折力[D]
+    public double LCyl_d { get; set; }                  //左乱視度数[D]
+    public DateTime? ExamDateTime { get; set; }         //測定日時
+    public bool IsRManualInput { get; set; }            //右眼手入力フラグ
+    public bool IsLManualInput { get; set; }            //左眼手入力フラグ
+  }
+
+  //DBから取得するケラトデータ
+  public class KrtData {
+    public string ID { get; set; } = default!;  //測定データID
+    public List<double?> K1_mm { get; set; } = new List<double?>();  //角膜曲率半径(弱主経線)[mm]
+    public List<double?> K1_d { get; set; } = new List<double?>();   //角膜曲率屈折力(弱主経線)[D]
+    public List<double?> K2_mm { get; set; } = new List<double?>();  //角膜曲率平均(強主経線)[mm]
+    public List<double?> K2_d { get; set; } = new List<double?>();   //角膜曲率屈折力(強主経線)[D]
+    public List<double?> AveK_mm { get; set; } = new List<double?>();//平均角膜曲率半径[mm]
+    public List<double?> AveK_d { get; set; } = new List<double?>(); //平均角膜曲率屈折力[D]
+    public List<double?> Cyl_d { get; set; } = new List<double?>();  //乱視度数[D]
+    public EyeType EyeId { get; set; }          //左右眼情報
+    public int DeviceID { get; set; }           //測定装置ID
+    public bool IsExamData { get; set; }        //測定データ有無
+    public DateTime? ExamDateTime { get; set; } //測定日時
+  }
+
+  // ↑ ここまで追加項目
+
   // todo: 古い定義を使用しているため、修正が必要
   public enum EyeType {
     none,

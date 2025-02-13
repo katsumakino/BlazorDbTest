@@ -12,37 +12,75 @@
 </div>
 
 @* KRT *@
-<EditForm EditContext="editContextKeratoList" FormName="keratoform" />
+<EditForm EditContext="editContextKrtList" FormName="krtform" />
 <h4>KRT測定値</h4>
 <div class="part-group">
     <label>右眼 / 左眼</label>
 	<div class="part-group">
 		<label>角膜曲率半径(弱主経線)[mm]:</label>
-    <input type="number" @bind-value=KeratoListModel.RData.K1_mm />
-    <input type="number" @bind-value=KeratoListModel.LData.K1_mm />
+    <input type="number" @bind-value=KrtListModel.RK1_mm />
+    <input type="number" @bind-value=KrtListModel.LK1_mm />
 	</div>
   <div class="part-group">
     <label>角膜曲率半径(強主経線)[mm]:</label>
-    <input type="number" @bind-value=KeratoListModel.RData.K2_mm />
-    <input type="number" @bind-value=KeratoListModel.LData.K2_mm />
+    <input type="number" @bind-value=KrtListModel.RK2_mm />
+    <input type="number" @bind-value=KrtListModel.LK2_mm />
   </div>
   <div class="part-group">
 		<label>乱視度数[°]:</label>
-		<input type="number" @bind-value=KeratoListModel.RData.Cyl_d />
-		<input type="number" @bind-value=KeratoListModel.LData.Cyl_d />
+		<input type="number" @bind-value=KrtListModel.RCyl_d />
+		<input type="number" @bind-value=KrtListModel.LCyl_d />
   </div>
 </div>
 <div>
   <button @onclick="KrtRegisterButtonClick">Register</button>
   <button @onclick="KrtViewButtonClick">View</button>
 </div>
+@if (krtList == null) {
+  <p><em>Loading...</em></p>
+} else {
+  <table class="table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>K1(R)</th>
+        <th>K1(L)</th>
+        <th>K2(R)</th>
+        <th>K2(L)</th>
+        <th>AveK(R)</th>
+        <th>AveK(L)</th>
+        <th>Cyl(R)</th>
+        <th>Cyl(L)</th>
+        <th>Exam Date</th>
+      </tr>
+    </thead>
+    <tbody>
+      @foreach (var krt in krtList) {
+        <tr>
+          <td>@krt.PatientID</td>
+          <td>@krt.RK1_mm</td>
+          <td>@krt.LK1_mm</td>
+          <td>@krt.RK2_mm</td>
+          <td>@krt.LK2_mm</td>
+          <td>@krt.RAveK_mm</td>
+          <td>@krt.LAveK_mm</td>
+          <td>@krt.RCyl_d</td>
+          <td>@krt.LCyl_d</td>
+          <td>@krt.ExamDateTime</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}
 
 @code {
+    private KrtList[]? krtList;
+
   [SupplyParameterFromForm]
   private PatientInfo PatientInfoModel { get; set; } = default!;
-  private KeratoList KeratoListModel { get; set; } = default!;
+  private KrtList KrtListModel { get; set; } = default!;
   private EditContext editContextPatientInfo { get; set; } = default!;
-  private EditContext editContextKeratoList { get; set; } = default!;
+  private EditContext editContextKrtList { get; set; } = default!;
 
   protected override async Task OnInitializedAsync() {
     PatientInfoModel ??= new();
@@ -50,70 +88,44 @@
     PatientInfoModel.BirthDate = DateTime.Today;
     editContextPatientInfo = new(PatientInfoModel);
 
-    KeratoListModel ??= new();
-    KeratoListModel.RData = new();
-    KeratoListModel.RData.ExamDateTime = DateTime.Now;
-    KeratoListModel.LData = new();
-    KeratoListModel.LData.ExamDateTime = DateTime.Now;
-    editContextKeratoList = new(KeratoListModel);
+    KrtListModel ??= new();
+    KrtListModel.ExamDateTime = DateTime.Now;
+    editContextKrtList = new(KrtListModel);
   }
 
   void KrtRegisterButtonClick() {
-		
+    Task.Run(() => SetKrtDataAsync());
 	}
+
+  /// <summary>
+  /// DBへケラト測定値を書込み
+  /// </summary>
+  /// <returns></returns>
+  protected async Task SetKrtDataAsync() {
+    KrtListModel.PatientID = PatientInfoModel.ID;
+
+    string content = $"api/DBKrtData/SetKrt/";
+    content += JsonSerializer.Serialize(KrtListModel);
+
+    await HttpClient.GetAsync(content);
+  }
 
   void KrtViewButtonClick() {
-
+    Task.Run(() => GetKrtListAsync());
   }
 
-  //患者情報
-  public class PatientInfo {
-    public bool Mark { get; set; }                      //お気に入り(仮)
-    public string ID { get; set; } = default!;
-    public string FamilyName { get; set; } = default!;  //患者姓
-    public string FirstName { get; set; } = default!;   //患者名
-    public Gender Gender { get; set; }                  //性別
-    public int Age { get; set; }                        //年齢
-    public DateTime? BirthDate { get; set; }            //生年月日
-    public string SameID { get; set; } = default!;      //同一ID
-    public int DeviceID { get; set; }                   //装置種別
-    public string UUID { get; set; } = default!;        //UUID
+  /// <summary>
+  /// DBからケラト測定値を取得
+  /// </summary>
+  /// <returns></returns>
+  protected async Task GetKrtListAsync() {
+    string content = $"api/DBKrtData/GetKrtList/";
+    content += PatientInfoModel.ID;
+
+    krtList = await HttpClient.GetFromJsonAsync<KrtList[]>(content);
+
+    //画面を更新する
+    StateHasChanged();
   }
 
-  //性別
-  public enum Gender {
-    none,
-    male,
-    female,
-    other, //未指定
-  }
-
-  // todo: 古い定義を使用しているため、修正が必要
-  public enum EyeType {
-    none,
-    right,
-    left,
-    both,
-  }
-
-  public class KeratoList {
-    public string PatientID { get; set; } = default!;   //患者ID
-    public KeratoData RData { get; set; } = default!;   //右眼データ
-    public KeratoData LData { get; set; } = default!;   //左眼データ
-  }
-
-  //DBから取得するケラトデータ
-  public class KeratoData {
-		public string ID { get; set; } = default!;  //測定データID
-    public double K1_mm { get; set; }           //角膜曲率半径(弱主経線)[mm]
-    public double K1_d { get; set; }            //角膜曲率屈折力(弱主経線)[D]
-    public double K2_mm { get; set; }           //角膜曲率平均(強主経線)[mm]
-    public double K2_d { get; set; }            //角膜曲率屈折力(強主経線)[D]
-    public double AveK_mm { get; set; }         //平均角膜曲率半径[mm]
-    public double AveK_d { get; set; }          //平均角膜曲率屈折力[D]
-    public double Cyl_d { get; set; }           //乱視度数[D]
-    public EyeType EyeId { get; set; }          //左右眼情報
-		public int DeviceID { get; set; }           //測定装置ID
-    public DateTime? ExamDateTime { get; set; } //測定日時
-	}
 }

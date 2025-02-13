@@ -282,8 +282,8 @@ namespace BlazorDbTest.Controllers {
         recOpax.vitreous_ref_ind = 0;
 
         recOpax.is_caliper = false;
-        recOpax.is_reliabillty = false;
-        recOpax.reliabillty.AddRange(new List<string?>() { string.Empty, string.Empty, string.Empty });
+        recOpax.is_reliability = false;
+        recOpax.reliability.AddRange(new List<string?>() { string.Empty, string.Empty, string.Empty });
         recOpax.data_path = string.Empty;
         recOpax.measured_at = null;
 
@@ -345,8 +345,8 @@ namespace BlazorDbTest.Controllers {
         npgsqlCommand.Parameters.AddWithValue(COLNAME_ExamOptaxialList[(int)eExamOptAxial.iol_ref_ind], aExamOptaxialRec.iol_ref_ind);
         npgsqlCommand.Parameters.AddWithValue(COLNAME_ExamOptaxialList[(int)eExamOptAxial.vitreous_ref_ind], aExamOptaxialRec.vitreous_ref_ind);
         npgsqlCommand.Parameters.AddWithValue(COLNAME_ExamOptaxialList[(int)eExamOptAxial.is_caliper], aExamOptaxialRec.is_caliper);
-        npgsqlCommand.Parameters.AddWithValue(COLNAME_ExamOptaxialList[(int)eExamOptAxial.is_reliabillty], aExamOptaxialRec.is_reliabillty);
-        npgsqlCommand.Parameters.AddWithValue(COLNAME_ExamOptaxialList[(int)eExamOptAxial.reliabillty], aExamOptaxialRec.reliabillty);
+        npgsqlCommand.Parameters.AddWithValue(COLNAME_ExamOptaxialList[(int)eExamOptAxial.is_reliability], aExamOptaxialRec.is_reliability);
+        npgsqlCommand.Parameters.AddWithValue(COLNAME_ExamOptaxialList[(int)eExamOptAxial.reliability], aExamOptaxialRec.reliability);
         npgsqlCommand.Parameters.AddWithValue(COLNAME_ExamOptaxialList[(int)eExamOptAxial.data_path], aExamOptaxialRec.data_path);
         npgsqlCommand.Parameters.AddWithValue(COLNAME_ExamOptaxialList[(int)eExamOptAxial.measured_at], DBCommonController._DateTimeToObject(aExamOptaxialRec.measured_at));
         npgsqlCommand.Parameters.AddWithValue(COLNAME_ExamOptaxialList[(int)eExamOptAxial.updated_at], DBCommonController._DateTimeToObject(aExamOptaxialRec.updated_at));
@@ -457,8 +457,8 @@ namespace BlazorDbTest.Controllers {
       iol_ref_ind,
       vitreous_ref_ind,
       is_caliper,
-      is_reliabillty,
-      reliabillty,
+      is_reliability,
+      reliability,
       data_path,
       measured_at,
       updated_at,
@@ -491,8 +491,8 @@ public class ExamOptaxialRec {
   public double iol_ref_ind { get; set; }
   public double vitreous_ref_ind { get; set; }
   public bool is_caliper { get; set; }
-  public bool is_reliabillty { get; set; }
-  public List<string?> reliabillty { get; set; } = new List<string?>();
+  public bool is_reliability { get; set; }
+  public List<string?> reliability { get; set; } = new List<string?>();
   public string data_path { get; set; } = string.Empty;
   public DateTime? measured_at { get; set; }
   public DateTime? updated_at { get; set; }
