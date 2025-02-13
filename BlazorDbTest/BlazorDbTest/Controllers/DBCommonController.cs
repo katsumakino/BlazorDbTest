@@ -62,7 +62,7 @@ namespace BlazorDbTest.Controllers {
         }
     }
     
-    public class CommonController {
+    public class DBCommonController {
 
         // 患者UUID取得
         public static string Select_PTUUID_by_PTID(NpgsqlConnection sqlConnection, string sPtid) {
@@ -104,14 +104,14 @@ namespace BlazorDbTest.Controllers {
             return result != 0 ? result + 1 : 1;
         }
 
-        public static int RegisterExamList(string pt_uuid, string dataType, Common.Const.eEyeType posEye, DateTime? exam_datetime, NpgsqlConnection sqlConnection) {
+        public static int RegisterExamList(string pt_uuid, string dataType, Common.DBConst.eEyeType posEye, DateTime? exam_datetime, NpgsqlConnection sqlConnection) {
             int retExamId = -1;
             var examrec = new ExamListRec();
             try {
                 // 主キー項目
                 examrec.exam_id = SelectMaxExamId(sqlConnection);
                 examrec.examtype_id = Select_Examtype_ID(sqlConnection, dataType);
-                examrec.eye_id = Select_Eye_ID(sqlConnection, Common.Const.strEyeType[posEye]);
+                examrec.eye_id = Select_Eye_ID(sqlConnection, Common.DBConst.strEyeType[posEye]);
 
                 examrec.pt_uuid = pt_uuid;
 

@@ -3,7 +3,7 @@ using System.Drawing;
 using System.Text;
 
 namespace BlazorDbTest.Common {
-    public class Const {
+    public class DBConst {
 
         // データタイプタグ一覧 ----------------------------------
         #region データタイプ

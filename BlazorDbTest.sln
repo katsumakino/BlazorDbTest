@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorDbTest", "BlazorDbTes
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorDbTest.Client", "BlazorDbTest\BlazorDbTest.Client\BlazorDbTest.Client.csproj", "{13AE3A49-EBE7-4EA0-BC12-537D8AE643BC}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AxialManagerS.Shared", "BlazorDbTest\AxialManagerS.Shared\AxialManagerS.Shared.csproj", "{67FF8A7C-07F1-4EE6-80ED-74B3E2EBB042}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{13AE3A49-EBE7-4EA0-BC12-537D8AE643BC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{13AE3A49-EBE7-4EA0-BC12-537D8AE643BC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{13AE3A49-EBE7-4EA0-BC12-537D8AE643BC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{67FF8A7C-07F1-4EE6-80ED-74B3E2EBB042}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{67FF8A7C-07F1-4EE6-80ED-74B3E2EBB042}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{67FF8A7C-07F1-4EE6-80ED-74B3E2EBB042}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{67FF8A7C-07F1-4EE6-80ED-74B3E2EBB042}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

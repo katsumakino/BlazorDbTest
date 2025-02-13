@@ -31,13 +31,13 @@
 
     string url = $"api/Log/WriteLog/";
 
-    if(logInfo.ErrLevel == "W") {
-      logInfo.Screenshot = await LogCommon.GetScreenshotUrl(JS);
-    } else {
-      logInfo.Screenshot = string.Empty;
-    }    
+    // if(logInfo.ErrLevel == "W") {
+    //   logInfo.Screenshot = await LogCommon.GetScreenshotUrl(JS);
+    // } else {
+    //   logInfo.Screenshot = string.Empty;
+    // }    
 
-    logInfo.SourcePosition = LogCommon.GetCallerFIlePath();
+    // logInfo.SourcePosition = LogCommon.GetCallerFIlePath();
 
     var conditions = JsonSerializer.Serialize(logInfo);
     var content = new StringContent(conditions, System.Text.Encoding.UTF8, "application/json");

@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <Folder Include="wwwroot\js\" />
+	  <ProjectReference Include="..\AxialManagerS.Shared\AxialManagerS.Shared.csproj" />
   </ItemGroup>
 
 </Project>

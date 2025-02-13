@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Net.Sockets;
 using System.Net;
-using static BlazorDbTest.Client.Pages.Counter;
+using AxialManagerS.Shared.Common;
 
 namespace BlazorDbTest.Controllers {
 
@@ -17,20 +17,23 @@ namespace BlazorDbTest.Controllers {
     private string errLogDirPathBase = $"_{DateTime.Now:yyyyMMdd_HHmmss}";
     private const int maxFileSize = 1024 * 1024 * 10; // 10MB
     private const int maxFileCount = 30;
-    private Common.FIleUtilities utilities = new Common.FIleUtilities();
+    private FIleUtilities utilities = new FIleUtilities();
 
     [HttpPost("WriteLog")]
     public void WriteLog([FromBody] LogInfo conditions) {
       if (conditions == null) return;
 
       try {
-        if (System.OperatingSystem.IsBrowser()) {
-          // Client側のIPアドレスを取得
-          conditions.IPAddress = GetClientIpAddress();
-        } else {
-          // Server側のIPアドレスを取得
-          conditions.IPAddress = GetLocalIPAddress().Result;
-        }
+        // todo:
+        conditions.IPAddress = GetClientIpAddress();
+
+        //if (System.OperatingSystem.IsBrowser()) {
+        //  // Client側のIPアドレスを取得
+        //  conditions.IPAddress = GetClientIpAddress();
+        //} else {
+        //  // Server側のIPアドレスを取得
+        //  conditions.IPAddress = GetLocalIPAddress().Result;
+        //}
 
         Log(conditions);
 
@@ -38,20 +41,20 @@ namespace BlazorDbTest.Controllers {
         if (conditions.ErrLevel == "W") {
           ErrorLog(conditions.Screenshot);
         }
-      } catch { 
+      } catch {
       }
     }
 
-      private void Log(Counter.LogInfo info) {
+    private void Log(LogInfo info) {
       try {
         CreateLogFile();
         using (StreamWriter writer = new StreamWriter(logFilePath, append: true)) {
           writer.WriteLineAsync($"{DateTime.Now:HH:mm:ss}, {info.Type}, {info.IPAddress}, {info.Message}, {info.SourcePosition}");
-          if(!string.IsNullOrEmpty(info.SubMessage)) {
+          if (!string.IsNullOrEmpty(info.SubMessage)) {
             writer.WriteLineAsync($"{info.SubMessage}");
           }
         }
-      } catch { 
+      } catch {
       }
     }
 
@@ -106,12 +109,12 @@ namespace BlazorDbTest.Controllers {
         var filePath = dirPath + "/" + filePathBase;
         var imageBytes = Convert.FromBase64String(errImg);
         await System.IO.File.WriteAllBytesAsync(filePath, imageBytes);
-			} catch {
+      } catch {
       }
     }
 
-		// ローカルIPアドレス(Server側)を取得
-		public static async Task<string> GetLocalIPAddress() {
+    // ローカルIPアドレス(Server側)を取得
+    public static async Task<string> GetLocalIPAddress() {
       string localIP = "NULL";
       try {
         var host = await Dns.GetHostEntryAsync(Dns.GetHostName());
@@ -131,6 +134,7 @@ namespace BlazorDbTest.Controllers {
     private string GetClientIpAddress() {
       var remoteIpAddress = HttpContext.Connection.RemoteIpAddress;
       string nullMessage = "IP NOT FOUND";
+
       if (remoteIpAddress == null) {
         return nullMessage;
       }
@@ -143,6 +147,34 @@ namespace BlazorDbTest.Controllers {
       // IPv6 アドレスを IPv4 に変換
       if (remoteIpAddress.AddressFamily == AddressFamily.InterNetworkV6) {
         var ipv4Address = Dns.GetHostEntry(remoteIpAddress).AddressList
+          .FirstOrDefault(ip => ip.AddressFamily == AddressFamily.InterNetwork);
+        if (ipv4Address != null) {
+          return ipv4Address.ToString();
+        }
+      }
+
+      return nullMessage;
+    }
+
+
+    [HttpGet("GetClientIp")]
+    public string GetClientIp() {
+      var ipAddress = HttpContext.Connection.RemoteIpAddress;
+
+      string nullMessage = "IP NOT FOUND";
+
+      if (ipAddress == null) {
+        return nullMessage;
+      }
+
+      // IPv4 アドレスを取得
+      if (ipAddress.AddressFamily == AddressFamily.InterNetwork) {
+        return ipAddress.ToString();
+      }
+
+      // IPv6 アドレスを IPv4 に変換
+      if (ipAddress.AddressFamily == AddressFamily.InterNetworkV6) {
+        var ipv4Address = Dns.GetHostEntry(ipAddress).AddressList
           .FirstOrDefault(ip => ip.AddressFamily == AddressFamily.InterNetwork);
         if (ipv4Address != null) {
           return ipv4Address.ToString();

@@ -6,7 +6,7 @@ using System.Data;
 using System.Text;
 using System.Text.Json;
 using System.Xml.Linq;
-using static BlazorDbTest.Controllers.CommonController;
+using static BlazorDbTest.Controllers.DBCommonController;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace BlazorDbTest.Controllers {

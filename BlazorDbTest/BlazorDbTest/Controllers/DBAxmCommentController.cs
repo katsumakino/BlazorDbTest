@@ -4,7 +4,7 @@ using Npgsql;
 using System.Data;
 using System.Text;
 using System.Text.Json;
-using static BlazorDbTest.Controllers.CommonController;
+using static BlazorDbTest.Controllers.DBCommonController;
 using static BlazorDbTest.Controllers.DBTreatmentController;
 
 namespace BlazorDbTest.Controllers {
