@@ -1,0 +1,214 @@
+﻿@page "/dbrefexam"
+@* HttpClient を受け取る *@
+@inject HttpClient HttpClient
+@using System.Text.Json;
+
+<h3>DBRefExamTest</h3>
+
+<h4>○ 患者ID</h4>
+<div class="part-group">
+  <label>ID:</label>
+  <InputText @bind-Value="PatientInfoModel.ID" autocomplete=off />
+</div>
+
+@* Ref *@
+<EditForm EditContext="editContextRefList" FormName="refform" />
+<h4>Ref(他覚)測定値</h4>
+<div class="part-group">
+    <label>右眼 / 左眼</label>
+	<div class="part-group">
+		<label>球面度数[D]:</label>
+    <input type="number" @bind-value=RefListModel.RS_d />
+    <input type="number" @bind-value=RefListModel.LS_d />
+	</div>
+  <div class="part-group">
+    <label>乱視度数[D]:</label>
+    <input type="number" @bind-value=RefListModel.RC_d />
+    <input type="number" @bind-value=RefListModel.LC_d />
+  </div>
+  <div class="part-group">
+		<label>乱視度数[°]:</label>
+		<input type="number" @bind-value=RefListModel.RA_deg />
+		<input type="number" @bind-value=RefListModel.LA_deg />
+  </div>
+  <div>
+    <label>Exam Date:</label>
+    <InputDate @bind-Value="RefListModel.ExamDateTime" max="@DateTime.Today.ToString("yyyy-MM-dd")" min="@MinDate" />
+  </div>
+</div>
+<div>
+  <button @onclick="RefRegisterButtonClick">Register</button>
+  <button @onclick="RefViewButtonClick">View</button>
+</div>
+@if (refList == null) {
+  <p><em>Loading...</em></p>
+} else {
+  <table class="table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>S(R)</th>
+        <th>S(L)</th>
+        <th>C(R)</th>
+        <th>C(L)</th>
+        <th>A(R)</th>
+        <th>A(L)</th>
+        <th>SE(R)</th>
+        <th>SE(L)</th>
+        <th>Exam Date</th>
+      </tr>
+    </thead>
+    <tbody>
+      @foreach (var _ref in refList) {
+        <tr>
+          <td>@_ref.PatientID</td>
+          <td>@_ref.RS_d</td>
+          <td>@_ref.LS_d</td>
+          <td>@_ref.RC_d</td>
+          <td>@_ref.LC_d</td>
+          <td>@_ref.RA_deg</td>
+          <td>@_ref.LA_deg</td>
+          <td>@_ref.RSE_d</td>
+          <td>@_ref.LSE_d</td>
+          <td>@_ref.ExamDateTime</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}
+
+<h4>Ref(自覚)測定値</h4>
+<div>
+  <button @onclick="SciRefRegisterButtonClick">Register</button>
+  <button @onclick="SciRefViewButtonClick">View</button>
+</div>
+@if (sciRefList == null) {
+  <p><em>Loading...</em></p>
+} else {
+  <table class="table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>S(R)</th>
+        <th>S(L)</th>
+        <th>C(R)</th>
+        <th>C(L)</th>
+        <th>A(R)</th>
+        <th>A(L)</th>
+        <th>SE(R)</th>
+        <th>SE(L)</th>
+        <th>Exam Date</th>
+      </tr>
+    </thead>
+    <tbody>
+      @foreach (var _sciref in sciRefList) {
+        <tr>
+          <td>@_sciref.PatientID</td>
+          <td>@_sciref.RS_d</td>
+          <td>@_sciref.LS_d</td>
+          <td>@_sciref.RC_d</td>
+          <td>@_sciref.LC_d</td>
+          <td>@_sciref.RA_deg</td>
+          <td>@_sciref.LA_deg</td>
+          <td>@_sciref.RSE_d</td>
+          <td>@_sciref.LSE_d</td>
+          <td>@_sciref.ExamDateTime</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}
+
+@code {
+  private RefList[]? refList;
+  private RefList[]? sciRefList;
+  private string MinDate = new DateTime(1990, 1, 1).ToString("yyyy-MM-dd");
+
+  [SupplyParameterFromForm]
+  private PatientInfo PatientInfoModel { get; set; } = default!;
+  private RefList RefListModel { get; set; } = default!;
+  private EditContext editContextPatientInfo { get; set; } = default!;
+  private EditContext editContextRefList { get; set; } = default!;
+  
+  protected override async Task OnInitializedAsync() {
+    PatientInfoModel ??= new();
+    PatientInfoModel.Gender = Gender.other;
+    PatientInfoModel.BirthDate = DateTime.Today;
+    editContextPatientInfo = new(PatientInfoModel);
+
+    RefListModel ??= new();
+    RefListModel.ExamDateTime = DateTime.Now;
+    editContextRefList = new(RefListModel);
+  }
+
+  void RefRegisterButtonClick() {
+    Task.Run(() => SetRefDataAsync());
+	}
+
+  /// <summary>
+  /// DBへRef(他覚)測定値を書込み
+  /// </summary>
+  /// <returns></returns>
+  protected async Task SetRefDataAsync() {
+    RefListModel.PatientID = PatientInfoModel.ID;
+
+    string content = $"api/DBRefData/SetRef/";
+    content += JsonSerializer.Serialize(RefListModel);
+
+    await HttpClient.GetAsync(content);
+  }
+
+  void RefViewButtonClick() {
+    Task.Run(() => GetRefListAsync());
+  }
+
+  /// <summary>
+  /// DBからRef(他覚)測定値を取得
+  /// </summary>
+  /// <returns></returns>
+  protected async Task GetRefListAsync() {
+    string content = $"api/DBRefData/GetRefList/";
+    content += PatientInfoModel.ID;
+
+    refList = await HttpClient.GetFromJsonAsync<RefList[]>(content);
+
+    //画面を更新する
+    StateHasChanged();
+  }
+
+  void SciRefRegisterButtonClick() {
+    Task.Run(() => SetSciRefDataAsync());
+  }
+
+  /// <summary>
+  /// DBへRef(自覚)測定値を書込み
+  /// </summary>
+  /// <returns></returns>
+  protected async Task SetSciRefDataAsync() {
+    RefListModel.PatientID = PatientInfoModel.ID;
+
+    string content = $"api/DBSciRefData/SetSciRef/";
+    content += JsonSerializer.Serialize(RefListModel);
+
+    await HttpClient.GetAsync(content);
+  }
+
+  void SciRefViewButtonClick() {
+    Task.Run(() => GetSciRefListAsync());
+  }
+
+  /// <summary>
+  /// DBからRef(自覚)測定値を取得
+  /// </summary>
+  /// <returns></returns>
+  protected async Task GetSciRefListAsync() {
+    string content = $"api/DBSciRefData/GetSciRefList/";
+    content += PatientInfoModel.ID;
+
+    sciRefList = await HttpClient.GetFromJsonAsync<RefList[]>(content);
+
+    //画面を更新する
+    StateHasChanged();
+  }
+
+}

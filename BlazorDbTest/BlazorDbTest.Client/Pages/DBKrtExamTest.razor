@@ -1,9 +1,9 @@
-﻿@page "/dbexam"
+﻿@page "/dbkrtexam"
 @* HttpClient を受け取る *@
 @inject HttpClient HttpClient
 @using System.Text.Json;
 
-<h3>DBExamTest</h3>
+<h3>DBKrtExamTest</h3>
 
 <h4>○ 患者ID</h4>
 <div class="part-group">
@@ -30,6 +30,10 @@
 		<label>乱視度数[°]:</label>
 		<input type="number" @bind-value=KrtListModel.RCyl_d />
 		<input type="number" @bind-value=KrtListModel.LCyl_d />
+  </div>
+  <div>
+    <label>Exam Date:</label>
+    <InputDate @bind-Value="KrtListModel.ExamDateTime" max="@DateTime.Today.ToString("yyyy-MM-dd")" min="@MinDate" />
   </div>
 </div>
 <div>
@@ -74,7 +78,8 @@
 }
 
 @code {
-    private KrtList[]? krtList;
+  private KrtList[]? krtList;
+  private string MinDate = new DateTime(1990, 1, 1).ToString("yyyy-MM-dd");
 
   [SupplyParameterFromForm]
   private PatientInfo PatientInfoModel { get; set; } = default!;

@@ -1,0 +1,114 @@
+﻿@page "/dbsightexam"
+@* HttpClient を受け取る *@
+@inject HttpClient HttpClient
+@using System.Text.Json;
+
+<h3>DBSightExamTest</h3>
+
+<h4>○ 患者ID</h4>
+<div class="part-group">
+  <label>ID:</label>
+  <InputText @bind-Value="PatientInfoModel.ID" autocomplete=off />
+</div>
+
+@* SIGHT *@
+<EditForm EditContext="editContextSightList" FormName="sightform" />
+<h4>SIGHT測定値</h4>
+<div class="part-group">
+    <label>右眼 / 左眼</label>
+	<div class="part-group">
+		<label>視力:</label>
+    <input type="number" @bind-value=SightListModel.RSight />
+    <input type="number" @bind-value=SightListModel.LSight />
+	</div>
+  <div>
+    <label>Exam Date:</label>
+    <InputDate @bind-Value="SightListModel.ExamDateTime" max="@DateTime.Today.ToString("yyyy-MM-dd")" min="@MinDate" />
+  </div>
+</div>
+<div>
+  <button @onclick="SightRegisterButtonClick">Register</button>
+  <button @onclick="SightViewButtonClick">View</button>
+</div>
+@if (sightList == null) {
+  <p><em>Loading...</em></p>
+} else {
+  <table class="table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Sight(R)</th>
+        <th>Sight(L)</th>
+        <th>Exam Date</th>
+      </tr>
+    </thead>
+    <tbody>
+      @foreach (var sight in sightList) {
+        <tr>
+          <td>@sight.PatientID</td>
+          <td>@sight.RSight</td>
+          <td>@sight.LSight</td>
+          <td>@sight.ExamDateTime</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}
+
+@code {
+  private SightList[]? sightList;
+  private string MinDate = new DateTime(1990, 1, 1).ToString("yyyy-MM-dd");
+
+  [SupplyParameterFromForm]
+  private PatientInfo PatientInfoModel { get; set; } = default!;
+  private SightList SightListModel { get; set; } = default!;
+  private EditContext editContextPatientInfo { get; set; } = default!;
+  private EditContext editContextSightList { get; set; } = default!;
+
+  protected override async Task OnInitializedAsync() {
+    PatientInfoModel ??= new();
+    PatientInfoModel.Gender = Gender.other;
+    PatientInfoModel.BirthDate = DateTime.Today;
+    editContextPatientInfo = new(PatientInfoModel);
+
+    SightListModel ??= new();
+    SightListModel.ExamDateTime = DateTime.Now;
+    editContextSightList = new(SightListModel);
+  }
+
+  void SightRegisterButtonClick() {
+    Task.Run(() => SetSightDataAsync());
+	}
+
+  /// <summary>
+  /// DBへ視力測定値を書込み
+  /// </summary>
+  /// <returns></returns>
+  protected async Task SetSightDataAsync() {
+    SightListModel.PatientID = PatientInfoModel.ID;
+
+    string content = $"api/DBSightData/SetSight/";
+    content += JsonSerializer.Serialize(SightListModel);
+
+    await HttpClient.GetAsync(content);
+  }
+
+  void SightViewButtonClick() {
+    Task.Run(() => GetSightListAsync());
+  }
+
+  /// <summary>
+  /// DBから視力測定値を取得
+  /// </summary>
+  /// <returns></returns>
+  protected async Task GetSightListAsync() {
+    string content = $"api/DBSightData/GetSightList/";
+    content += PatientInfoModel.ID;
+
+    sightList = await HttpClient.GetFromJsonAsync<SightList[]>(content);
+
+    //画面を更新する
+    StateHasChanged();
+  }
+
+}

@@ -74,6 +74,7 @@
 
   // ↓ここから
 
+  //ケラト(データ表示/書込に使用するもの)
   public class KrtList {
     public string PatientID { get; set; } = default!;   //患者ID
     public string RExamID { get; set; } = default!;     //右測定データID
@@ -111,6 +112,114 @@
     public int DeviceID { get; set; }           //測定装置ID
     public bool IsExamData { get; set; }        //測定データ有無
     public DateTime? ExamDateTime { get; set; } //測定日時
+  }
+
+  //屈折力(データ表示/書込に使用するもの)
+  public class RefList {
+    public string PatientID { get; set; } = default!;   //患者ID
+    public string RExamID { get; set; } = default!;     //右測定データID
+    public string LExamID { get; set; } = default!;     //左測定データID
+    public double RS_d { get; set; }                    //右球面度数[D]
+    public double RC_d { get; set; }                    //右乱視度数[D]
+    public int RA_deg { get; set; }                     //右乱視軸[°]
+    public double RSE_d { get; set; }                   //右等価球面度数[D]
+    public double LS_d { get; set; }                    //左球面度数[D]
+    public double LC_d { get; set; }                    //左乱視度数[D]
+    public int LA_deg { get; set; }                     //左乱視軸[°]
+    public double LSE_d { get; set; }                   //左等価球面度数[D]
+    public DateTime? ExamDateTime { get; set; }         //測定日
+    public bool IsRManualInput { get; set; }            //右眼手入力フラグ
+    public bool IsLManualInput { get; set; }            //左眼手入力フラグ
+  }
+
+  // DBから取得する他覚屈折力データ
+  public class RefData {
+    public string ID { get; set; } = default!;                      //測定データID
+    public List<double?> S_d { get; set; } = new List<double?>();   //球面度数[D]
+    public List<double?> C_d { get; set; } = new List<double?>();   //乱視度数[D]
+    public List<int?> A_deg { get; set; } = new List<int?>();       //乱視軸[°]
+    public List<double?> SE_d { get; set; } = new List<double?>();  //等価球面度数[D]
+    public EyeType EyeId { get; set; }                              //左右眼情報
+    public int DeviceID { get; set; }                               //測定装置ID
+    public bool IsExamData { get; set; }                            //測定データ有無
+    public DateTime? ExamDateTime { get; set; }                     //測定日時
+  }
+
+  // DBから取得する自覚屈折力データ
+  public class SciRefData {
+    public string ID { get; set; } = default!;          //測定データID
+    public double S_d { get; set; }                     //球面度数[D]
+    public double C_d { get; set; }                     //乱視度数[D]
+    public int A_deg { get; set; }                      //乱視軸[°]
+    public double SE_d { get; set; }                    //等価球面度数[D]
+    public EyeType EyeId { get; set; }                  //左右眼情報
+    public int DeviceID { get; set; }                   //測定装置ID
+    public bool IsExamData { get; set; }                //測定データ有無
+    public DateTime? ExamDateTime { get; set; }         //測定日時
+  }
+
+  //中央角膜厚(データ表示/書込に使用するもの)
+  public class PachyList {
+    public string PatientID { get; set; } = default!;   //患者ID
+    public string RExamID { get; set; } = default!;     //右測定データID
+    public string LExamID { get; set; } = default!;     //左測定データID
+    public double RPachy { get; set; }                  //右眼中央角膜厚
+    public double LPachy { get; set; }                  //左眼中央角膜厚
+    public DateTime? ExamDateTime { get; set; }         //測定日
+    public bool IsRManualInput { get; set; }            //右眼手入力フラグ
+    public bool IsLManualInput { get; set; }            //左眼手入力フラグ
+  }
+
+  // DBから取得する中央角膜厚データ
+  public class PachyData {
+    public string ID { get; set; } = default!;                      //測定データID
+    public List<double?> Pachy { get; set; } = new List<double?>(); //中央角膜厚
+    public EyeType EyeId { get; set; }                              //左右眼情報
+    public int DeviceID { get; set; }                               //測定装置ID
+    public bool IsExamData { get; set; }                            //測定データ有無
+    public DateTime? ExamDateTime { get; set; }                     //測定日時
+  }
+
+  //瞳孔径(データ表示/書込に使用するもの)
+  public class DiaList {
+    public string PatientID { get; set; } = default!;   //患者ID
+    public string RExamID { get; set; } = default!;     //右測定データID
+    public string LExamID { get; set; } = default!;     //左測定データID
+    public double RPupil { get; set; }                  //右瞳孔径
+    public double LPupil { get; set; }                  //左瞳孔径
+    public DateTime? ExamDateTime { get; set; }         //測定日
+    public bool IsRManualInput { get; set; }            //右眼手入力フラグ
+    public bool IsLManualInput { get; set; }            //左眼手入力フラグ
+  }
+
+  // DBから取得する瞳孔径データ
+  public class DiaData {
+    public string ID { get; set; } = default!;                      //測定データID
+    public double Pupil { get; set; }                               //瞳孔径
+    public EyeType EyeId { get; set; }                              //左右眼情報
+    public int DeviceID { get; set; }                               //測定装置ID
+    public bool IsExamData { get; set; }                            //測定データ有無
+    public DateTime? ExamDateTime { get; set; }                     //測定日時
+  }
+
+  //視力(データ表示/書込に使用するもの)
+  public class  SightList{
+    public string PatientID { get; set; } = default!;   //患者ID
+    public string RExamID { get; set; } = default!;     //右測定データID
+    public string LExamID { get; set; } = default!;     //左測定データID
+    public double RSight { get; set; }                  //右眼視力
+    public double LSight { get; set; }                  //左眼視力
+    public DateTime? ExamDateTime { get; set; }         //測定日
+  }
+
+  // DBから取得する視力データ
+  public class SightData {
+    public string ID { get; set; } = default!;                      //測定データID
+    public double Sight { get; set; }                               //視力
+    public EyeType EyeId { get; set; }                              //左右眼情報
+    public int DeviceID { get; set; }                               //測定装置ID
+    public bool IsExamData { get; set; }                            //測定データ有無
+    public DateTime? ExamDateTime { get; set; }                     //測定日時
   }
 
   // ↑ ここまで追加項目

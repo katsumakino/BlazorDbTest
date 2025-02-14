@@ -450,6 +450,18 @@ namespace BlazorDbTest.Controllers {
             int.TryParse(oColumnRes.ToString(), out result);
             return result;
         }
+  
+        public static List<int?> _objectToIntList(object oColumnRes) {
+            List<int?> list = new List<int?>();
+            if (oColumnRes is int[] array) {
+              for (int i = 0; i < array.Length; i++) {
+                int? num = array[i];
+                list.Add(num);
+              }
+            }
+
+            return list;
+        }
 
         public static double? _objectToDouble(object oColumnRes) {
             double result = 0.0;
@@ -532,7 +544,7 @@ namespace BlazorDbTest.Controllers {
             "", "PATIENT_LIST", "OPERATOR_LIST", "EXAM_LIST", "EXAM_BMODE", "EXAM_DIA", "EXAM_KRT", "EXAM_OPTAXIAL", "EXAM_OPTACD", "EXAM_OPTLENS",
             "EXAM_PACHY_CCT", "EXAM_REF", "EXAM_SCI_REF", "EXAM_SPECULAR", "EXAM_TONO", "EXAM_TOPO", "EXAM_USAXIAL", "MST_DEVICES", "MST_ENVIRONMENTS", "MST_EXAMTYPES",
             "MST_EYES", "MST_FITTINGS", "MST_GENDERS", "MST_IOL_EYES", "MST_PHITYPES", "MST_SELECTTYPES", "MST_SPECULAR_ANALYSIS_METHODS", "MST_SPECULAR_FIXATION_LIGHT_POS", "MST_TARGET_EYES", "VERSION_INFO",
-            "VERSION_MST_INFO", "AXM_PATIENT_LIST", "AXM_COMMENT", "AXM_TREATMENT", "AXM_TREATMENT_INFO", "MST_AXMCOMMENTTYPES"
+            "VERSION_MST_INFO", "AXM_PATIENT_LIST", "AXM_EXAM_SIGHT", "AXM_COMMENT", "AXM_TREATMENT", "AXM_TREATMENT_INFO", "MST_AXMCOMMENTTYPES"
         ];
 
         public static string[] COLNAME_PatientList = ["pt_uuid", "pt_id", "pt_lastname", "pt_firstname", "gender_id", "pt_dob", "pt_description", "updated_at", "created_at"];
@@ -583,6 +595,7 @@ namespace BlazorDbTest.Controllers {
             VERSION_MST_INFO,
             // 以下、AXM用テーブル
             AXM_PATIENT_LIST,
+            AXM_EXAM_SIGHT,
             AXM_COMMENT,
             AXM_TREATMENT,
             AXM_TREATMENT_INFO,

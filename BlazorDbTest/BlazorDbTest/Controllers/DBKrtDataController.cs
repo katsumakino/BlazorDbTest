@@ -266,6 +266,8 @@ namespace BlazorDbTest.Controllers {
             if (!isExist) {
               KrtList var = new KrtList() {
                 PatientID = pt_id,
+                RExamID = string.Empty,
+                LExamID = string.Empty,
                 RK1_mm = 0.0,
                 RK1_d = 0.0,
                 RK2_mm = 0.0,

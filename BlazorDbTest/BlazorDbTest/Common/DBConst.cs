@@ -206,8 +206,10 @@ namespace BlazorDbTest.Common {
             USAXIAL,
             IOL_CALC,
             TORIC_IOL_CALC,
-        }
-        public static Dictionary<eMSTDATATYPE, string> strMstDataType = new()
+            // 以下はAXM用
+            SIGHT
+    }
+    public static Dictionary<eMSTDATATYPE, string> strMstDataType = new()
         {
             { eMSTDATATYPE.NONE, "none" },
             { eMSTDATATYPE.ADIAG, "ADIAG" },
@@ -229,6 +231,7 @@ namespace BlazorDbTest.Common {
             { eMSTDATATYPE.USAXIAL, "USAXIAL" },
             { eMSTDATATYPE.IOL_CALC, "IOL_CALC" },
             { eMSTDATATYPE.TORIC_IOL_CALC, "TORIC_IOL_CALC" },
+            { eMSTDATATYPE.SIGHT, "SIGHT" }
         };
         #endregion
         #region 右眼左眼
