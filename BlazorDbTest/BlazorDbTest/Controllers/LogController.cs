@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Net.Sockets;
 using System.Net;
 using AxialManagerS.Shared.Common;
+using Microsoft.AspNetCore.HttpOverrides;
 
 namespace BlazorDbTest.Controllers {
 
@@ -24,16 +25,26 @@ namespace BlazorDbTest.Controllers {
       if (conditions == null) return;
 
       try {
-        // todo:
+        // Client側のIPアドレスを取得
         conditions.IPAddress = GetClientIpAddress();
 
-        //if (System.OperatingSystem.IsBrowser()) {
-        //  // Client側のIPアドレスを取得
-        //  conditions.IPAddress = GetClientIpAddress();
-        //} else {
-        //  // Server側のIPアドレスを取得
-        //  conditions.IPAddress = GetLocalIPAddress().Result;
-        //}
+        Log(conditions);
+
+        // エラーレベルが高い場合は、エラーログを作成する
+        if (conditions.ErrLevel == "W") {
+          ErrorLog(conditions.Screenshot);
+        }
+      } catch {
+      }
+    }
+
+    [HttpPost("WriteLogServer")]
+    public void WriteLogServer([FromBody] LogInfo conditions) {
+      if (conditions == null) return;
+
+      try {
+        // Server側のIPアドレスを取得
+        conditions.IPAddress = GetLocalIPAddress().Result;
 
         Log(conditions);
 
@@ -132,56 +143,19 @@ namespace BlazorDbTest.Controllers {
 
     // クライアントのIPアドレスを取得
     private string GetClientIpAddress() {
-      var remoteIpAddress = HttpContext.Connection.RemoteIpAddress;
       string nullMessage = "IP NOT FOUND";
 
-      if (remoteIpAddress == null) {
+      var clientIp = HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault()
+        ?? HttpContext.Connection.RemoteIpAddress?.ToString();
+
+      if (string.IsNullOrEmpty(clientIp)) {
         return nullMessage;
       }
 
-      // IPv4 アドレスを取得
-      if (remoteIpAddress.AddressFamily == AddressFamily.InterNetwork) {
-        return remoteIpAddress.ToString();
-      }
-
-      // IPv6 アドレスを IPv4 に変換
-      if (remoteIpAddress.AddressFamily == AddressFamily.InterNetworkV6) {
-        var ipv4Address = Dns.GetHostEntry(remoteIpAddress).AddressList
+      var clientAddress = Dns.GetHostEntry(clientIp).AddressList
           .FirstOrDefault(ip => ip.AddressFamily == AddressFamily.InterNetwork);
-        if (ipv4Address != null) {
-          return ipv4Address.ToString();
-        }
-      }
 
-      return nullMessage;
-    }
-
-
-    [HttpGet("GetClientIp")]
-    public string GetClientIp() {
-      var ipAddress = HttpContext.Connection.RemoteIpAddress;
-
-      string nullMessage = "IP NOT FOUND";
-
-      if (ipAddress == null) {
-        return nullMessage;
-      }
-
-      // IPv4 アドレスを取得
-      if (ipAddress.AddressFamily == AddressFamily.InterNetwork) {
-        return ipAddress.ToString();
-      }
-
-      // IPv6 アドレスを IPv4 に変換
-      if (ipAddress.AddressFamily == AddressFamily.InterNetworkV6) {
-        var ipv4Address = Dns.GetHostEntry(ipAddress).AddressList
-          .FirstOrDefault(ip => ip.AddressFamily == AddressFamily.InterNetwork);
-        if (ipv4Address != null) {
-          return ipv4Address.ToString();
-        }
-      }
-
-      return nullMessage;
+      return clientAddress?.ToString() ?? nullMessage;
     }
   }
 }

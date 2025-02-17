@@ -1,4 +1,5 @@
 using BlazorDbTest.Client.Pages;
+using BlazorDbTest.Common;
 using BlazorDbTest.Components;
 using Microsoft.EntityFrameworkCore;
 
