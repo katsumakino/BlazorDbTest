@@ -133,7 +133,6 @@ namespace BlazorDbTest.Controllers {
                 examrec.updated_at = dateNow;
                 examrec.created_at = dateNow;
 
-                // todo: ↓の条件に装置種別=AxMも追加
                 // 検査タイプID、検査眼ID、検査日時で検索し該当するものがあればExamIDを変更
                 retExamId = Select_ExamID_by_PK_and_ExamDateTime(sqlConnection, examrec.examtype_id, examrec.eye_id, (DateTime)examrec.measured_at, examrec.device_id);
                 if (retExamId != -1) { examrec.exam_id = retExamId; } else { retExamId = examrec.exam_id; }
@@ -532,6 +531,24 @@ namespace BlazorDbTest.Controllers {
 
         public static string _doupdateexam(string colUpdatedAt, DateTime dtUpdate) {
             return "do update set \"" + colUpdatedAt + "\" = '" + dtUpdate.ToString("yyyy-MM-dd HH:mm:ss.FFFFFF") + "' ";
+        }
+
+        public static string _doupdatevalue(string col, string valueStr) {
+            return ", \"" + col + "\" = '" + valueStr + "' ";
+        }
+
+        public static string _doupdateintlist(string col, List<int?> list) {
+            string valueList = "{";
+            valueList += string.Join(",", list.Select((int? x) => x.HasValue ? x.ToString() : "0"));    // todo: 0は適切か
+            valueList += "}";
+            return ", \"" + col + "\" = '" + valueList + "' ";
+        }
+
+        public static string _doupdatedoublelist(string col, List<double?> list) {
+            string valueList = "{";
+            valueList += string.Join(",", list.Select((double? x) => x.HasValue ? x.ToString() : "0"));   // todo: 0は適切か
+      valueList += "}";
+            return ", \"" + col + "\" = '" + valueList + "' ";
         }
 
         public static string _dotcol(string aColumn) {

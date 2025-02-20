@@ -208,6 +208,10 @@
 
 <br />
 <h4>○ 患者の治療状況登録</h4>
+<div class="part-group">
+  <label>ID:</label>
+  <input type="number" @bind-value=TreatmentModel.ID />
+</div>
 <div>
     <label>Start Date:</label>
     <InputDate @bind-Value="TreatmentModel.StartDateTime" max="@DateTime.Today.ToString("yyyy-MM-dd")" min="@MinDate" />
@@ -332,7 +336,7 @@
     editContextPatientInfo = new(PatientInfoModel);
 
     AxialModel ??= new();
-    AxialModel.ExamDateTime = DateTime.Now;
+    AxialModel.ExamDateTime = DateTime.Today;
     editContextAxial = new(AxialModel);
 
     TreatmentMethodModel ??= new();
@@ -340,13 +344,13 @@
     editContextTreatmentMethod = new(TreatmentMethodModel);
 
     TreatmentModel ??= new();
-    TreatmentModel.StartDateTime = DateTime.Now;
-    TreatmentModel.EndDateTime = DateTime.Now;
+    TreatmentModel.StartDateTime = DateTime.Today;
+    TreatmentModel.EndDateTime = DateTime.Today;
     editContextTreatment = new(TreatmentModel);
 
     AxmCommentModel ??= new();
     AxmCommentModel.CommentType = AxmCommentType.none;
-    AxmCommentModel.ExamDateTime = DateTime.Now;
+    AxmCommentModel.ExamDateTime = DateTime.Today;
     editContextAxmComment = new(AxmCommentModel);
 
     // API を呼び出してデータを取得

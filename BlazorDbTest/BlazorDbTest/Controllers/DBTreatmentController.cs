@@ -146,9 +146,6 @@ namespace BlazorDbTest.Controllers {
                         return;
                     }
 
-                    // 治療状況ID取得
-                    var traet_id = SelectMaxTreatmentId(sqlConnection);
-
                     // 患者UUID取得
                     var uuid = Select_PTUUID_by_PTID(sqlConnection, pt_id);
                     if (uuid == string.Empty) {
@@ -156,12 +153,19 @@ namespace BlazorDbTest.Controllers {
                         return;
                     }
 
+                    // IDが登録済みであるか確認
+                    var treat_id = Select_TreatmentId_By_Treatment(sqlConnection, treatmentData.ID);
+                    if (treat_id == -1) {
+                        // 新規登録なら、ID割り当て
+                        treat_id = SelectMaxTreatmentId(sqlConnection);
+                    }
+
                     // 更新日、作成日は揃える
                     var dateNow = DateTime.Now;
 
                     // DB登録
                     result = InsertTreatment(new TreatmentRec {
-                        treatment_id = traet_id,
+                        treatment_id = treat_id,
                         treatmenttype_id = type_id,
                         pt_uuid = uuid,
                         start_at = treatmentData.StartDateTime,
@@ -261,6 +265,12 @@ namespace BlazorDbTest.Controllers {
             stringBuilder.Append(text2);
             stringBuilder.Append(_onconflict("pk_axm_treatment_info"));
             stringBuilder.Append(_doupdateexam(COLNAME_AxmTreatmentInfoList[(int)eAxmTreatmentInfo.updated_at], DateTime.Now));
+            stringBuilder.Append(_doupdatevalue(COLNAME_AxmTreatmentInfoList[(int)eAxmTreatmentInfo.treatment_name], rec.treatment_name));
+            stringBuilder.Append(_doupdatevalue(COLNAME_AxmTreatmentInfoList[(int)eAxmTreatmentInfo.color_r], rec.color_r.ToString()));
+            stringBuilder.Append(_doupdatevalue(COLNAME_AxmTreatmentInfoList[(int)eAxmTreatmentInfo.color_g], rec.color_g.ToString()));
+            stringBuilder.Append(_doupdatevalue(COLNAME_AxmTreatmentInfoList[(int)eAxmTreatmentInfo.color_b], rec.color_b.ToString()));
+            stringBuilder.Append(_doupdatevalue(COLNAME_AxmTreatmentInfoList[(int)eAxmTreatmentInfo.color_a], rec.color_a.ToString()));
+            stringBuilder.Append(_doupdatevalue(COLNAME_AxmTreatmentInfoList[(int)eAxmTreatmentInfo.suppression_rate], rec.suppression_rate.ToString()));
             stringBuilder.Append(";");
             int num = 0;
             // SQLコマンド実行
@@ -304,6 +314,9 @@ namespace BlazorDbTest.Controllers {
             stringBuilder.Append(text2);
             stringBuilder.Append(_onconflict("pk_axm_treatment"));
             stringBuilder.Append(_doupdateexam(COLNAME_AxmTreatmentList[(int)eAxmTreatment.updated_at], DateTime.Now));
+            stringBuilder.Append(_doupdatevalue(COLNAME_AxmTreatmentList[(int)eAxmTreatment.treatmenttype_id], rec.treatmenttype_id.ToString()));
+            stringBuilder.Append(_doupdatevalue(COLNAME_AxmTreatmentList[(int)eAxmTreatment.start_at], _DateTimeToObject(rec.start_at).ToString()));
+            stringBuilder.Append(_doupdatevalue(COLNAME_AxmTreatmentList[(int)eAxmTreatment.end_at], _DateTimeToObject(rec.end_at).ToString()));
             stringBuilder.Append(";");
             int num = 0;
             // SQLコマンド実行
@@ -344,13 +357,13 @@ namespace BlazorDbTest.Controllers {
             int result = -1;
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.Append("select ");
-            stringBuilder.Append(_col(COLNAME_AxmTreatmentInfoList[0]));
+            stringBuilder.Append(_col(COLNAME_AxmTreatmentInfoList[(int)eAxmTreatmentInfo.treatmenttype_id]));
             stringBuilder.Append("from ");
             stringBuilder.Append(_table(DB_TableNames[(int)eDbTable.AXM_TREATMENT_INFO]));
             stringBuilder.Append("where ");
-            stringBuilder.Append(_col(COLNAME_AxmTreatmentInfoList[0]));
+            stringBuilder.Append(_col(COLNAME_AxmTreatmentInfoList[(int)eAxmTreatmentInfo.treatmenttype_id]));
             stringBuilder.Append(" = ");
-            stringBuilder.Append(_bind(COLNAME_AxmTreatmentInfoList[0]));
+            stringBuilder.Append(_bind(COLNAME_AxmTreatmentInfoList[(int)eAxmTreatmentInfo.treatmenttype_id]));
             stringBuilder.Append(";");
             using NpgsqlCommand npgsqlCommand = new NpgsqlCommand(stringBuilder.ToString(), sqlConnection);
             npgsqlCommand.Parameters.AddWithValue(COLNAME_AxmTreatmentInfoList[0], treatmentType);
@@ -379,6 +392,29 @@ namespace BlazorDbTest.Controllers {
             }
 
             return result != 0 ? result + 1 : 1;
+        }
+
+        // treatment_idの有無を取得
+        public static int Select_TreatmentId_By_Treatment(NpgsqlConnection sqlConnection, int treatment) {
+            int result = -1;
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.Append("select ");
+            stringBuilder.Append(_col(COLNAME_AxmTreatmentList[(int)eAxmTreatment.treatment_id]));
+            stringBuilder.Append("from ");
+            stringBuilder.Append(_table(DB_TableNames[(int)eDbTable.AXM_TREATMENT]));
+            stringBuilder.Append("where ");
+            stringBuilder.Append(_col(COLNAME_AxmTreatmentList[(int)eAxmTreatment.treatment_id]));
+            stringBuilder.Append(" = ");
+            stringBuilder.Append(_bind(COLNAME_AxmTreatmentList[(int)eAxmTreatment.treatment_id]));
+            stringBuilder.Append(";");
+            using NpgsqlCommand npgsqlCommand = new NpgsqlCommand(stringBuilder.ToString(), sqlConnection);
+            npgsqlCommand.Parameters.AddWithValue(COLNAME_AxmTreatmentList[(int)eAxmTreatment.treatment_id], treatment);
+            using NpgsqlDataReader npgsqlDataReader = npgsqlCommand.ExecuteReader();
+            while (npgsqlDataReader.Read()) {
+                result = _objectToInt(npgsqlDataReader[0]);
+            }
+
+            return result;
         }
 
         /// <summary>

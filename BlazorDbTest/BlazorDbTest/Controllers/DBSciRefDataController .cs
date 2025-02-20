@@ -333,6 +333,10 @@ namespace BlazorDbTest.Controllers {
       stringBuilder.Append(text2);
       stringBuilder.Append(DBCommonController._onconflict("pk_exam_sciref"));
       stringBuilder.Append(DBCommonController._doupdateexam(COLNAME_ExamSciRefList[(int)eExamSciRef.updated_at], DateTime.Now));
+      stringBuilder.Append(DBCommonController._doupdatevalue(COLNAME_ExamSciRefList[(int)eExamSciRef.s_d], aExamSciRefRec.s_d.ToString()));
+      stringBuilder.Append(DBCommonController._doupdatevalue(COLNAME_ExamSciRefList[(int)eExamSciRef.c_d], aExamSciRefRec.c_d.ToString()));
+      stringBuilder.Append(DBCommonController._doupdatevalue(COLNAME_ExamSciRefList[(int)eExamSciRef.a_deg], aExamSciRefRec.a_deg.ToString()));
+      stringBuilder.Append(DBCommonController._doupdatevalue(COLNAME_ExamSciRefList[(int)eExamSciRef.se_d], aExamSciRefRec.se_d.ToString()));
       stringBuilder.Append(";");
       int num = 0;
       using (NpgsqlCommand npgsqlCommand = new NpgsqlCommand(stringBuilder.ToString(), sqlConnection)) {

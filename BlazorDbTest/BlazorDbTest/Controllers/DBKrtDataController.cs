@@ -382,6 +382,15 @@ namespace BlazorDbTest.Controllers {
       stringBuilder.Append(text2);
       stringBuilder.Append(DBCommonController._onconflict("pk_exam_krt"));
       stringBuilder.Append(DBCommonController._doupdateexam(COLNAME_ExamKrtList[(int)eExamKrt.updated_at], DateTime.Now));
+      stringBuilder.Append(DBCommonController._doupdatevalue(COLNAME_ExamKrtList[(int)eExamKrt.select_id], aExamKeratoRec.select_id.ToString()));
+      stringBuilder.Append(DBCommonController._doupdatevalue(COLNAME_ExamKrtList[(int)eExamKrt.phi_id], aExamKeratoRec.phi_id.ToString()));
+      stringBuilder.Append(DBCommonController._doupdatedoublelist(COLNAME_ExamKrtList[(int)eExamKrt.k1_mm], aExamKeratoRec.k1_mm));
+      stringBuilder.Append(DBCommonController._doupdatedoublelist(COLNAME_ExamKrtList[(int)eExamKrt.k1_d], aExamKeratoRec.k1_d));
+      stringBuilder.Append(DBCommonController._doupdatedoublelist(COLNAME_ExamKrtList[(int)eExamKrt.k2_mm], aExamKeratoRec.k2_mm));
+      stringBuilder.Append(DBCommonController._doupdatedoublelist(COLNAME_ExamKrtList[(int)eExamKrt.k2_d], aExamKeratoRec.k2_d));
+      stringBuilder.Append(DBCommonController._doupdatedoublelist(COLNAME_ExamKrtList[(int)eExamKrt.avek_mm], aExamKeratoRec.avek_mm));
+      stringBuilder.Append(DBCommonController._doupdatedoublelist(COLNAME_ExamKrtList[(int)eExamKrt.avek_d], aExamKeratoRec.avek_d));
+      stringBuilder.Append(DBCommonController._doupdatedoublelist(COLNAME_ExamKrtList[(int)eExamKrt.cyl_d], aExamKeratoRec.cyl_d));
       stringBuilder.Append(";");
       int num = 0;
       using (NpgsqlCommand npgsqlCommand = new NpgsqlCommand(stringBuilder.ToString(), sqlConnection)) {

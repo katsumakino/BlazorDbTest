@@ -320,6 +320,8 @@ namespace BlazorDbTest.Controllers {
       stringBuilder.Append(text2);
       stringBuilder.Append(DBCommonController._onconflict("pk_exam_optaxial"));
       stringBuilder.Append(DBCommonController._doupdateexam(COLNAME_ExamOptaxialList[(int)eExamOptAxial.updated_at], DateTime.Now));
+      stringBuilder.Append(DBCommonController._doupdatedoublelist(COLNAME_ExamOptaxialList[(int)eExamOptAxial.axial_mm], aExamOptaxialRec.axial_mm));
+      stringBuilder.Append(DBCommonController._doupdatevalue(COLNAME_ExamOptaxialList[(int)eExamOptAxial.fitting_id], aExamOptaxialRec.fitting_id.ToString()));
       stringBuilder.Append(";");
       int num = 0;
       using (NpgsqlCommand npgsqlCommand = new NpgsqlCommand(stringBuilder.ToString(), sqlConnection)) {

@@ -41,7 +41,11 @@ namespace BlazorDbTest.Controllers {
                     }
 
                     // コメントデータID取得
-                    var comment_id = SelectMaxCommentId(sqlConnection);
+                    var commenttype_id = Select_AxmCommentTypeId(sqlConnection, AXM_COMMENT_TYPE[(int)comment.CommentType]);
+                    var comment_id = Select_AxmCommentID_by_PK(sqlConnection, uuid, (DateTime)comment.ExamDateTime, comment.CommentType, commenttype_id);
+                    if(comment_id == -1) {
+                        comment_id = SelectMaxCommentId(sqlConnection);
+                    }
 
                     // 更新日、作成日は揃える
                     var dateNow = DateTime.Now;
@@ -49,7 +53,7 @@ namespace BlazorDbTest.Controllers {
                     // DB登録
                     result = InsertAxmComment(new AxmCommentRec {
                         comment_id = comment_id,
-                        commenttype_id = Select_AxmCommentTypeId(sqlConnection, AXM_COMMENT_TYPE[(int)comment.CommentType]),
+                        commenttype_id = commenttype_id,
                         pt_uuid = uuid,
                         description = comment.Description,
                         measured_at = (comment.CommentType == DBTest.AxmCommentType.ExamDate) ? comment.ExamDateTime : null,
@@ -147,6 +151,7 @@ namespace BlazorDbTest.Controllers {
             stringBuilder.Append(text2);
             stringBuilder.Append(_onconflict("pk_axm_comment"));
             stringBuilder.Append(_doupdateexam(COLNAME_AxmCommentList[(int)eAxmComment.updated_at], DateTime.Now));
+            stringBuilder.Append(_doupdatevalue(COLNAME_AxmCommentList[(int)eAxmComment.description], rec.description));
             stringBuilder.Append(";");
             int num = 0;
             // SQLコマンド実行
@@ -164,7 +169,7 @@ namespace BlazorDbTest.Controllers {
             return num != 0;
         }
 
-        public static int Select_AxmCommentID_by_PK(NpgsqlConnection sqlConnection, string pt_uuid, DateTime measured_at) {
+        public static int Select_AxmCommentID_by_PK(NpgsqlConnection sqlConnection, string pt_uuid, DateTime measured_at, DBTest.AxmCommentType type, int commenttype_id) {
             int result = -1;
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.Append("select ");
@@ -175,10 +180,16 @@ namespace BlazorDbTest.Controllers {
             stringBuilder.Append(_col(COLNAME_AxmCommentList[(int)eAxmComment.pt_uuid]));
             stringBuilder.Append("= ");
             stringBuilder.Append(_val(pt_uuid));
-            stringBuilder.Append(" or ");
-            stringBuilder.Append(_col(COLNAME_AxmCommentList[(int)eAxmComment.measured_at]));
+            stringBuilder.Append(" and ");
+            stringBuilder.Append(_col(COLNAME_AxmCommentList[(int)eAxmComment.commenttype_id]));
             stringBuilder.Append("= ");
-            stringBuilder.Append(_val(measured_at.ToString("yyyy-MM-dd HH:mm:ss")));
+            stringBuilder.Append(_val(commenttype_id.ToString()));
+            if (type == DBTest.AxmCommentType.ExamDate) {
+                stringBuilder.Append(" and ");
+                stringBuilder.Append(_col(COLNAME_AxmCommentList[(int)eAxmComment.measured_at]));
+                stringBuilder.Append("= ");
+                stringBuilder.Append(_val(measured_at.ToString("yyyy-MM-dd HH:mm:ss")));
+            }
             stringBuilder.Append(";");
             using NpgsqlCommand npgsqlCommand = new NpgsqlCommand(stringBuilder.ToString(), sqlConnection);
             using NpgsqlDataReader npgsqlDataReader = npgsqlCommand.ExecuteReader();

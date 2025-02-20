@@ -324,6 +324,7 @@ namespace BlazorDbTest.Controllers {
       stringBuilder.Append(text2);
       stringBuilder.Append(DBCommonController._onconflict("pk_exam_pachy_cct"));
       stringBuilder.Append(DBCommonController._doupdateexam(COLNAME_ExamPachyList[(int)eExamPachy.updated_at], DateTime.Now));
+      stringBuilder.Append(DBCommonController._doupdatedoublelist(COLNAME_ExamPachyList[(int)eExamPachy.pachy_um], aExamPachyRec.pachy_um));
       stringBuilder.Append(";");
       int num = 0;
       using (NpgsqlCommand npgsqlCommand = new NpgsqlCommand(stringBuilder.ToString(), sqlConnection)) {

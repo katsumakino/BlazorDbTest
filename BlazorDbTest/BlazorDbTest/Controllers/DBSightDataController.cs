@@ -286,6 +286,7 @@ namespace BlazorDbTest.Controllers {
       stringBuilder.Append(text2);
       stringBuilder.Append(DBCommonController._onconflict("pk_exam_sight"));
       stringBuilder.Append(DBCommonController._doupdateexam(COLNAME_ExamSightList[(int)eExamSight.updated_at], DateTime.Now));
+      stringBuilder.Append(DBCommonController._doupdatevalue(COLNAME_ExamSightList[(int)eExamSight.sight_d], aExamSightRec.sight_d.ToString()));
       stringBuilder.Append(";");
       int num = 0;
       using (NpgsqlCommand npgsqlCommand = new NpgsqlCommand(stringBuilder.ToString(), sqlConnection)) {
