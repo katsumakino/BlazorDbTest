@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Json;
 using static BlazorDbTest.Controllers.DBCommonController;
 using static BlazorDbTest.Controllers.DBTreatmentController;
+using AxialManagerS.Shared.Common;
 
 namespace BlazorDbTest.Controllers {
 
@@ -21,8 +22,10 @@ namespace BlazorDbTest.Controllers {
                 if (conditions == null || conditions == string.Empty) return;
 
                 DBTest.AxmComment comment = JsonSerializer.Deserialize<DBTest.AxmComment>(conditions);
+                
+                if (comment == null) return;
 
-                if(comment == null) return;
+                comment.Description = DBAccessCommon.CheckConvertString(comment.Description);
 
                 bool result = false;
                 DBAccess dbAccess = DBAccess.GetInstance();

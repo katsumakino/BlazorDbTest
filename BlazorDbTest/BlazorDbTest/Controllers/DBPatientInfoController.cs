@@ -222,6 +222,9 @@ namespace BlazorDbTest.Controllers {
 
         if (patientSearch == null) return DataSource;
 
+        patientSearch.IdOrName = DBAccessCommon.CheckConvertString(patientSearch.IdOrName);
+        patientSearch.PatientComment = DBAccessCommon.CheckConvertString(patientSearch.PatientComment);
+
         DBAccess dbAccess = DBAccess.GetInstance();
         try {
           // PostgreSQL Server 通信接続

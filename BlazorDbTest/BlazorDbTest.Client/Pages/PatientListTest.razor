@@ -157,6 +157,9 @@
     // フラグ,治療方法,コメント: AXM_TABLE
     ////////////////////////////////////////////////////////////////////
     protected async Task GetSearchPatientListAsync() {
+        PatientSearchModel.IdOrName = DBAccessCommon.ConvertString(PatientSearchModel.IdOrName);
+        PatientSearchModel.PatientComment = DBAccessCommon.ConvertString(PatientSearchModel.PatientComment);
+
         string content = $"api/DBPatientInfo/GetSearchPatientList/";
         content += JsonSerializer.Serialize(PatientSearchModel);
 

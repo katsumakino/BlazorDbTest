@@ -542,6 +542,8 @@
   /// </summary>
   /// <returns></returns>
   protected async Task SetAxmCommentListAsync() {
+    AxmCommentModel.Description = DBAccessCommon.ConvertString(AxmCommentModel.Description); 
+
     string content = $"api/DBAxmComment/SetAxmComment/";
     content += PatientInfoModel.ID;
     content += "/";
