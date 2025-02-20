@@ -158,6 +158,39 @@ namespace BlazorDbTest.Controllers {
       return DataSource;
     }
 
+    // 視力測定値削除
+    [HttpGet("DeleteSightData/{examId}/")]
+    public void DeleteSightData(int examId) {
+      try {
+        DBAccess dbAccess = DBAccess.GetInstance();
+
+        bool result = false;
+
+        try {
+          // PostgreSQL Server 通信接続
+          NpgsqlConnection sqlConnection = dbAccess.GetSqlConnection();
+
+          // クエリコマンド実行
+          // AXM_EXAM_SIGHTテーブルからから削除
+          if (delete_by_examId(examId, sqlConnection) != 0) {
+            // EXAM_LISTテーブルから削除
+            result = (DBCommonController.delete_by_ExamId(examId, sqlConnection) != 0);
+          }
+        } catch {
+        } finally {
+          if (!result) {
+            // todo: Error通知
+          }
+
+          // PostgreSQL Server 通信切断
+          dbAccess.CloseSqlConnection();
+        }
+      } catch {
+      }
+
+      return;
+    }
+
     /// <summary>
     /// DBから取得したデータを下記ルールに則りリストへセット
     /// ・1測定日1データ(右左)とする
@@ -303,6 +336,21 @@ namespace BlazorDbTest.Controllers {
       }
 
       return num != 0;
+    }
+
+    public int delete_by_examId(int examId, NpgsqlConnection sqlConnection) {
+      StringBuilder stringBuilder = new StringBuilder();
+      stringBuilder.Append("delete ");
+      stringBuilder.Append("from ");
+      stringBuilder.Append(DBCommonController._table(DBCommonController.DB_TableNames[(int)DBCommonController.eDbTable.AXM_EXAM_SIGHT]));
+      stringBuilder.Append("where ");
+      stringBuilder.Append(DBCommonController._col(COLNAME_ExamSightList[(int)eExamSight.exam_id]));
+      stringBuilder.Append("= ");
+      stringBuilder.Append(DBCommonController._bind(COLNAME_ExamSightList[(int)eExamSight.exam_id]));
+      stringBuilder.Append(";");
+      using NpgsqlCommand npgsqlCommand = new NpgsqlCommand(stringBuilder.ToString(), sqlConnection);
+      npgsqlCommand.Parameters.AddWithValue(COLNAME_ExamSightList[(int)eExamSight.exam_id], examId);
+      return npgsqlCommand.ExecuteNonQuery();
     }
 
     public static string[] COLNAME_ExamSightList = new string[(int)eExamSight.MAX]

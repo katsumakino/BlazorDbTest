@@ -36,6 +36,8 @@
   <table class="table">
     <thead>
       <tr>
+        <th>ExamID(R)</th>
+        <th>ExamID(L)</th>
         <th>ID</th>
         <th>Sight(R)</th>
         <th>Sight(L)</th>
@@ -45,6 +47,8 @@
     <tbody>
       @foreach (var sight in sightList) {
         <tr>
+          <td>@sight.RExamID</td>
+          <td>@sight.LExamID</td>
           <td>@sight.PatientID</td>
           <td>@sight.RSight</td>
           <td>@sight.LSight</td>
@@ -54,6 +58,13 @@
     </tbody>
   </table>
 }
+<div>
+  <label>ID(R):</label>
+  <input type="number" @bind-value=SightListModel.RExamID />
+  <label>ID(L):</label>
+  <input type="number" @bind-value=SightListModel.LExamID />
+  <button @onclick="DeleteSightListButtonClick">Delete</button>
+</div>
 
 @code {
   private SightList[]? sightList;
@@ -109,6 +120,22 @@
 
     //画面を更新する
     StateHasChanged();
+  }
+
+  void DeleteSightListButtonClick() {
+    // 視力測定値リストから削除
+    Task.Run(() => DeleteSightListAsync());
+  }
+
+  /// <summary>
+  /// DBから視力測定値を削除
+  /// </summary>
+  /// <returns></returns>
+  protected async Task DeleteSightListAsync() {
+    string content = $"api/DBSightData/DeleteSightData/";
+
+    await HttpClient.GetAsync(content + SightListModel.RExamID);
+    await HttpClient.GetAsync(content + SightListModel.LExamID);
   }
 
 }

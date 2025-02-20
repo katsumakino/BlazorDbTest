@@ -36,6 +36,8 @@
   <table class="table">
     <thead>
       <tr>
+        <th>ExamID(R)</th>
+        <th>ExamID(L)</th>
         <th>ID</th>
         <th>Pupil(R)</th>
         <th>Pupil(L)</th>
@@ -45,6 +47,8 @@
     <tbody>
       @foreach (var dia in diaList) {
         <tr>
+          <td>@dia.RExamID</td>
+          <td>@dia.LExamID</td>
           <td>@dia.PatientID</td>
           <td>@dia.RPupil</td>
           <td>@dia.LPupil</td>
@@ -54,6 +58,13 @@
     </tbody>
   </table>
 }
+<div>
+  <label>ID(R):</label>
+  <input type="number" @bind-value=DiaListModel.RExamID />
+  <label>ID(L):</label>
+  <input type="number" @bind-value=DiaListModel.LExamID />
+  <button @onclick="DeleteDiaListButtonClick">Delete</button>
+</div>
 
 @code {
     private DiaList[]? diaList;
@@ -109,6 +120,22 @@
 
     //画面を更新する
     StateHasChanged();
+  }
+
+  void DeleteDiaListButtonClick() {
+    // 瞳孔径測定値リストから削除
+    Task.Run(() => DeleteDiaListAsync());
+  }
+
+  /// <summary>
+  /// DBから瞳孔径測定値を削除
+  /// </summary>
+  /// <returns></returns>
+  protected async Task DeleteDiaListAsync() {
+    string content = $"api/DBDiaData/DeleteDiaData/";
+
+    await HttpClient.GetAsync(content + DiaListModel.RExamID);
+    await HttpClient.GetAsync(content + DiaListModel.LExamID);
   }
 
 }

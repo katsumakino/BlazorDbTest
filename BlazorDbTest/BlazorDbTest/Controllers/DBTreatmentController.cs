@@ -1,4 +1,5 @@
-﻿using BlazorDbTest.Client.Pages;
+﻿using AxialManagerS.Shared.Common;
+using BlazorDbTest.Client.Pages;
 using Microsoft.AspNetCore.Mvc;
 using Npgsql;
 using System;
@@ -23,6 +24,8 @@ namespace BlazorDbTest.Controllers {
 
                 DBTest.TreatmentMethodSetting setting = JsonSerializer.Deserialize<DBTest.TreatmentMethodSetting>(conditions);
                 if (setting == null) return;
+
+                setting.TreatName = DBAccessCommon.CheckConvertString(setting.TreatName);
 
                 if (setting.TreatName == null || setting.TreatName == string.Empty) return;
                 if(setting.RGBAColor == null) return;
@@ -239,6 +242,69 @@ namespace BlazorDbTest.Controllers {
             }
 
             return DataSource;
+        }
+
+        // 治療状況削除
+        [HttpGet("DeleteTreatmentData/{treatmentId}/")]
+        public void DeleteTreatmentData(int treatmentId) {
+            try {
+                DBAccess dbAccess = DBAccess.GetInstance();
+
+                bool result = false;
+
+                try {
+                    // PostgreSQL Server 通信接続
+                    NpgsqlConnection sqlConnection = dbAccess.GetSqlConnection();
+
+                    // クエリコマンド実行
+                    // AXM_TREATMENTテーブルからから削除
+                    result = (delete_treatment_by_treatmentId(treatmentId, sqlConnection) != 0);
+                } catch {
+                } finally {
+                    if (!result) {
+                        // todo: Error通知
+                    }
+
+                    // PostgreSQL Server 通信切断
+                    dbAccess.CloseSqlConnection();
+                }
+            } catch {
+            }
+
+            return;
+        }
+
+        // 治療方法削除
+        [HttpGet("DeleteTreatmentInfoData/{treatmentTypeId}/")]
+        public void DeleteTreatmentInfoData(int treatmentTypeId) {
+            try {
+                DBAccess dbAccess = DBAccess.GetInstance();
+
+                bool result = false;
+
+                try {
+                    // PostgreSQL Server 通信接続
+                    NpgsqlConnection sqlConnection = dbAccess.GetSqlConnection();
+
+                    // クエリコマンド実行
+                    // AXM_TREATMENTテーブルからから全データ削除
+                    if(delete_treatment_by_treatmentTypeId(treatmentTypeId, sqlConnection) != 0) {
+                        // AXM_TREATMENT_INFOテーブルからから削除
+                        result = (delete_treatmentinfo_by_treatmentTypeId(treatmentTypeId, sqlConnection) != 0);
+                    }                    
+                } catch {
+                } finally {
+                    if (!result) {
+                        // todo: Error通知
+                    }
+
+                    // PostgreSQL Server 通信切断
+                    dbAccess.CloseSqlConnection();
+                }
+            } catch {
+            }
+
+            return;
         }
 
         public static bool InsertTreatmentInfo(TreatmentInfoRec rec, NpgsqlConnection sqlConnection) {
@@ -491,6 +557,51 @@ namespace BlazorDbTest.Controllers {
             }
 
             return result;
+        }
+
+        public int delete_treatment_by_treatmentId(int treatmentId, NpgsqlConnection sqlConnection) {
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.Append("delete ");
+            stringBuilder.Append("from ");
+            stringBuilder.Append(_table(DB_TableNames[(int)eDbTable.AXM_TREATMENT]));
+            stringBuilder.Append("where ");
+            stringBuilder.Append(_col(COLNAME_AxmTreatmentList[(int)eAxmTreatment.treatment_id]));
+            stringBuilder.Append("= ");
+            stringBuilder.Append(_bind(COLNAME_AxmTreatmentList[(int)eAxmTreatment.treatment_id]));
+            stringBuilder.Append(";");
+            using NpgsqlCommand npgsqlCommand = new NpgsqlCommand(stringBuilder.ToString(), sqlConnection);
+            npgsqlCommand.Parameters.AddWithValue(COLNAME_AxmTreatmentList[(int)eAxmTreatment.treatment_id], treatmentId);
+            return npgsqlCommand.ExecuteNonQuery();
+        }
+
+        public int delete_treatment_by_treatmentTypeId(int treatmentTypeId, NpgsqlConnection sqlConnection) {
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.Append("delete ");
+            stringBuilder.Append("from ");
+            stringBuilder.Append(_table(DB_TableNames[(int)eDbTable.AXM_TREATMENT]));
+            stringBuilder.Append("where ");
+            stringBuilder.Append(_col(COLNAME_AxmTreatmentList[(int)eAxmTreatment.treatmenttype_id]));
+            stringBuilder.Append("= ");
+            stringBuilder.Append(_bind(COLNAME_AxmTreatmentList[(int)eAxmTreatment.treatmenttype_id]));
+            stringBuilder.Append(";");
+            using NpgsqlCommand npgsqlCommand = new NpgsqlCommand(stringBuilder.ToString(), sqlConnection);
+            npgsqlCommand.Parameters.AddWithValue(COLNAME_AxmTreatmentList[(int)eAxmTreatment.treatmenttype_id], treatmentTypeId);
+            return npgsqlCommand.ExecuteNonQuery();
+        }
+
+        public int delete_treatmentinfo_by_treatmentTypeId(int treatmentTypeId, NpgsqlConnection sqlConnection) {
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.Append("delete ");
+            stringBuilder.Append("from ");
+            stringBuilder.Append(_table(DB_TableNames[(int)eDbTable.AXM_TREATMENT_INFO]));
+            stringBuilder.Append("where ");
+            stringBuilder.Append(_col(COLNAME_AxmTreatmentInfoList[(int)eAxmTreatmentInfo.treatmenttype_id]));
+            stringBuilder.Append("= ");
+            stringBuilder.Append(_bind(COLNAME_AxmTreatmentInfoList[(int)eAxmTreatmentInfo.treatmenttype_id]));
+            stringBuilder.Append(";");
+            using NpgsqlCommand npgsqlCommand = new NpgsqlCommand(stringBuilder.ToString(), sqlConnection);
+            npgsqlCommand.Parameters.AddWithValue(COLNAME_AxmTreatmentInfoList[(int)eAxmTreatmentInfo.treatmenttype_id], treatmentTypeId);
+            return npgsqlCommand.ExecuteNonQuery();
         }
 
         public static string[] COLNAME_AxmTreatmentInfoList = new string[(int)eAxmTreatmentInfo.MAX] {

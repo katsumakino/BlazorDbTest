@@ -130,6 +130,35 @@ namespace BlazorDbTest.Controllers {
             return DataSource;
         }
 
+        // コメント削除
+        [HttpGet("DeleteAxmCommentData/{commentId}/")]
+        public void DeleteAxmCommentData(int commentId) {
+            try {
+                DBAccess dbAccess = DBAccess.GetInstance();
+
+                bool result = false;
+
+                try {
+                    // PostgreSQL Server 通信接続
+                    NpgsqlConnection sqlConnection = dbAccess.GetSqlConnection();
+
+                    // クエリコマンド実行
+                    result = (delete_by_commentId(commentId, sqlConnection) != 0);
+                } catch {
+                } finally {
+                    if (!result) {
+                        // todo: Error通知
+                    }
+
+                    // PostgreSQL Server 通信切断
+                    dbAccess.CloseSqlConnection();
+                }
+            } catch {
+            }
+
+            return;
+        }
+
         public static bool InsertAxmComment(AxmCommentRec rec, NpgsqlConnection sqlConnection) {
             // SQLコマンド
             StringBuilder stringBuilder = new StringBuilder();
@@ -241,6 +270,21 @@ namespace BlazorDbTest.Controllers {
             }
 
             return result;
+        }
+
+        public int delete_by_commentId(int commentId, NpgsqlConnection sqlConnection) {
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.Append("delete ");
+            stringBuilder.Append("from ");
+            stringBuilder.Append(_table(DB_TableNames[(int)eDbTable.AXM_COMMENT]));
+            stringBuilder.Append("where ");
+            stringBuilder.Append(_col(COLNAME_AxmCommentList[(int)eAxmComment.comment_id]));
+            stringBuilder.Append("= ");
+            stringBuilder.Append(_bind(COLNAME_AxmCommentList[(int)eAxmComment.comment_id]));
+            stringBuilder.Append(";");
+            using NpgsqlCommand npgsqlCommand = new NpgsqlCommand(stringBuilder.ToString(), sqlConnection);
+            npgsqlCommand.Parameters.AddWithValue(COLNAME_AxmCommentList[(int)eAxmComment.comment_id], commentId);
+            return npgsqlCommand.ExecuteNonQuery();
         }
 
         public static string[] COLNAME_AxmCommentList = new string[(int)eAxmComment.MAX] {

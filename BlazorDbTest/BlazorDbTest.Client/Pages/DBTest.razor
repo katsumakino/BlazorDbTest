@@ -104,9 +104,6 @@
 </div>
 <div>
     <button @onclick="AxialButtonClick">Register</button>
-</div>
-<br />
-<div>
     <button @onclick="UpdateAxialListButtonClick">Update</button>
 </div>
 @if (axialList == null) {
@@ -115,6 +112,8 @@
     <table class="table">
         <thead>
             <tr>
+                <th>ExamID(R)</th>
+                <th>ExamID(L)</th>
                 <th>ID</th>
                 <th>R</th>
                 <th>L</th>
@@ -124,6 +123,8 @@
         <tbody>
             @foreach (var axial in axialList) {
                 <tr>
+                    <td>@axial.RExamID</td>
+                    <td>@axial.LExamID</td>
                     <td>@axial.PatientID</td>
                     <td>@axial.RAxial</td>
                     <td>@axial.LAxial</td>
@@ -133,6 +134,13 @@
         </tbody>
     </table>
 }
+<div>
+  <label>ID(R):</label>
+  <input type="number" @bind-value=AxialModel.RExamID />
+  <label>ID(L):</label>
+  <input type="number" @bind-value=AxialModel.LExamID />
+  <button @onclick="DeleteAxialListButtonClick">Delete</button>
+</div>
 
 <br />
 <h4>○ 治療名称</h4>
@@ -205,6 +213,11 @@
         </tbody>
     </table>
 }
+<div>
+  <label>ID:</label>
+  <input type="number" @bind-value=TreatmentMethodModel.ID />
+  <button @onclick="DeleteTreatmentMethodButtonClick">Delete</button>
+</div>
 
 <br />
 <h4>○ 患者の治療状況登録</h4>
@@ -252,6 +265,11 @@
         </tbody>
     </table>
 }
+<div>
+  <label>ID:</label>
+  <input type="number" @bind-value=TreatmentModel.ID />
+  <button @onclick="DeleteTreatmentButtonClick">Delete</button>
+</div>
 
 <br />
 <h4>○ コメント登録</h4>
@@ -303,6 +321,11 @@
         </tbody>
     </table>
 }
+<div>
+  <label>ID(R):</label>
+  <input type="number" @bind-value=AxmCommentModel.ID />
+  <button @onclick="DeleteCommentListButtonClick">Delete</button>
+</div>
 
 @code {
   public readonly string EmptyText = Convert.ToBase64String(Encoding.UTF8.GetBytes("Noi_Npu_Tva_Lue"));   // todo: Common定義
@@ -407,6 +430,26 @@
     Task.Run(() => GetAxmCommentListAsync());
   }
 
+  void DeleteAxialListButtonClick() {
+    // 眼軸長測定値リストから削除
+    Task.Run(() => DeleteAxialListAsync());
+  }
+
+  void DeleteTreatmentButtonClick() {
+    // 治療方法リストから削除
+    Task.Run(() => DeleteTreatmentAsync());
+  }
+
+  void DeleteTreatmentMethodButtonClick() {
+    // 治療状況リストから削除
+    Task.Run(() => DeleteTreatmentMethodAsync());
+  }
+
+  void DeleteCommentListButtonClick() {
+    // コメントリストから削除
+    Task.Run(() => DeleteCommentListAsync());
+  }
+
   /// <summary>
   /// DBへ患者情報を書込み
   /// </summary>
@@ -486,10 +529,23 @@
   }
 
   /// <summary>
+  /// DBから眼軸長測定値を削除
+  /// </summary>
+  /// <returns></returns>
+  protected async Task DeleteAxialListAsync() {
+    string content = $"api/DBAxialData/DeleteOptAxialData/";
+    
+    await HttpClient.GetAsync(content + AxialModel.RExamID);
+    await HttpClient.GetAsync(content + AxialModel.LExamID);
+  }
+
+  /// <summary>
   /// DBへ治療方法を書込み
   /// </summary>
   /// <returns></returns>
   protected async Task SetTreatmentMethodAsync() {
+    TreatmentMethodModel.TreatName = DBAccessCommon.ConvertString(TreatmentMethodModel.TreatName);
+
     string content = $"api/DBTreatment/SetTreatmentMethod/";
     content += JsonSerializer.Serialize(TreatmentMethodModel);
 
@@ -509,7 +565,17 @@
   }
 
   /// <summary>
-  /// DBへ治療方法を書込み
+  /// DBから治療方法を削除
+  /// </summary>
+  /// <returns></returns>
+  protected async Task DeleteTreatmentMethodAsync() {
+    string content = $"api/DBTreatment/DeleteTreatmentInfoData/";
+
+    await HttpClient.GetAsync(content + TreatmentMethodModel.ID);
+  }
+
+  /// <summary>
+  /// DBへ治療状況を書込み
   /// </summary>
   /// <returns></returns>
   protected async Task SetTreatmentDataAsync() {
@@ -524,7 +590,7 @@
   }
 
   /// <summary>
-  /// DBから治療方法を取得
+  /// DBから治療状況を取得
   /// </summary>
   /// <returns></returns>
   protected async Task GetTreatmentDataListAsync() {
@@ -535,6 +601,16 @@
 
     //画面を更新する
     StateHasChanged();
+  }
+
+  /// <summary>
+  /// DBから治療状況を削除
+  /// </summary>
+  /// <returns></returns>
+  protected async Task DeleteTreatmentAsync() {
+    string content = $"api/DBTreatment/DeleteTreatmentData/";
+
+    await HttpClient.GetAsync(content + TreatmentModel.ID);
   }
 
   /// <summary>
@@ -563,6 +639,16 @@
 
     //画面を更新する
     StateHasChanged();
+  }
+
+  /// <summary>
+  /// DBからコメントを削除
+  /// </summary>
+  /// <returns></returns>
+  protected async Task DeleteCommentListAsync() {
+    string content = $"api/DBAxmComment/DeleteAxmCommentData/";
+
+    await HttpClient.GetAsync(content + AxmCommentModel.ID);
   }
 
   // 測定日時の日付部分のみ取得

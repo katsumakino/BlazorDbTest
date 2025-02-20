@@ -396,6 +396,21 @@ namespace BlazorDbTest.Controllers {
             return result;
         }
 
+        public static int delete_by_ExamId(int examId, NpgsqlConnection sqlConnection) {
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.Append("delete ");
+            stringBuilder.Append("from ");
+            stringBuilder.Append(_table(DB_TableNames[(int)eDbTable.EXAM_LIST]));
+            stringBuilder.Append("where ");
+            stringBuilder.Append(_col(COLNAME_ExamList[(int)eExamList.exam_id]));
+            stringBuilder.Append("= ");
+            stringBuilder.Append(_bind(COLNAME_ExamList[(int)eExamList.exam_id]));
+            stringBuilder.Append(";");
+            using NpgsqlCommand npgsqlCommand = new NpgsqlCommand(stringBuilder.ToString(), sqlConnection);
+            npgsqlCommand.Parameters.AddWithValue(COLNAME_ExamList[(int)eExamList.exam_id], examId);
+            return npgsqlCommand.ExecuteNonQuery();
+        }
+
         public static object _DateTimeToObject(DateTime? input) {
             object obj = input;
             obj ??= DBNull.Value;

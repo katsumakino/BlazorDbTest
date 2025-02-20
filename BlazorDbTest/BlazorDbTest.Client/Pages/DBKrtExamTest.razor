@@ -46,6 +46,8 @@
   <table class="table">
     <thead>
       <tr>
+        <th>ExamID(R)</th>
+        <th>ExamID(L)</th>
         <th>ID</th>
         <th>K1(R)</th>
         <th>K1(L)</th>
@@ -61,6 +63,8 @@
     <tbody>
       @foreach (var krt in krtList) {
         <tr>
+          <td>@krt.RExamID</td>
+          <td>@krt.LExamID</td>
           <td>@krt.PatientID</td>
           <td>@krt.RK1_mm</td>
           <td>@krt.LK1_mm</td>
@@ -76,6 +80,13 @@
     </tbody>
   </table>
 }
+<div>
+  <label>ID(R):</label>
+  <input type="number" @bind-value=KrtListModel.RExamID />
+  <label>ID(L):</label>
+  <input type="number" @bind-value=KrtListModel.LExamID />
+  <button @onclick="DeleteKrtListButtonClick">Delete</button>
+</div>
 
 @code {
   private KrtList[]? krtList;
@@ -131,6 +142,22 @@
 
     //画面を更新する
     StateHasChanged();
+  }
+
+  void DeleteKrtListButtonClick() {
+    // ケラト測定値リストから削除
+    Task.Run(() => DeleteKrtListAsync());
+  }
+
+  /// <summary>
+  /// DBからケラト測定値を削除
+  /// </summary>
+  /// <returns></returns>
+  protected async Task DeleteKrtListAsync() {
+    string content = $"api/DBKrtData/DeleteKrtData/";
+
+    await HttpClient.GetAsync(content + KrtListModel.RExamID);
+    await HttpClient.GetAsync(content + KrtListModel.LExamID);
   }
 
 }

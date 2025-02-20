@@ -165,6 +165,39 @@ namespace BlazorDbTest.Controllers {
       return DataSource;
     }
 
+    // レフ(他覚)測定値削除
+    [HttpGet("DeleteRefData/{examId}/")]
+    public void DeleteRefData(int examId) {
+      try {
+        DBAccess dbAccess = DBAccess.GetInstance();
+
+        bool result = false;
+
+        try {
+          // PostgreSQL Server 通信接続
+          NpgsqlConnection sqlConnection = dbAccess.GetSqlConnection();
+
+          // クエリコマンド実行
+          // EXAM_REFテーブルからから削除
+          if (delete_by_examId(examId, sqlConnection) != 0) {
+            // EXAM_LISTテーブルから削除
+            result = (DBCommonController.delete_by_ExamId(examId, sqlConnection) != 0);
+          }
+        } catch {
+        } finally {
+          if (!result) {
+            // todo: Error通知
+          }
+
+          // PostgreSQL Server 通信切断
+          dbAccess.CloseSqlConnection();
+        }
+      } catch {
+      }
+
+      return;
+    }
+
     /// <summary>
     /// DBから取得したデータを下記ルールに則りリストへセット
     /// ・1測定日1データ(右左)とする
@@ -374,6 +407,21 @@ namespace BlazorDbTest.Controllers {
       }
 
       return num != 0;
+    }
+
+    public int delete_by_examId(int examId, NpgsqlConnection sqlConnection) {
+      StringBuilder stringBuilder = new StringBuilder();
+      stringBuilder.Append("delete ");
+      stringBuilder.Append("from ");
+      stringBuilder.Append(DBCommonController._table(DBCommonController.DB_TableNames[(int)DBCommonController.eDbTable.EXAM_REF]));
+      stringBuilder.Append("where ");
+      stringBuilder.Append(DBCommonController._col(COLNAME_ExamRefList[(int)eExamRef.exam_id]));
+      stringBuilder.Append("= ");
+      stringBuilder.Append(DBCommonController._bind(COLNAME_ExamRefList[(int)eExamRef.exam_id]));
+      stringBuilder.Append(";");
+      using NpgsqlCommand npgsqlCommand = new NpgsqlCommand(stringBuilder.ToString(), sqlConnection);
+      npgsqlCommand.Parameters.AddWithValue(COLNAME_ExamRefList[(int)eExamRef.exam_id], examId);
+      return npgsqlCommand.ExecuteNonQuery();
     }
 
     // todo: 誤字修正

@@ -36,6 +36,8 @@
   <table class="table">
     <thead>
       <tr>
+        <th>ExamID(R)</th>
+        <th>ExamID(L)</th>
         <th>ID</th>
         <th>Pachy(R)</th>
         <th>Pachy(L)</th>
@@ -45,6 +47,8 @@
     <tbody>
       @foreach (var pachy in pachyList) {
         <tr>
+          <td>@pachy.RExamID</td>
+          <td>@pachy.LExamID</td>
           <td>@pachy.PatientID</td>
           <td>@pachy.RPachy</td>
           <td>@pachy.LPachy</td>
@@ -54,6 +58,13 @@
     </tbody>
   </table>
 }
+<div>
+  <label>ID(R):</label>
+  <input type="number" @bind-value=PachyListModel.RExamID />
+  <label>ID(L):</label>
+  <input type="number" @bind-value=PachyListModel.LExamID />
+  <button @onclick="DeletePachyListButtonClick">Delete</button>
+</div>
 
 @code {
   private PachyList[]? pachyList;
@@ -109,6 +120,22 @@
 
     //画面を更新する
     StateHasChanged();
+  }
+
+  void DeletePachyListButtonClick() {
+    // 角膜厚測定値リストから削除
+    Task.Run(() => DeletePachyListAsync());
+  }
+
+  /// <summary>
+  /// DBから角膜厚測定値を削除
+  /// </summary>
+  /// <returns></returns>
+  protected async Task DeletePachyListAsync() {
+    string content = $"api/DBPachyData/DeletePachyData/";
+
+    await HttpClient.GetAsync(content + PachyListModel.RExamID);
+    await HttpClient.GetAsync(content + PachyListModel.LExamID);
   }
 
 }

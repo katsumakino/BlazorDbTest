@@ -46,6 +46,8 @@
   <table class="table">
     <thead>
       <tr>
+        <th>ExamID(R)</th>
+        <th>ExamID(L)</th>
         <th>ID</th>
         <th>S(R)</th>
         <th>S(L)</th>
@@ -61,6 +63,8 @@
     <tbody>
       @foreach (var _ref in refList) {
         <tr>
+          <td>@_ref.RExamID</td>
+          <td>@_ref.LExamID</td>
           <td>@_ref.PatientID</td>
           <td>@_ref.RS_d</td>
           <td>@_ref.LS_d</td>
@@ -76,6 +80,13 @@
     </tbody>
   </table>
 }
+<div>
+  <label>ID(R):</label>
+  <input type="number" @bind-value=RefListModel.RExamID />
+  <label>ID(L):</label>
+  <input type="number" @bind-value=RefListModel.LExamID />
+  <button @onclick="DeleteRefListButtonClick">Delete</button>
+</div>
 
 <h4>Ref(自覚)測定値</h4>
 <div>
@@ -88,6 +99,8 @@
   <table class="table">
     <thead>
       <tr>
+        <th>ExamID(R)</th>
+        <th>ExamID(L)</th>
         <th>ID</th>
         <th>S(R)</th>
         <th>S(L)</th>
@@ -103,6 +116,8 @@
     <tbody>
       @foreach (var _sciref in sciRefList) {
         <tr>
+          <td>@_sciref.RExamID</td>
+          <td>@_sciref.LExamID</td>
           <td>@_sciref.PatientID</td>
           <td>@_sciref.RS_d</td>
           <td>@_sciref.LS_d</td>
@@ -118,6 +133,13 @@
     </tbody>
   </table>
 }
+<div>
+  <label>ID(R):</label>
+  <input type="number" @bind-value=RefListModel.RExamID />
+  <label>ID(L):</label>
+  <input type="number" @bind-value=RefListModel.LExamID />
+  <button @onclick="DeleteSciRefListButtonClick">Delete</button>
+</div>
 
 @code {
   private RefList[]? refList;
@@ -176,6 +198,22 @@
     StateHasChanged();
   }
 
+  void DeleteRefListButtonClick() {
+    // Ref(他覚)測定値リストから削除
+    Task.Run(() => DeleteRefListAsync());
+  }
+
+  /// <summary>
+  /// DBからRef(他覚)測定値を削除
+  /// </summary>
+  /// <returns></returns>
+  protected async Task DeleteRefListAsync() {
+    string content = $"api/DBRefData/DeleteRefData/";
+
+    await HttpClient.GetAsync(content + RefListModel.RExamID);
+    await HttpClient.GetAsync(content + RefListModel.LExamID);
+  }
+
   void SciRefRegisterButtonClick() {
     Task.Run(() => SetSciRefDataAsync());
   }
@@ -209,6 +247,22 @@
 
     //画面を更新する
     StateHasChanged();
+  }
+
+  void DeleteSciRefListButtonClick() {
+    // Ref(自覚)測定値リストから削除
+    Task.Run(() => DeleteSciRefListAsync());
+  }
+
+  /// <summary>
+  /// DBからRef(自覚)測定値を削除
+  /// </summary>
+  /// <returns></returns>
+  protected async Task DeleteSciRefListAsync() {
+    string content = $"api/DBSciRefData/DeleteSciRefData/";
+
+    await HttpClient.GetAsync(content + RefListModel.RExamID);
+    await HttpClient.GetAsync(content + RefListModel.LExamID);
   }
 
 }
