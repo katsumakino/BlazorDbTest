@@ -455,6 +455,10 @@
   /// </summary>
   /// <returns></returns>
   protected async Task SetPatientInfoAsync() {
+    PatientInfoModel.FirstName = DBAccessCommon.ConvertString(PatientInfoModel.FirstName);
+    PatientInfoModel.FamilyName = DBAccessCommon.ConvertString(PatientInfoModel.FamilyName);
+    PatientInfoModel.SameID = DBAccessCommon.ConvertString(PatientInfoModel.SameID);
+
     string content = $"api/DBPatientInfo/SetPatientInfo/";
     content += JsonSerializer.Serialize(PatientInfoModel);
 

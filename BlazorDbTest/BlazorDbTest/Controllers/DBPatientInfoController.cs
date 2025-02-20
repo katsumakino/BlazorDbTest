@@ -27,6 +27,10 @@ namespace BlazorDbTest.Controllers {
 
         if (patientInfo.ID == null || patientInfo.ID == string.Empty) return;
 
+        patientInfo.FamilyName = DBAccessCommon.CheckConvertString(patientInfo.FamilyName);
+        patientInfo.FirstName = DBAccessCommon.CheckConvertString(patientInfo.FirstName);
+        patientInfo.SameID = DBAccessCommon.CheckConvertString(patientInfo.SameID);
+
         bool result = false;
         DBAccess dbAccess = DBAccess.GetInstance();
 
@@ -608,6 +612,9 @@ namespace BlazorDbTest.Controllers {
       stringBuilder.Append(text2);
       stringBuilder.Append(_onconflict("pk_axm_patient_list"));
       stringBuilder.Append(_doupdateexam(COLNAME_AxmPatientList[(int)eAxmPatientList.updated_at], DateTime.Now));
+      stringBuilder.Append(_doupdatevalue(COLNAME_AxmPatientList[(int)eAxmPatientList.axm_flag], aPatientRec.axm_flag.ToString()));
+      stringBuilder.Append(_doupdatevalue(COLNAME_AxmPatientList[(int)eAxmPatientList.is_axm_same_pt_id], aPatientRec.is_axm_same_pt_id.ToString()));
+      stringBuilder.Append(_doupdatevalue(COLNAME_AxmPatientList[(int)eAxmPatientList.axm_same_pt_id], aPatientRec.axm_same_pt_id));
       stringBuilder.Append(";");
 
       using (NpgsqlCommand npgsqlCommand = new NpgsqlCommand(stringBuilder.ToString(), sqlConnection)) {
