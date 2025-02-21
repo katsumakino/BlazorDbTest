@@ -4,9 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 using Npgsql;
 using System.Data;
 using System.Text;
-using System.Text.Json;
-using BlazorDbTest.Controllers;
-using static BlazorDbTest.Controllers.DBAxialDataController;
 
 namespace BlazorDbTest.Controllers {
 
@@ -15,15 +12,11 @@ namespace BlazorDbTest.Controllers {
   public class DBPachyDataController : ControllerBase {
 
     // 角膜厚測定値書込み
-    [HttpGet("SetPachy/{conditions}/")]
-    public void SetPachy(string conditions) {
+    [HttpPost("SetPachy")]
+    public void SetPachy([FromBody] PachyList conditions) {
       try {
-        if (conditions == null || conditions == string.Empty) return;
-
-        PachyList PachyList = JsonSerializer.Deserialize<PachyList>(conditions);
-
-        if (PachyList == null) return;
-        if (PachyList.PatientID == null || PachyList.PatientID == string.Empty) return;
+        if (conditions == null) return;
+        if (conditions.PatientID == null || conditions.PatientID == string.Empty) return;
 
         bool result = false;
         DBAccess dbAccess = DBAccess.GetInstance();
@@ -34,7 +27,7 @@ namespace BlazorDbTest.Controllers {
 
           // クエリコマンド実行
           // UUIDの有無を確認(true:update / false:insert)
-          var uuid = DBCommonController.Select_PTUUID_by_PTID(sqlConnection, PachyList.PatientID);
+          var uuid = DBCommonController.Select_PTUUID_by_PTID(sqlConnection, conditions.PatientID);
           if (uuid == string.Empty) {
             // AXMからの測定データ登録時は、必ず患者データが存在する
             return;
@@ -43,14 +36,14 @@ namespace BlazorDbTest.Controllers {
             var exam_id_r = DBCommonController.RegisterExamList(uuid,
                 DBConst.strMstDataType[DBConst.eMSTDATATYPE.PACHY_CCT],
                 DBConst.eEyeType.RIGHT,
-                PachyList.ExamDateTime,
+                conditions.ExamDateTime,
                 sqlConnection);
             // EXAM_Pachyに保存(右眼測定値)
             var rec_Pachy_r = MakePachyRec(exam_id_r,
                 DBConst.strEyeType[DBConst.eEyeType.RIGHT],
                 sqlConnection);
-            rec_Pachy_r.pachy_um[0] = PachyList.RPachy;
-            rec_Pachy_r.measured_at = PachyList.ExamDateTime;
+            rec_Pachy_r.pachy_um[0] = conditions.RPachy;
+            rec_Pachy_r.measured_at = conditions.ExamDateTime;
 
             // DB登録
             result = Insert(rec_Pachy_r, sqlConnection);
@@ -59,14 +52,14 @@ namespace BlazorDbTest.Controllers {
             var exam_id_l = DBCommonController.RegisterExamList(uuid,
                 DBConst.strMstDataType[DBConst.eMSTDATATYPE.PACHY_CCT],
                 DBConst.eEyeType.LEFT,
-                PachyList.ExamDateTime,
+                conditions.ExamDateTime,
                 sqlConnection);
             // EXAM_Pachyに保存(左眼測定値)
             var rec_Pachy_l = MakePachyRec(exam_id_l,
                 DBConst.strEyeType[DBConst.eEyeType.LEFT],
                 sqlConnection);
-            rec_Pachy_l.pachy_um[0] = PachyList.LPachy;
-            rec_Pachy_l.measured_at = PachyList.ExamDateTime;
+            rec_Pachy_l.pachy_um[0] = conditions.LPachy;
+            rec_Pachy_l.measured_at = conditions.ExamDateTime;
 
             // DB登録
             result &= Insert(rec_Pachy_l, sqlConnection);
@@ -138,14 +131,14 @@ namespace BlazorDbTest.Controllers {
           List<PachyData> PachyDataSource = new();
 
           PachyDataSource = (from DataRow data in DataTable.Rows
-                           select new PachyData() {
-                             ID = data[COLNAME_ExamPachyList[(int)eExamPachy.exam_id]].ToString() ?? string.Empty,
-                             Pachy = DBCommonController._objectToDoubleList(data[COLNAME_ExamPachyList[(int)eExamPachy.pachy_um]]),
-                             EyeId = (EyeType)Enum.ToObject(typeof(EyeType), data[COLNAME_ExamPachyList[(int)eExamPachy.eye_id]]),
-                             IsExamData = (bool)data[COLNAME_ExamPachyList[(int)eExamPachy.is_exam_data]],
-                             DeviceID = 4,     // todo: 
-                             ExamDateTime = (DateTime)data[COLNAME_ExamPachyList[(int)eExamPachy.measured_at]],
-                           }).ToList();
+                             select new PachyData() {
+                               ID = data[COLNAME_ExamPachyList[(int)eExamPachy.exam_id]].ToString() ?? string.Empty,
+                               Pachy = DBCommonController._objectToDoubleList(data[COLNAME_ExamPachyList[(int)eExamPachy.pachy_um]]),
+                               EyeId = (EyeType)Enum.ToObject(typeof(EyeType), data[COLNAME_ExamPachyList[(int)eExamPachy.eye_id]]),
+                               IsExamData = (bool)data[COLNAME_ExamPachyList[(int)eExamPachy.is_exam_data]],
+                               DeviceID = 4,     // todo: 
+                               ExamDateTime = (DateTime)data[COLNAME_ExamPachyList[(int)eExamPachy.measured_at]],
+                             }).ToList();
 
           DataSource = SetPachyList(patientId, PachyDataSource.ToArray());
         }

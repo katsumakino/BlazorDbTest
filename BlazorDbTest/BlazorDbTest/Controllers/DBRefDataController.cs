@@ -13,15 +13,11 @@ namespace BlazorDbTest.Controllers {
   public class DBRefDataController : ControllerBase {
 
     // レフ(他覚)測定値書込み
-    [HttpGet("SetRef/{conditions}/")]
-    public void SetRef(string conditions) {
+    [HttpPost("SetRef")]
+    public void SetRef([FromBody] RefList conditions) {
       try {
-        if (conditions == null || conditions == string.Empty) return;
-
-        RefList RefList = JsonSerializer.Deserialize<RefList>(conditions);
-
-        if (RefList == null) return;
-        if (RefList.PatientID == null || RefList.PatientID == string.Empty) return;
+        if (conditions == null) return;
+        if (conditions.PatientID == null || conditions.PatientID == string.Empty) return;
 
         bool result = false;
         DBAccess dbAccess = DBAccess.GetInstance();
@@ -32,7 +28,7 @@ namespace BlazorDbTest.Controllers {
 
           // クエリコマンド実行
           // UUIDの有無を確認(true:update / false:insert)
-          var uuid = DBCommonController.Select_PTUUID_by_PTID(sqlConnection, RefList.PatientID);
+          var uuid = DBCommonController.Select_PTUUID_by_PTID(sqlConnection, conditions.PatientID);
           if (uuid == string.Empty) {
             // AXMからの測定データ登録時は、必ず患者データが存在する
             return;
@@ -41,17 +37,17 @@ namespace BlazorDbTest.Controllers {
             var exam_id_r = DBCommonController.RegisterExamList(uuid,
                 DBConst.strMstDataType[DBConst.eMSTDATATYPE.REF],
                 DBConst.eEyeType.RIGHT,
-                RefList.ExamDateTime,
+                conditions.ExamDateTime,
                 sqlConnection);
             // EXAM_Refに保存(右眼測定値)
             var rec_Ref_r = MakeRefRec(exam_id_r,
                 DBConst.strEyeType[DBConst.eEyeType.RIGHT],
                 sqlConnection);
-            rec_Ref_r.s_d[0] = RefList.RS_d;
-            rec_Ref_r.c_d[0] = RefList.RC_d;
-            rec_Ref_r.a_deg[0] = RefList.RA_deg;
-            rec_Ref_r.se_d[0] = RefList.RS_d + (RefList.RC_d / 2);
-            rec_Ref_r.measured_at = RefList.ExamDateTime;
+            rec_Ref_r.s_d[0] = conditions.RS_d;
+            rec_Ref_r.c_d[0] = conditions.RC_d;
+            rec_Ref_r.a_deg[0] = conditions.RA_deg;
+            rec_Ref_r.se_d[0] = conditions.RS_d + (conditions.RC_d / 2);
+            rec_Ref_r.measured_at = conditions.ExamDateTime;
 
             // DB登録
             result = Insert(rec_Ref_r, sqlConnection);
@@ -60,17 +56,17 @@ namespace BlazorDbTest.Controllers {
             var exam_id_l = DBCommonController.RegisterExamList(uuid,
                 DBConst.strMstDataType[DBConst.eMSTDATATYPE.REF],
                 DBConst.eEyeType.LEFT,
-                RefList.ExamDateTime,
+                conditions.ExamDateTime,
                 sqlConnection);
             // EXAM_Refに保存(左眼測定値)
             var rec_Ref_l = MakeRefRec(exam_id_l,
                 DBConst.strEyeType[DBConst.eEyeType.LEFT],
                 sqlConnection);
-            rec_Ref_l.s_d[0] = RefList.LS_d;
-            rec_Ref_l.c_d[0] = RefList.LC_d;
-            rec_Ref_l.a_deg[0] = RefList.LA_deg;
-            rec_Ref_l.se_d[0] = RefList.LS_d + (RefList.LC_d / 2);
-            rec_Ref_l.measured_at = RefList.ExamDateTime;
+            rec_Ref_l.s_d[0] = conditions.LS_d;
+            rec_Ref_l.c_d[0] = conditions.LC_d;
+            rec_Ref_l.a_deg[0] = conditions.LA_deg;
+            rec_Ref_l.se_d[0] = conditions.LS_d + (conditions.LC_d / 2);
+            rec_Ref_l.measured_at = conditions.ExamDateTime;
 
             // DB登録
             result &= Insert(rec_Ref_l, sqlConnection);
@@ -261,7 +257,7 @@ namespace BlazorDbTest.Controllers {
                       list[j].LS_d = RefDataList[i].S_d[0] ?? 0.0;    // todo:
                       list[j].LC_d = RefDataList[i].C_d[0] ?? 0.0;
                       list[j].LA_deg = RefDataList[i].A_deg[0] ?? 0;
-                      list[j].LSE_d = RefDataList[i].SE_d[0] ?? 0.0; 
+                      list[j].LSE_d = RefDataList[i].SE_d[0] ?? 0.0;
                       list[j].IsLManualInput = (RefDataList[i].DeviceID == 4);  // todo:
                       list[j].ExamDateTime = RefDataList[i].ExamDateTime;
                       isExist = true;

@@ -17,19 +17,11 @@ namespace BlazorDbTest.Controllers {
   public class DBPatientInfoController : ControllerBase {
 
     // 患者情報書込み
-    [HttpGet("SetPatientInfo/{conditions}")]
-    public void SetPatientInfo(string conditions) {
+    [HttpPost("SetPatientInfo")]
+    public void SetPatientInfo([FromBody] PatientInfo conditions) {
       try {
-        if (conditions == null || conditions == string.Empty) return;
-
-        PatientInfo patientInfo = JsonSerializer.Deserialize<PatientInfo>(conditions);
-        if (patientInfo == null) return;
-
-        if (patientInfo.ID == null || patientInfo.ID == string.Empty) return;
-
-        patientInfo.FamilyName = DBAccessCommon.CheckConvertString(patientInfo.FamilyName);
-        patientInfo.FirstName = DBAccessCommon.CheckConvertString(patientInfo.FirstName);
-        patientInfo.SameID = DBAccessCommon.CheckConvertString(patientInfo.SameID);
+        if (conditions == null) return;
+        if (conditions.ID == null || conditions.ID == string.Empty) return;
 
         bool result = false;
         DBAccess dbAccess = DBAccess.GetInstance();
@@ -39,16 +31,16 @@ namespace BlazorDbTest.Controllers {
           NpgsqlConnection sqlConnection = dbAccess.GetSqlConnection();
 
           // UUIDの有無を確認(true:update / false:insert)
-          var uuid = Select_PTUUID_by_PTID(sqlConnection, patientInfo.ID);
+          var uuid = Select_PTUUID_by_PTID(sqlConnection, conditions.ID);
           if (uuid == string.Empty) {
             // Insert
             DateTime dateTime = DateTime.Now;
             PatientRec patientRec = new() {
-              pt_id = patientInfo.ID,
-              pt_lastname = patientInfo.FamilyName,
-              pt_firstname = patientInfo.FirstName,
-              gender_id = Select_GenderId(sqlConnection, GENDER_TYPE[(int)patientInfo.Gender]),
-              pt_dob = patientInfo.BirthDate,
+              pt_id = conditions.ID,
+              pt_lastname = conditions.FamilyName ?? string.Empty,
+              pt_firstname = conditions.FirstName ?? string.Empty,
+              gender_id = Select_GenderId(sqlConnection, GENDER_TYPE[(int)conditions.Gender]),
+              pt_dob = conditions.BirthDate,
               pt_description = string.Empty,
               pt_updated_at = dateTime,
               pt_created_at = dateTime
@@ -57,14 +49,14 @@ namespace BlazorDbTest.Controllers {
             result = Insert(sqlConnection, patientRec);
 
             // AXM用患者情報テーブルにも登録
-            uuid = Select_PTUUID_by_PTID(sqlConnection, patientInfo.ID);
+            uuid = Select_PTUUID_by_PTID(sqlConnection, conditions.ID);
             if (uuid != string.Empty) {
               AxmPatientRec axmPatientRec = new() {
                 pt_uuid = uuid,
                 axm_pt_id = SelectMaxAxmPatientId(sqlConnection),
-                axm_flag = patientInfo.Mark,
-                is_axm_same_pt_id = (patientInfo.SameID != string.Empty),
-                axm_same_pt_id = patientInfo.SameID,
+                axm_flag = conditions.Mark,
+                is_axm_same_pt_id = (conditions.SameID != string.Empty),
+                axm_same_pt_id = conditions.SameID ?? string.Empty,
                 updated_at = dateTime,
                 created_at = dateTime
               };
@@ -80,11 +72,11 @@ namespace BlazorDbTest.Controllers {
             DateTime dateTime = DateTime.Now;
             PatientRec patientRec = new() {
               pt_uuid = uuid,
-              pt_id = patientInfo.ID,
-              pt_lastname = patientInfo.FamilyName,
-              pt_firstname = patientInfo.FirstName,
-              gender_id = Select_GenderId(sqlConnection, GENDER_TYPE[(int)patientInfo.Gender]),
-              pt_dob = patientInfo.BirthDate,
+              pt_id = conditions.ID,
+              pt_lastname = conditions.FamilyName ?? string.Empty,
+              pt_firstname = conditions.FirstName ?? string.Empty,
+              gender_id = Select_GenderId(sqlConnection, GENDER_TYPE[(int)conditions.Gender]),
+              pt_dob = conditions.BirthDate,
               pt_updated_at = dateTime
             };
 
@@ -94,9 +86,9 @@ namespace BlazorDbTest.Controllers {
             AxmPatientRec axmPatientRec = new() {
               pt_uuid = uuid,
               axm_pt_id = SelectMaxAxmPatientId(sqlConnection),
-              axm_flag = patientInfo.Mark,
-              is_axm_same_pt_id = (patientInfo.SameID != string.Empty),
-              axm_same_pt_id = patientInfo.SameID,
+              axm_flag = conditions.Mark,
+              is_axm_same_pt_id = (conditions.SameID != string.Empty),
+              axm_same_pt_id = conditions.SameID ?? string.Empty,
               updated_at = dateTime,
               created_at = dateTime
             };
@@ -225,9 +217,6 @@ namespace BlazorDbTest.Controllers {
         PatientSearch patientSearch = JsonSerializer.Deserialize<PatientSearch>(conditions);
 
         if (patientSearch == null) return DataSource;
-
-        patientSearch.IdOrName = DBAccessCommon.CheckConvertString(patientSearch.IdOrName);
-        patientSearch.PatientComment = DBAccessCommon.CheckConvertString(patientSearch.PatientComment);
 
         DBAccess dbAccess = DBAccess.GetInstance();
         try {

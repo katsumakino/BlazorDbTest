@@ -167,6 +167,10 @@
     Task.Run(() => SetRefDataAsync());
 	}
 
+  private JsonSerializerOptions options = new JsonSerializerOptions {
+      Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All)
+    };
+
   /// <summary>
   /// DBへRef(他覚)測定値を書込み
   /// </summary>
@@ -174,10 +178,12 @@
   protected async Task SetRefDataAsync() {
     RefListModel.PatientID = PatientInfoModel.ID;
 
-    string content = $"api/DBRefData/SetRef/";
-    content += JsonSerializer.Serialize(RefListModel);
+    string url = $"api/DBRefData/SetRef/";
 
-    await HttpClient.GetAsync(content);
+    var conditions = JsonSerializer.Serialize(RefListModel, options);
+    var content = new StringContent(conditions, Encoding.UTF8, "application/json");
+
+    var response = await HttpClient.PostAsync(url, content);
   }
 
   void RefViewButtonClick() {
@@ -225,10 +231,12 @@
   protected async Task SetSciRefDataAsync() {
     RefListModel.PatientID = PatientInfoModel.ID;
 
-    string content = $"api/DBSciRefData/SetSciRef/";
-    content += JsonSerializer.Serialize(RefListModel);
+    string url = $"api/DBSciRefData/SetSciRef/";
 
-    await HttpClient.GetAsync(content);
+    var conditions = JsonSerializer.Serialize(RefListModel, options);
+    var content = new StringContent(conditions, Encoding.UTF8, "application/json");
+
+    var response = await HttpClient.PostAsync(url, content);
   }
 
   void SciRefViewButtonClick() {

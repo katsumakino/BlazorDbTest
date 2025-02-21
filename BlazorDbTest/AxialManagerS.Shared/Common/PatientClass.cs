@@ -255,6 +255,11 @@
       public DateTime? EndDateTime { get; set; }           //治療終了日時
   }
 
+  public class TreatmentDataRequest {
+    public string PatientID { get; set; } = default!;       //患者ID
+    public TreatmentData TreatmentData { get; set; } = default!;
+  }
+
   public class AxmComment {
       public int ID { get; set; } = default!;                 //AXM用コメントデータID
       public AxmCommentType CommentType { get; set; } = 0;    //コメントタイプ
@@ -262,8 +267,13 @@
       public DateTime? ExamDateTime { get; set; }             //測定日時
   }
 
-  //コメントタイプ
-  public enum AxmCommentType {
+  public class AxmCommentRequest {
+    public string PatientID { get; set; } = default!;       //患者ID
+    public AxmComment AxmComment { get; set; } = default!;
+  }
+
+    //コメントタイプ
+    public enum AxmCommentType {
       none,
       Patient,
       ExamDate

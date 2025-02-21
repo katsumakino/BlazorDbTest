@@ -148,6 +148,10 @@
         Task.Run(() => GetSearchPatientListAsync());
     }
 
+  private JsonSerializerOptions options = new JsonSerializerOptions {
+      Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All)
+    };
+
     ////////////////////////////////////////////////////////////////////
     // todo: 患者リストを取得
     // ID,名前,性別,年齢: PATIENT_LIST
@@ -157,11 +161,8 @@
     // フラグ,治療方法,コメント: AXM_TABLE
     ////////////////////////////////////////////////////////////////////
     protected async Task GetSearchPatientListAsync() {
-        PatientSearchModel.IdOrName = DBAccessCommon.ConvertString(PatientSearchModel.IdOrName);
-        PatientSearchModel.PatientComment = DBAccessCommon.ConvertString(PatientSearchModel.PatientComment);
-
         string content = $"api/DBPatientInfo/GetSearchPatientList/";
-        content += JsonSerializer.Serialize(PatientSearchModel);
+        content += JsonSerializer.Serialize(PatientSearchModel, options);
 
         patientList = await HttpClient.GetFromJsonAsync<PatientList[]>(content);
 

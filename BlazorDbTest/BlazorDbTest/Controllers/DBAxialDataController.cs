@@ -1,13 +1,9 @@
-﻿using BlazorDbTest.Client.Pages;
+﻿using AxialManagerS.Shared.Common;
 using BlazorDbTest.Common;
 using Microsoft.AspNetCore.Mvc;
 using Npgsql;
-using System.Collections.Generic;
 using System.Data;
 using System.Text;
-using System.Text.Json;
-using AxialManagerS.Shared.Common;
-using System.Runtime.CompilerServices;
 
 namespace BlazorDbTest.Controllers {
 
@@ -16,15 +12,11 @@ namespace BlazorDbTest.Controllers {
   public class DBAxialDataController : ControllerBase {
 
     // 眼軸長測定値書込み
-    [HttpGet("SetOptAxial/{conditions}/")]
-    public void SetOptAxial(string conditions) {
+    [HttpPost("SetOptAxial")]
+    public void SetOptAxial([FromBody] AxialList conditions) {
       try {
-        if (conditions == null || conditions == string.Empty) return;
-
-        AxialList axialList = JsonSerializer.Deserialize<AxialList>(conditions);
-
-        if (axialList == null) return;
-        if (axialList.PatientID == null || axialList.PatientID == string.Empty) return;
+        if (conditions == null) return;
+        if (conditions.PatientID == null || conditions.PatientID == string.Empty) return;
 
         bool result = false;
         DBAccess dbAccess = DBAccess.GetInstance();
@@ -35,7 +27,7 @@ namespace BlazorDbTest.Controllers {
 
           // クエリコマンド実行
           // UUIDの有無を確認(true:update / false:insert)
-          var uuid = DBCommonController.Select_PTUUID_by_PTID(sqlConnection, axialList.PatientID);
+          var uuid = DBCommonController.Select_PTUUID_by_PTID(sqlConnection, conditions.PatientID);
           if (uuid == string.Empty) {
             // AxMからの測定データ登録時は、必ず患者データが存在する
             return;
@@ -44,16 +36,16 @@ namespace BlazorDbTest.Controllers {
             var exam_id_r = DBCommonController.RegisterExamList(uuid,
             DBConst.strMstDataType[DBConst.eMSTDATATYPE.OPTAXIAL],
                 DBConst.eEyeType.RIGHT,
-                axialList.ExamDateTime,
+                conditions.ExamDateTime,
                 sqlConnection);
             // EXAM_OPTAXIALに保存(右眼測定値)
             var rec_optaxial_r = MakeOptaxialRec(exam_id_r,
             DBConst.strEyeType[DBConst.eEyeType.RIGHT],
                 sqlConnection);
-            rec_optaxial_r.axial_mm[0] = axialList.RAxial; // todo: 設定に合わせた位置に格納
+            rec_optaxial_r.axial_mm[0] = conditions.RAxial; // todo: 設定に合わせた位置に格納
             // todo: 表示設定の計算方法をセットする
             rec_optaxial_r.target_eye_id = DBCommonController.Select_TargetEyeId_By_TargetEyeType(sqlConnection, "immersion");
-            rec_optaxial_r.measured_at = axialList.ExamDateTime;
+            rec_optaxial_r.measured_at = conditions.ExamDateTime;
 
             // DB登録
             result = Insert(rec_optaxial_r, sqlConnection);
@@ -62,16 +54,16 @@ namespace BlazorDbTest.Controllers {
             var exam_id_l = DBCommonController.RegisterExamList(uuid,
             DBConst.strMstDataType[DBConst.eMSTDATATYPE.OPTAXIAL],
             DBConst.eEyeType.LEFT,
-                axialList.ExamDateTime,
+                conditions.ExamDateTime,
                 sqlConnection);
             // EXAM_OPTAXIALに保存(左眼測定値)
             var rec_optaxial_l = MakeOptaxialRec(exam_id_l,
             DBConst.strEyeType[DBConst.eEyeType.LEFT],
                 sqlConnection);
-            rec_optaxial_l.axial_mm[0] = axialList.LAxial; // todo: 設定に合わせた位置に格納
+            rec_optaxial_l.axial_mm[0] = conditions.LAxial; // todo: 設定に合わせた位置に格納
             // todo: 表示設定の計算方法をセットする
             rec_optaxial_l.target_eye_id = DBCommonController.Select_TargetEyeId_By_TargetEyeType(sqlConnection, "immersion");
-            rec_optaxial_l.measured_at = axialList.ExamDateTime;
+            rec_optaxial_l.measured_at = conditions.ExamDateTime;
 
             // DB登録
             result &= Insert(rec_optaxial_l, sqlConnection);
@@ -176,7 +168,7 @@ namespace BlazorDbTest.Controllers {
 
           // クエリコマンド実行
           // EXAM_OPTAXIALテーブルからから削除
-          if(delete_by_examId(examId, sqlConnection) != 0) {
+          if (delete_by_examId(examId, sqlConnection) != 0) {
             // EXAM_LISTテーブルから削除
             result = (DBCommonController.delete_by_ExamId(examId, sqlConnection) != 0);
           }

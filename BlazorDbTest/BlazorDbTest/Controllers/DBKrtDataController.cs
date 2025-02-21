@@ -15,15 +15,11 @@ namespace BlazorDbTest.Controllers {
   public class DBKrtDataController : ControllerBase {
 
     // ケラト測定値書込み
-    [HttpGet("SetKrt/{conditions}/")]
-    public void SetKrt(string conditions) {
-      try {
-        if (conditions == null || conditions == string.Empty) return;
-
-        KrtList krtList = JsonSerializer.Deserialize<KrtList>(conditions);
-
-        if (krtList == null) return;
-        if (krtList.PatientID == null || krtList.PatientID == string.Empty) return;
+      [HttpPost("SetKrt")]
+      public void SetKrt([FromBody] KrtList conditions) {
+        try {
+        if (conditions == null) return;
+        if (conditions.PatientID == null || conditions.PatientID == string.Empty) return;
 
         bool result = false;
         DBAccess dbAccess = DBAccess.GetInstance();
@@ -34,7 +30,7 @@ namespace BlazorDbTest.Controllers {
 
           // クエリコマンド実行
           // UUIDの有無を確認(true:update / false:insert)
-          var uuid = DBCommonController.Select_PTUUID_by_PTID(sqlConnection, krtList.PatientID);
+          var uuid = DBCommonController.Select_PTUUID_by_PTID(sqlConnection, conditions.PatientID);
           if (uuid == string.Empty) {
             // AXMからの測定データ登録時は、必ず患者データが存在する
             return;
@@ -43,20 +39,20 @@ namespace BlazorDbTest.Controllers {
             var exam_id_r = DBCommonController.RegisterExamList(uuid,
                 DBConst.strMstDataType[DBConst.eMSTDATATYPE.KRT],
                 DBConst.eEyeType.RIGHT,
-                krtList.ExamDateTime,
+                conditions.ExamDateTime,
                 sqlConnection);
             // EXAM_KRTに保存(右眼測定値)
             var rec_krt_r = MakeKrtRec(exam_id_r,
                 DBConst.strEyeType[DBConst.eEyeType.RIGHT],
                 sqlConnection);
-            rec_krt_r.k1_mm[0] = krtList.RK1_mm;
-            rec_krt_r.k1_d[0] = krtList.RK1_d;
-            rec_krt_r.k2_mm[0] = krtList.RK2_mm;
-            rec_krt_r.k2_d[0] = krtList.RK2_d;
-            rec_krt_r.avek_mm[0] = (krtList.RK1_mm + krtList.RK2_mm) / 2;
-            rec_krt_r.avek_d[0] = (krtList.RK1_d + krtList.RK2_d) / 2;
-            rec_krt_r.cyl_d[0] = krtList.RCyl_d;
-            rec_krt_r.measured_at = krtList.ExamDateTime;
+            rec_krt_r.k1_mm[0] = conditions.RK1_mm;
+            rec_krt_r.k1_d[0] = conditions.RK1_d;
+            rec_krt_r.k2_mm[0] = conditions.RK2_mm;
+            rec_krt_r.k2_d[0] = conditions.RK2_d;
+            rec_krt_r.avek_mm[0] = (conditions.RK1_mm + conditions.RK2_mm) / 2;
+            rec_krt_r.avek_d[0] = (conditions.RK1_d + conditions.RK2_d) / 2;
+            rec_krt_r.cyl_d[0] = conditions.RCyl_d;
+            rec_krt_r.measured_at = conditions.ExamDateTime;
 
             // DB登録
             result = Insert(rec_krt_r, sqlConnection);
@@ -65,20 +61,20 @@ namespace BlazorDbTest.Controllers {
             var exam_id_l = DBCommonController.RegisterExamList(uuid,
                 DBConst.strMstDataType[DBConst.eMSTDATATYPE.KRT],
                 DBConst.eEyeType.LEFT,
-                krtList.ExamDateTime,
+                conditions.ExamDateTime,
                 sqlConnection);
             // EXAM_KRTに保存(左眼測定値)
             var rec_krt_l = MakeKrtRec(exam_id_l,
                 DBConst.strEyeType[DBConst.eEyeType.LEFT],
                 sqlConnection);
-            rec_krt_l.k1_mm[0] = krtList.LK1_mm;
-            rec_krt_l.k1_d[0] = krtList.LK1_d;
-            rec_krt_l.k2_mm[0] = krtList.LK2_mm;
-            rec_krt_l.k2_d[0] = krtList.LK2_d;
-            rec_krt_l.avek_mm[0] = (krtList.LK1_mm + krtList.LK2_mm) / 2;
-            rec_krt_l.avek_d[0] = (krtList.LK1_d + krtList.LK2_d) / 2;
-            rec_krt_l.cyl_d[0] = krtList.LCyl_d;
-            rec_krt_l.measured_at = krtList.ExamDateTime;
+            rec_krt_l.k1_mm[0] = conditions.LK1_mm;
+            rec_krt_l.k1_d[0] = conditions.LK1_d;
+            rec_krt_l.k2_mm[0] = conditions.LK2_mm;
+            rec_krt_l.k2_d[0] = conditions.LK2_d;
+            rec_krt_l.avek_mm[0] = (conditions.LK1_mm + conditions.LK2_mm) / 2;
+            rec_krt_l.avek_d[0] = (conditions.LK1_d + conditions.LK2_d) / 2;
+            rec_krt_l.cyl_d[0] = conditions.LCyl_d;
+            rec_krt_l.measured_at = conditions.ExamDateTime;
 
             // DB登録
             result &= Insert(rec_krt_l, sqlConnection);

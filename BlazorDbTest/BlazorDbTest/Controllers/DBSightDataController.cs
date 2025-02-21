@@ -5,8 +5,6 @@ using Npgsql;
 using System.Data;
 using System.Text;
 using System.Text.Json;
-using BlazorDbTest.Controllers;
-using static BlazorDbTest.Controllers.DBAxialDataController;
 
 namespace BlazorDbTest.Controllers {
 
@@ -15,15 +13,11 @@ namespace BlazorDbTest.Controllers {
   public class DBSightDataController : ControllerBase {
 
     // 視力測定値書込み
-    [HttpGet("SetSight/{conditions}/")]
-    public void SetSight(string conditions) {
+    [HttpPost("SetSight")]
+    public void SetSight([FromBody] SightList conditions) {
       try {
-        if (conditions == null || conditions == string.Empty) return;
-
-        SightList SightList = JsonSerializer.Deserialize<SightList>(conditions);
-
-        if (SightList == null) return;
-        if (SightList.PatientID == null || SightList.PatientID == string.Empty) return;
+        if (conditions == null) return;
+        if (conditions.PatientID == null || conditions.PatientID == string.Empty) return;
 
         bool result = false;
         DBAccess dbAccess = DBAccess.GetInstance();
@@ -34,7 +28,7 @@ namespace BlazorDbTest.Controllers {
 
           // クエリコマンド実行
           // UUIDの有無を確認(true:update / false:insert)
-          var uuid = DBCommonController.Select_PTUUID_by_PTID(sqlConnection, SightList.PatientID);
+          var uuid = DBCommonController.Select_PTUUID_by_PTID(sqlConnection, conditions.PatientID);
           if (uuid == string.Empty) {
             // AXMからの測定データ登録時は、必ず患者データが存在する
             return;
@@ -43,14 +37,14 @@ namespace BlazorDbTest.Controllers {
             var exam_id_r = DBCommonController.RegisterExamList(uuid,
                 DBConst.strMstDataType[DBConst.eMSTDATATYPE.SIGHT],
                 DBConst.eEyeType.RIGHT,
-                SightList.ExamDateTime,
+                conditions.ExamDateTime,
                 sqlConnection);
             // EXAM_Sightに保存(右眼測定値)
             var rec_Sight_r = MakeSightRec(exam_id_r,
                 DBConst.strEyeType[DBConst.eEyeType.RIGHT],
                 sqlConnection);
-            rec_Sight_r.sight_d = SightList.RSight;
-            rec_Sight_r.measured_at = SightList.ExamDateTime;
+            rec_Sight_r.sight_d = conditions.RSight;
+            rec_Sight_r.measured_at = conditions.ExamDateTime;
 
             // DB登録
             result = Insert(rec_Sight_r, sqlConnection);
@@ -59,14 +53,14 @@ namespace BlazorDbTest.Controllers {
             var exam_id_l = DBCommonController.RegisterExamList(uuid,
                 DBConst.strMstDataType[DBConst.eMSTDATATYPE.SIGHT],
                 DBConst.eEyeType.LEFT,
-                SightList.ExamDateTime,
+                conditions.ExamDateTime,
                 sqlConnection);
             // EXAM_Sightに保存(左眼測定値)
             var rec_Sight_l = MakeSightRec(exam_id_l,
                 DBConst.strEyeType[DBConst.eEyeType.LEFT],
                 sqlConnection);
-            rec_Sight_l.sight_d = SightList.LSight;
-            rec_Sight_l.measured_at = SightList.ExamDateTime;
+            rec_Sight_l.sight_d = conditions.LSight;
+            rec_Sight_l.measured_at = conditions.ExamDateTime;
 
             // DB登録
             result &= Insert(rec_Sight_l, sqlConnection);
@@ -138,14 +132,14 @@ namespace BlazorDbTest.Controllers {
           List<SightData> SightDataSource = new();
 
           SightDataSource = (from DataRow data in DataTable.Rows
-                           select new SightData() {
-                             ID = data[COLNAME_ExamSightList[(int)eExamSight.exam_id]].ToString() ?? string.Empty,
-                             Sight = Convert.ToDouble(data[COLNAME_ExamSightList[(int)eExamSight.sight_d]]),
-                             EyeId = (EyeType)Enum.ToObject(typeof(EyeType), data[COLNAME_ExamSightList[(int)eExamSight.eye_id]]),
-                             IsExamData = (bool)data[COLNAME_ExamSightList[(int)eExamSight.is_exam_data]],
-                             DeviceID = 4,     // todo: 
-                             ExamDateTime = (DateTime)data[COLNAME_ExamSightList[(int)eExamSight.measured_at]],
-                           }).ToList();
+                             select new SightData() {
+                               ID = data[COLNAME_ExamSightList[(int)eExamSight.exam_id]].ToString() ?? string.Empty,
+                               Sight = Convert.ToDouble(data[COLNAME_ExamSightList[(int)eExamSight.sight_d]]),
+                               EyeId = (EyeType)Enum.ToObject(typeof(EyeType), data[COLNAME_ExamSightList[(int)eExamSight.eye_id]]),
+                               IsExamData = (bool)data[COLNAME_ExamSightList[(int)eExamSight.is_exam_data]],
+                               DeviceID = 4,     // todo: 
+                               ExamDateTime = (DateTime)data[COLNAME_ExamSightList[(int)eExamSight.measured_at]],
+                             }).ToList();
 
           DataSource = SetSightList(patientId, SightDataSource.ToArray());
         }
@@ -212,7 +206,7 @@ namespace BlazorDbTest.Controllers {
                 if (SightDataList[i].EyeId == EyeType.right) {
                   // 装置種別AxMのデータを優先する
                   // 装置種別AxMのデータは、1測定日に1つしか登録できない
-                  
+
                   if (list[j].RSight == 0.0) {    // todo: 0があり得るので要修正
                     // 右眼かつ同じ測定日の右眼が0のとき
                     list[j].RExamID = SightDataList[i].ID;
@@ -228,20 +222,20 @@ namespace BlazorDbTest.Controllers {
                     break;
                   }
                 } else if (SightDataList[i].EyeId == EyeType.left) {
-                    if (list[j].LSight == 0.0) {
-                      // 左眼かつ同じ測定日の左眼が0のとき
-                      list[j].LExamID = SightDataList[i].ID;
-                      list[j].LSight = SightDataList[i].Sight;
-                      isExist = true;
-                      break;
-                    } else if (list[j].ExamDateTime < SightDataList[i].ExamDateTime) {
-                      // 左眼かつ同じ測定時間が新しい
-                      list[j].LExamID = SightDataList[i].ID;
-                      list[j].LSight = SightDataList[i].Sight;
-                      list[j].ExamDateTime = SightDataList[i].ExamDateTime;
-                      isExist = true;
-                      break;
-                    }
+                  if (list[j].LSight == 0.0) {
+                    // 左眼かつ同じ測定日の左眼が0のとき
+                    list[j].LExamID = SightDataList[i].ID;
+                    list[j].LSight = SightDataList[i].Sight;
+                    isExist = true;
+                    break;
+                  } else if (list[j].ExamDateTime < SightDataList[i].ExamDateTime) {
+                    // 左眼かつ同じ測定時間が新しい
+                    list[j].LExamID = SightDataList[i].ID;
+                    list[j].LSight = SightDataList[i].Sight;
+                    list[j].ExamDateTime = SightDataList[i].ExamDateTime;
+                    isExist = true;
+                    break;
+                  }
                 }
               }
             }

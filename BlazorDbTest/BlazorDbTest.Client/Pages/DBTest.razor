@@ -3,6 +3,9 @@
 @inject HttpClient HttpClient
 @using System.Text.Json;
 
+@using System.Text.Encodings.Web;
+@using System.Text.Unicode;
+
 <PageTitle>DB Test</PageTitle>
 
 <h1>Hi!</h1>
@@ -328,7 +331,6 @@
 </div>
 
 @code {
-  public readonly string EmptyText = Convert.ToBase64String(Encoding.UTF8.GetBytes("Noi_Npu_Tva_Lue"));   // todo: Common定義
 
   private PatientInfo[]? patientList;
   private AxialList[]? axialList;
@@ -353,6 +355,7 @@
   private ValidationMessageStore ValidationMessageStore { get; set; } = default!;
 
   protected override async Task OnInitializedAsync() {
+     
     PatientInfoModel ??= new();
     PatientInfoModel.Gender = Gender.other;
     PatientInfoModel.BirthDate = DateTime.Today;
@@ -450,19 +453,21 @@
     Task.Run(() => DeleteCommentListAsync());
   }
 
+  private JsonSerializerOptions options = new JsonSerializerOptions {
+      Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
+    };
+
   /// <summary>
   /// DBへ患者情報を書込み
   /// </summary>
   /// <returns></returns>
   protected async Task SetPatientInfoAsync() {
-    PatientInfoModel.FirstName = DBAccessCommon.ConvertString(PatientInfoModel.FirstName);
-    PatientInfoModel.FamilyName = DBAccessCommon.ConvertString(PatientInfoModel.FamilyName);
-    PatientInfoModel.SameID = DBAccessCommon.ConvertString(PatientInfoModel.SameID);
+    string url = $"api/DBPatientInfo/SetPatientInfo/";
+    
+    var conditions = JsonSerializer.Serialize(PatientInfoModel, options);
+    var content = new StringContent(conditions, Encoding.UTF8, "application/json");
 
-    string content = $"api/DBPatientInfo/SetPatientInfo/";
-    content += JsonSerializer.Serialize(PatientInfoModel);
-
-    await HttpClient.GetAsync(content);
+    var response = await HttpClient.PostAsync(url, content);
 
     patientList = await HttpClient.GetFromJsonAsync<PatientInfo[]>("api/DBPatientInfo/GetPatientInfoList");
 
@@ -512,10 +517,12 @@
   protected async Task SetAxialDataAsync() {
     AxialModel.PatientID = PatientInfoModel.ID;
 
-    string content = $"api/DBAxialData/SetOptAxial/";
-    content += JsonSerializer.Serialize(AxialModel);
+    string url = $"api/DBAxialData/SetOptAxial/";
 
-    await HttpClient.GetAsync(content);
+    var conditions = JsonSerializer.Serialize(AxialModel, options);
+    var content = new StringContent(conditions, Encoding.UTF8, "application/json");
+
+    var response = await HttpClient.PostAsync(url, content);
   }
 
   /// <summary>
@@ -538,7 +545,7 @@
   /// <returns></returns>
   protected async Task DeleteAxialListAsync() {
     string content = $"api/DBAxialData/DeleteOptAxialData/";
-    
+
     await HttpClient.GetAsync(content + AxialModel.RExamID);
     await HttpClient.GetAsync(content + AxialModel.LExamID);
   }
@@ -548,12 +555,12 @@
   /// </summary>
   /// <returns></returns>
   protected async Task SetTreatmentMethodAsync() {
-    TreatmentMethodModel.TreatName = DBAccessCommon.ConvertString(TreatmentMethodModel.TreatName);
+    string url = $"api/DBTreatment/SetTreatmentMethod/";
 
-    string content = $"api/DBTreatment/SetTreatmentMethod/";
-    content += JsonSerializer.Serialize(TreatmentMethodModel);
+    var conditions = JsonSerializer.Serialize(TreatmentMethodModel, options);
+    var content = new StringContent(conditions, Encoding.UTF8, "application/json");
 
-    await HttpClient.GetAsync(content);
+    var response = await HttpClient.PostAsync(url, content);
   }
 
   /// <summary>
@@ -583,14 +590,19 @@
   /// </summary>
   /// <returns></returns>
   protected async Task SetTreatmentDataAsync() {
+    string url = $"api/DBTreatment/SetTreatment/";
+
     TreatmentModel.TreatID = TreatmentMethodModel.ID;
 
-    string content = $"api/DBTreatment/SetTreatment/";
-    content += PatientInfoModel.ID;
-    content += "/";
-    content += JsonSerializer.Serialize(TreatmentModel);
+    TreatmentDataRequest treatmentRequestModel = new TreatmentDataRequest {
+        PatientID = PatientInfoModel.ID,
+        TreatmentData = TreatmentModel
+      };
 
-    await HttpClient.GetAsync(content);
+    var conditions = JsonSerializer.Serialize(treatmentRequestModel, options);
+    var content = new StringContent(conditions, Encoding.UTF8, "application/json");
+
+    var response = await HttpClient.PostAsync(url, content);
   }
 
   /// <summary>
@@ -622,13 +634,17 @@
   /// </summary>
   /// <returns></returns>
   protected async Task SetAxmCommentListAsync() {
-    AxmCommentModel.Description = DBAccessCommon.ConvertString(AxmCommentModel.Description); 
+    string url = $"api/DBAxmComment/SetAxmComment/";
+    
+    AxmCommentRequest commentRequestModel = new AxmCommentRequest {
+			PatientID = PatientInfoModel.ID,
+      AxmComment = AxmCommentModel
+		};
 
-    string content = $"api/DBAxmComment/SetAxmComment/";
-    content += PatientInfoModel.ID;
-    content += "/";
-    content += JsonSerializer.Serialize(AxmCommentModel);
-    await HttpClient.GetAsync(content);
+    var conditions = JsonSerializer.Serialize(commentRequestModel, options);
+    var content = new StringContent(conditions, Encoding.UTF8, "application/json");
+
+    var response = await HttpClient.PostAsync(url, content);
   }
 
   /// <summary>
@@ -662,101 +678,4 @@
     }
     return (DateTime)input.Value.Date;
   }
-
-  //患者情報
-  public class PatientInfo {
-    public bool Mark { get; set; }                      //お気に入り(仮)
-    public string ID { get; set; } = default!;
-    public string FamilyName { get; set; } = default!;  //患者姓
-    public string FirstName { get; set; } = default!;   //患者名
-    public Gender Gender { get; set; }                  //性別
-    public int Age { get; set; }                        //年齢
-    public DateTime? BirthDate { get; set; }            //生年月日
-    public string SameID { get; set; } = default!;      //同一ID
-    public int DeviceID { get; set; }                   //装置種別
-    public string UUID { get; set; } = default!;        //UUID
-  }
-
-  //性別
-  public enum Gender {
-    none,
-    male,
-    female,
-    other, //未指定
-  }
-
-  //検索結果
-  class PatientSerch {
-    public PatientInfo PatientInfo { get; set; } = default!;    //患者情報
-    public DateTime LatestPicDate { get; set; }                 //最新撮影日
-    public double LatestRAxial { get; set; }                    //最新右眼軸長
-    public double LatestLAxial { get; set; }                    //最新左眼軸長
-    public string PatientComment { get; set; } = default!;      //患者コメント
-    public string AllTreatName { get; set; } = default!;        //治療名称一覧
-  }
-
-  //眼軸長(データ表示/書込に使用するもの)
-  public class AxialList {
-    public string PatientID { get; set; } = default!;   //患者ID
-    public string RExamID { get; set; } = default!;     //右測定データID
-    public string LExamID { get; set; } = default!;     //左測定データID
-    public double RAxial { get; set; }                  //右眼軸長
-    public double LAxial { get; set; }                  //左眼軸長
-    public DateTime? ExamDateTime { get; set; }         //測定日
-    public bool IsRManualInput { get; set; }            //右眼手入力フラグ
-    public bool IsLManualInput { get; set; }            //左眼手入力フラグ
-  }
-
-  // DBから取得する眼軸長データ
-  public class AxialData {
-    public string ID { get; set; } = default!;              //測定データID
-    public List<double?> Axial { get; set; } = new List<double?>();    //眼軸長
-    public EyeType EyeId { get; set; }                      //左右眼情報
-    public int DeviceID { get; set; }                       //測定装置ID
-    public DateTime? ExamDateTime { get; set; }             //測定日時
-  }
-
-    // todo: 古い定義を使用しているため、修正が必要
-    public enum EyeType {
-        none,
-        right,
-        left,
-        both,
-    }
-
-    //治療方法設定
-    public class TreatmentMethodSetting {
-        public int ID { get; set; }
-        public string TreatName { get; set; } = default!;//治療方法の名前
-        public RGBAColor ?RGBAColor { get; set; }//治療方法に割り当てられた色
-        public int SuppresionRate { get; set; }//抑制率
-    }
-
-    public class RGBAColor {
-        public int R { get; set; } = 0;//色のR値
-        public int G { get; set; } = 0;//色のG値
-        public int B { get; set; } = 0;//色のB値
-        public int A { get; set; } = 0;//色のA値
-    }
-
-    public class TreatmentData {
-        public int ID { get; set; } = 0;                     //治療ID
-        public int TreatID { get; set; } = 0;                //治療方法ID
-        public DateTime? StartDateTime { get; set; }         //治療開始日時
-        public DateTime? EndDateTime { get; set; }           //治療終了日時
-    }
-
-    public class AxmComment {
-        public int ID { get; set; } = default!;                 //AXM用コメントデータID
-        public AxmCommentType CommentType { get; set; } = 0;               //コメントタイプ
-        public string Description { get; set; } = default!;     //コメント
-        public DateTime? ExamDateTime { get; set; }             //測定日時
-    }
-
-    //コメントタイプ
-    public enum AxmCommentType {
-        none,
-        Patient,
-        ExamDate
-    }
 }

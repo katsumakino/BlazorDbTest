@@ -113,6 +113,10 @@
     Task.Run(() => SetKrtDataAsync());
 	}
 
+  private JsonSerializerOptions options = new JsonSerializerOptions {
+      Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All)
+    };
+
   /// <summary>
   /// DBへケラト測定値を書込み
   /// </summary>
@@ -120,10 +124,12 @@
   protected async Task SetKrtDataAsync() {
     KrtListModel.PatientID = PatientInfoModel.ID;
 
-    string content = $"api/DBKrtData/SetKrt/";
-    content += JsonSerializer.Serialize(KrtListModel);
+    string url = $"api/DBKrtData/SetKrt/";
 
-    await HttpClient.GetAsync(content);
+    var conditions = JsonSerializer.Serialize(KrtListModel, options);
+    var content = new StringContent(conditions, Encoding.UTF8, "application/json");
+
+    var response = await HttpClient.PostAsync(url, content);
   }
 
   void KrtViewButtonClick() {

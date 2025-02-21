@@ -24,6 +24,10 @@
     Task.Run(() => WriteLogAsync());
   }
 
+  private JsonSerializerOptions options = new JsonSerializerOptions {
+      Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All)
+    };
+
   protected async Task WriteLogAsync() {
     logInfo.Message = "Clicked: " + currentCount;
     logInfo.Type = "EVENT";
@@ -39,7 +43,7 @@
 
     // logInfo.SourcePosition = LogCommon.GetCallerFIlePath();
 
-    var conditions = JsonSerializer.Serialize(logInfo);
+    var conditions = JsonSerializer.Serialize(logInfo, options);
     var content = new StringContent(conditions, System.Text.Encoding.UTF8, "application/json");
 
     try {

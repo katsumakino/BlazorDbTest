@@ -14,75 +14,70 @@ namespace BlazorDbTest.Controllers {
 
     public class DBAxmCommentController : ControllerBase {
 
-        // コメント登録
-        [HttpGet("SetAxmComment/{pt_id}/{conditions}")]
-        public void SetAxmComment(string pt_id, string conditions) {
-            try {
-                if (pt_id == null || pt_id == string.Empty) return;
-                if (conditions == null || conditions == string.Empty) return;
+    // コメント登録
+    [HttpPost("SetAxmComment")]
+    public void SetAxmComment([FromBody] AxmCommentRequest conditions) {
+      try {
+        if (conditions == null) return;
+        if(conditions.PatientID == null || conditions.PatientID == string.Empty) return;
+        if (conditions.AxmComment.Description == null) return;
 
-                DBTest.AxmComment comment = JsonSerializer.Deserialize<DBTest.AxmComment>(conditions);
-                
-                if (comment == null) return;
+        bool result = false;
+        DBAccess dbAccess = DBAccess.GetInstance();
 
-                comment.Description = DBAccessCommon.CheckConvertString(comment.Description);
+        try {
+          // PostgreSQL Server 通信接続
+          NpgsqlConnection sqlConnection = dbAccess.GetSqlConnection();
 
-                bool result = false;
-                DBAccess dbAccess = DBAccess.GetInstance();
+          // クエリコマンド実行
 
-                try {
-                    // PostgreSQL Server 通信接続
-                    NpgsqlConnection sqlConnection = dbAccess.GetSqlConnection();
-
-                    // クエリコマンド実行
-
-                    // UUIDの有無を確認(true:update / false:insert)
-                    var uuid = Select_PTUUID_by_PTID(sqlConnection, pt_id);
-                    if (uuid == string.Empty) {
-                        // コメント登録時は、必ず患者データが存在する
-                        return;
-                    }
-
-                    // コメントデータID取得
-                    var commenttype_id = Select_AxmCommentTypeId(sqlConnection, AXM_COMMENT_TYPE[(int)comment.CommentType]);
-                    var comment_id = Select_AxmCommentID_by_PK(sqlConnection, uuid, (DateTime)comment.ExamDateTime, comment.CommentType, commenttype_id);
-                    if(comment_id == -1) {
-                        comment_id = SelectMaxCommentId(sqlConnection);
-                    }
-
-                    // 更新日、作成日は揃える
-                    var dateNow = DateTime.Now;
-
-                    // DB登録
-                    result = InsertAxmComment(new AxmCommentRec {
-                        comment_id = comment_id,
-                        commenttype_id = commenttype_id,
-                        pt_uuid = uuid,
-                        description = comment.Description,
-                        measured_at = (comment.CommentType == DBTest.AxmCommentType.ExamDate) ? comment.ExamDateTime : null,
-                        created_at = dateNow,
-                        updated_at = dateNow
-                    }, sqlConnection);
-
-                } catch {
-                } finally {
-                    if (!result) {
-                        // todo: Error通知
-                    }
-
-                    // PostgreSQL Server 通信切断
-                    dbAccess.CloseSqlConnection();
-                }
-            } catch {
-            }
-
+          // UUIDの有無を確認(true:update / false:insert)
+          var uuid = Select_PTUUID_by_PTID(sqlConnection, conditions.PatientID);
+          if (uuid == string.Empty) {
+            // コメント登録時は、必ず患者データが存在する
             return;
-        }
+          }
 
+          // コメントデータID取得
+          var commenttype_id = Select_AxmCommentTypeId(sqlConnection, AXM_COMMENT_TYPE[(int)conditions.AxmComment.CommentType]);
+          var comment_id = Select_AxmCommentID_by_PK(sqlConnection, uuid, (DateTime)conditions.AxmComment.ExamDateTime
+            , conditions.AxmComment.CommentType, commenttype_id);
+          if (comment_id == -1) {
+            comment_id = SelectMaxCommentId(sqlConnection);
+          }
+
+          // 更新日、作成日は揃える
+          var dateNow = DateTime.Now;
+
+          // DB登録
+          result = InsertAxmComment(new AxmCommentRec {
+            comment_id = comment_id,
+            commenttype_id = commenttype_id,
+            pt_uuid = uuid,
+            description = conditions.AxmComment.Description ?? string.Empty,
+            measured_at = (conditions.AxmComment.CommentType == AxmCommentType.ExamDate) ? conditions.AxmComment.ExamDateTime : null,
+            created_at = dateNow,
+            updated_at = dateNow
+          }, sqlConnection);
+
+        } catch {
+        } finally {
+          if (!result) {
+            // todo: Error通知
+          }
+
+          // PostgreSQL Server 通信切断
+          dbAccess.CloseSqlConnection();
+        }
+      } catch {
+      }
+
+      return;
+    }
         // コメントデータ取得
         [HttpGet("GetDBAxmCommentList/{pt_id}")]
-        public List<DBTest.AxmComment> GetDBAxmCommentList(string pt_id) {
-            List<DBTest.AxmComment> DataSource = new();
+        public List<AxmComment> GetDBAxmCommentList(string pt_id) {
+            List<AxmComment> DataSource = new();
             if (pt_id == null || pt_id == string.Empty) return DataSource;
 
             DBAccess dbAccess = DBAccess.GetInstance();
@@ -114,9 +109,9 @@ namespace BlazorDbTest.Controllers {
                     DataAdapter.Fill(DataTable);
 
                     DataSource = (from DataRow data in DataTable.Rows
-                                  select new DBTest.AxmComment() {
+                                  select new AxmComment() {
                                       ID = _objectToInt(data[COLNAME_AxmCommentList[(int)eAxmComment.comment_id]]),
-                                      CommentType = (DBTest.AxmCommentType)Enum.ToObject(typeof(DBTest.AxmCommentType), data[COLNAME_AxmCommentList[(int)eAxmComment.commenttype_id]]),
+                                      CommentType = (AxmCommentType)Enum.ToObject(typeof(AxmCommentType), data[COLNAME_AxmCommentList[(int)eAxmComment.commenttype_id]]),
                                       Description = data[COLNAME_AxmCommentList[(int)eAxmComment.description]].ToString() ?? string.Empty,
                                       ExamDateTime = _objectToDateTime(data[COLNAME_AxmCommentList[(int)eAxmComment.measured_at]])
                                   }).ToList();
@@ -201,7 +196,7 @@ namespace BlazorDbTest.Controllers {
             return num != 0;
         }
 
-        public static int Select_AxmCommentID_by_PK(NpgsqlConnection sqlConnection, string pt_uuid, DateTime measured_at, DBTest.AxmCommentType type, int commenttype_id) {
+        public static int Select_AxmCommentID_by_PK(NpgsqlConnection sqlConnection, string pt_uuid, DateTime measured_at, AxmCommentType type, int commenttype_id) {
             int result = -1;
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.Append("select ");
@@ -216,7 +211,7 @@ namespace BlazorDbTest.Controllers {
             stringBuilder.Append(_col(COLNAME_AxmCommentList[(int)eAxmComment.commenttype_id]));
             stringBuilder.Append("= ");
             stringBuilder.Append(_val(commenttype_id.ToString()));
-            if (type == DBTest.AxmCommentType.ExamDate) {
+            if (type == AxmCommentType.ExamDate) {
                 stringBuilder.Append(" and ");
                 stringBuilder.Append(_col(COLNAME_AxmCommentList[(int)eAxmComment.measured_at]));
                 stringBuilder.Append("= ");

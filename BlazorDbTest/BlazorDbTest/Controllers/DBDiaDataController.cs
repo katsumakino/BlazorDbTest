@@ -5,7 +5,6 @@ using Npgsql;
 using System.Data;
 using System.Text;
 using System.Text.Json;
-using BlazorDbTest.Controllers;
 using static BlazorDbTest.Controllers.DBAxialDataController;
 
 namespace BlazorDbTest.Controllers {
@@ -15,15 +14,12 @@ namespace BlazorDbTest.Controllers {
   public class DBDiaDataController : ControllerBase {
 
     // 瞳孔径測定値書込み
-    [HttpGet("SetDia/{conditions}/")]
-    public void SetDia(string conditions) {
+    [HttpPost("SetDia")]
+    public void SetDia([FromBody] DiaList conditions) {
       try {
-        if (conditions == null || conditions == string.Empty) return;
+        if (conditions == null) return;
 
-        DiaList DiaList = JsonSerializer.Deserialize<DiaList>(conditions);
-
-        if (DiaList == null) return;
-        if (DiaList.PatientID == null || DiaList.PatientID == string.Empty) return;
+        if (conditions.PatientID == null || conditions.PatientID == string.Empty) return;
 
         bool result = false;
         DBAccess dbAccess = DBAccess.GetInstance();
@@ -34,7 +30,7 @@ namespace BlazorDbTest.Controllers {
 
           // クエリコマンド実行
           // UUIDの有無を確認(true:update / false:insert)
-          var uuid = DBCommonController.Select_PTUUID_by_PTID(sqlConnection, DiaList.PatientID);
+          var uuid = DBCommonController.Select_PTUUID_by_PTID(sqlConnection, conditions.PatientID);
           if (uuid == string.Empty) {
             // AXMからの測定データ登録時は、必ず患者データが存在する
             return;
@@ -43,14 +39,14 @@ namespace BlazorDbTest.Controllers {
             var exam_id_r = DBCommonController.RegisterExamList(uuid,
                 DBConst.strMstDataType[DBConst.eMSTDATATYPE.DIA],
                 DBConst.eEyeType.RIGHT,
-                DiaList.ExamDateTime,
+                conditions.ExamDateTime,
                 sqlConnection);
             // EXAM_Diaに保存(右眼測定値)
             var rec_Dia_r = MakeDiaRec(exam_id_r,
                 DBConst.strEyeType[DBConst.eEyeType.RIGHT],
                 sqlConnection);
-            rec_Dia_r.pupil_mm = DiaList.RPupil;
-            rec_Dia_r.measured_at = DiaList.ExamDateTime;
+            rec_Dia_r.pupil_mm = conditions.RPupil;
+            rec_Dia_r.measured_at = conditions.ExamDateTime;
 
             // DB登録
             result = Insert(rec_Dia_r, sqlConnection);
@@ -59,14 +55,14 @@ namespace BlazorDbTest.Controllers {
             var exam_id_l = DBCommonController.RegisterExamList(uuid,
                 DBConst.strMstDataType[DBConst.eMSTDATATYPE.DIA],
                 DBConst.eEyeType.LEFT,
-                DiaList.ExamDateTime,
+                conditions.ExamDateTime,
                 sqlConnection);
             // EXAM_Diaに保存(左眼測定値)
             var rec_Dia_l = MakeDiaRec(exam_id_l,
                 DBConst.strEyeType[DBConst.eEyeType.LEFT],
                 sqlConnection);
-            rec_Dia_l.pupil_mm = DiaList.LPupil;
-            rec_Dia_l.measured_at = DiaList.ExamDateTime;
+            rec_Dia_l.pupil_mm = conditions.LPupil;
+            rec_Dia_l.measured_at = conditions.ExamDateTime;
 
             // DB登録
             result &= Insert(rec_Dia_l, sqlConnection);
