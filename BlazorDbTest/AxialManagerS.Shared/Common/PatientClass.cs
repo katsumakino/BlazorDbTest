@@ -53,11 +53,11 @@
 
     //眼軸長(データ表示/書込に使用するもの)
   public class AxialList {
-    public string PatientID { get; set; } = default!;   //患者ID
-    public string RExamID { get; set; } = default!;     //右測定データID
-    public string LExamID { get; set; } = default!;     //左測定データID
-    public double RAxial { get; set; }                  //右眼軸長
-    public double LAxial { get; set; }                  //左眼軸長
+    public string? PatientID { get; set; } = default!;   //患者ID
+    public string? RExamID { get; set; } = default!;     //右測定データID
+    public string? LExamID { get; set; } = default!;     //左測定データID
+    public double? RAxial { get; set; }                  //右眼軸長
+    public double? LAxial { get; set; }                  //左眼軸長
     public DateTime? ExamDateTime { get; set; }         //測定日
     public bool IsRManualInput { get; set; }            //右眼手入力フラグ
     public bool IsLManualInput { get; set; }            //左眼手入力フラグ
@@ -65,10 +65,10 @@
 
   // DBから取得する眼軸長データ
   public class AxialData {
-    public string ID { get; set; } = default!;                      //測定データID
+    public string? ID { get; set; } = default!;                      //測定データID
     public List<double?> Axial { get; set; } = new List<double?>(); //眼軸長
     public EyeType EyeId { get; set; }                              //左右眼情報
-    public int DeviceID { get; set; }                               //測定装置ID
+    public int? DeviceID { get; set; }                               //測定装置ID
     public DateTime? ExamDateTime { get; set; }                     //測定日時
   }
 
