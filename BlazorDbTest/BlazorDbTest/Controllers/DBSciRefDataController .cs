@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Npgsql;
 using System.Data;
 using System.Text;
+using static BlazorDbTest.Controllers.DBAxialDataController;
 
 namespace BlazorDbTest.Controllers {
 
@@ -42,10 +43,11 @@ namespace BlazorDbTest.Controllers {
             var rec_Ref_r = MakeRefRec(exam_id_r,
                 DBConst.strEyeType[DBConst.eEyeType.RIGHT],
                 sqlConnection);
-            rec_Ref_r.s_d = conditions.RS_d;
-            rec_Ref_r.c_d = conditions.RC_d;
-            rec_Ref_r.a_deg = conditions.RA_deg;
-            rec_Ref_r.se_d = conditions.RS_d + (conditions.RC_d / 2);
+            rec_Ref_r.s_d = conditions.RS_d ?? 0.0;
+            rec_Ref_r.c_d = conditions.RC_d ?? 0.0;
+            rec_Ref_r.a_deg = conditions.RA_deg ?? 0;
+            rec_Ref_r.se_d = (conditions.RS_d + (conditions.RC_d / 2)) ?? 0.0;
+            rec_Ref_r.is_exam_data = (conditions.RS_d != null && conditions.RC_d != null && conditions.RA_deg != null);
             rec_Ref_r.measured_at = conditions.ExamDateTime;
 
             // DB登録
@@ -61,10 +63,11 @@ namespace BlazorDbTest.Controllers {
             var rec_Ref_l = MakeRefRec(exam_id_l,
                 DBConst.strEyeType[DBConst.eEyeType.LEFT],
                 sqlConnection);
-            rec_Ref_l.s_d = conditions.LS_d;
-            rec_Ref_l.c_d = conditions.LC_d;
-            rec_Ref_l.a_deg = conditions.LA_deg;
-            rec_Ref_l.se_d = conditions.LS_d + (conditions.LC_d / 2);
+            rec_Ref_l.s_d = conditions.LS_d ?? 0.0;
+            rec_Ref_l.c_d = conditions.LC_d ?? 0.0;
+            rec_Ref_l.a_deg = conditions.LA_deg ?? 0;
+            rec_Ref_l.se_d = (conditions.LS_d + (conditions.LC_d / 2)) ?? 0.0;
+            rec_Ref_l.is_exam_data = (conditions.LS_d != null && conditions.LC_d != null && conditions.LA_deg != null);
             rec_Ref_l.measured_at = conditions.ExamDateTime;
 
             // DB登録
@@ -125,6 +128,12 @@ namespace BlazorDbTest.Controllers {
           Query += DBCommonController._col(DBCommonController.COLNAME_ExamList[(int)DBCommonController.eExamList.pt_uuid]);
           Query += " = ";
           Query += DBCommonController._val(uuid);
+          Query += " AND ";
+          Query += DBCommonController._table(DBCommonController.DB_TableNames[(int)DBCommonController.eDbTable.EXAM_SCI_REF]);
+          Query += ".";
+          Query += DBCommonController._col(COLNAME_ExamSciRefList[(int)eExamSciRef.is_exam_data]);
+          Query += " = ";
+          Query += DBCommonController._val("TRUE");
           Query += " )";
           Query += " ORDER BY ";
           Query += DBCommonController._col(COLNAME_ExamSciRefList[(int)eExamSciRef.measured_at]);
@@ -212,11 +221,11 @@ namespace BlazorDbTest.Controllers {
                   == DBCommonController._objectToDateOnly(SciRefDataList[i].ExamDateTime)) {
 
                 if (SciRefDataList[i].EyeId == EyeType.right) {
-                  // 装置種別AxMのデータを優先する
-                  // 装置種別AxMのデータは、1測定日に1つしか登録できない
+                  // 装置種別AXMのデータを優先する
+                  // 装置種別AXMのデータは、1測定日に1つしか登録できない
                   if (!list[j].IsRManualInput) {
-                    if (list[j].RS_d == 0.0) {    // todo: 0もあり得るので要修正
-                      // 右眼かつ同じ測定日の右眼が0のとき
+                    if (list[j].RS_d == null) {
+                      // 右眼かつ同じ測定日の右眼がnullのとき
                       list[j].RExamID = SciRefDataList[i].ID;
                       list[j].RS_d = SciRefDataList[i].S_d;
                       list[j].RC_d = SciRefDataList[i].C_d;
@@ -240,7 +249,7 @@ namespace BlazorDbTest.Controllers {
                   }
                 } else if (SciRefDataList[i].EyeId == EyeType.left) {
                   if (!list[j].IsLManualInput) {
-                    if (list[j].LS_d == 0.0) {    // todo: 0もあり得るので要修正
+                    if (list[j].LS_d == null) {
                       // 左眼かつ同じ測定日の左眼が0のとき
                       list[j].LExamID = SciRefDataList[i].ID;
                       list[j].LS_d = SciRefDataList[i].S_d;    // todo:
@@ -273,14 +282,14 @@ namespace BlazorDbTest.Controllers {
                 PatientID = pt_id,
                 RExamID = string.Empty,
                 LExamID = string.Empty,
-                RS_d = 0.0,
-                RC_d = 0.0,
-                RA_deg = 0,
-                RSE_d = 0.0,
-                LS_d = 0.0,
-                LC_d = 0.0,
-                LA_deg = 0,
-                LSE_d = 0.0,
+                RS_d = null,
+                RC_d = null,
+                RA_deg = null,
+                RSE_d = null,
+                LS_d = null,
+                LC_d = null,
+                LA_deg = null,
+                LSE_d = null,
                 ExamDateTime = SciRefDataList[i].ExamDateTime,
                 IsRManualInput = false,
                 IsLManualInput = false,
@@ -365,6 +374,7 @@ namespace BlazorDbTest.Controllers {
       stringBuilder.Append(DBCommonController._doupdatevalue(COLNAME_ExamSciRefList[(int)eExamSciRef.c_d], aExamSciRefRec.c_d.ToString()));
       stringBuilder.Append(DBCommonController._doupdatevalue(COLNAME_ExamSciRefList[(int)eExamSciRef.a_deg], aExamSciRefRec.a_deg.ToString()));
       stringBuilder.Append(DBCommonController._doupdatevalue(COLNAME_ExamSciRefList[(int)eExamSciRef.se_d], aExamSciRefRec.se_d.ToString()));
+      stringBuilder.Append(DBCommonController._doupdatevalue(COLNAME_ExamSciRefList[(int)eExamSciRef.is_exam_data], aExamSciRefRec.is_exam_data.ToString()));
       stringBuilder.Append(";");
       int num = 0;
       using (NpgsqlCommand npgsqlCommand = new NpgsqlCommand(stringBuilder.ToString(), sqlConnection)) {
@@ -428,16 +438,16 @@ namespace BlazorDbTest.Controllers {
 }
 
 public class ExamSciRefRec {
-  public int exam_id { get; set; }
-  public int examtype_id { get; set; }
-  public int eye_id { get; set; }
-  public int device_id { get; set; }
-  public bool is_exam_data { get; set; }
-  public string comment { get; set; }
-  public double s_d { get; set; }
-  public double c_d { get; set; }
-  public int a_deg { get; set; }
-  public double se_d { get; set; }
+  public int? exam_id { get; set; }
+  public int? examtype_id { get; set; }
+  public int? eye_id { get; set; }
+  public int? device_id { get; set; }
+  public bool? is_exam_data { get; set; }
+  public string? comment { get; set; }
+  public double? s_d { get; set; }
+  public double? c_d { get; set; }
+  public int? a_deg { get; set; }
+  public double? se_d { get; set; }
   public DateTime? measured_at { get; set; }
   public DateTime? updated_at { get; set; }
   public DateTime? created_at { get; set; }

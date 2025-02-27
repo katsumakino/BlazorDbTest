@@ -42,7 +42,7 @@ namespace BlazorDbTest.Controllers {
             var rec_optaxial_r = MakeOptaxialRec(exam_id_r,
             DBConst.strEyeType[DBConst.eEyeType.RIGHT],
                 sqlConnection);
-            rec_optaxial_r.axial_mm[0] = conditions.RAxial; // todo: 設定に合わせた位置に格納
+            rec_optaxial_r.axial_mm[0] = conditions.RAxial ?? 0.0; // todo: 設定に合わせた位置に格納
             rec_optaxial_r.is_exam_data = (conditions.RAxial != null);
             // todo: 表示設定の計算方法をセットする
             rec_optaxial_r.target_eye_id = DBCommonController.Select_TargetEyeId_By_TargetEyeType(sqlConnection, "immersion");
@@ -61,7 +61,7 @@ namespace BlazorDbTest.Controllers {
             var rec_optaxial_l = MakeOptaxialRec(exam_id_l,
             DBConst.strEyeType[DBConst.eEyeType.LEFT],
                 sqlConnection);
-            rec_optaxial_l.axial_mm[0] = conditions.LAxial; // todo: 設定に合わせた位置に格納
+            rec_optaxial_l.axial_mm[0] = conditions.LAxial ?? 0.0; // todo: 設定に合わせた位置に格納
             rec_optaxial_l.is_exam_data = (conditions.LAxial != null);
             // todo: 表示設定の計算方法をセットする
             rec_optaxial_l.target_eye_id = DBCommonController.Select_TargetEyeId_By_TargetEyeType(sqlConnection, "immersion");

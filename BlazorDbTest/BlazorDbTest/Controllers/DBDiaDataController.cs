@@ -45,7 +45,8 @@ namespace BlazorDbTest.Controllers {
             var rec_Dia_r = MakeDiaRec(exam_id_r,
                 DBConst.strEyeType[DBConst.eEyeType.RIGHT],
                 sqlConnection);
-            rec_Dia_r.pupil_mm = conditions.RPupil;
+            rec_Dia_r.pupil_mm = conditions.RPupil ?? 0.0;
+            rec_Dia_r.is_exam_pupil_data = (conditions.RPupil != null);
             rec_Dia_r.measured_at = conditions.ExamDateTime;
 
             // DB登録
@@ -61,7 +62,8 @@ namespace BlazorDbTest.Controllers {
             var rec_Dia_l = MakeDiaRec(exam_id_l,
                 DBConst.strEyeType[DBConst.eEyeType.LEFT],
                 sqlConnection);
-            rec_Dia_l.pupil_mm = conditions.LPupil;
+            rec_Dia_l.pupil_mm = conditions.LPupil ?? 0.0;
+            rec_Dia_l.is_exam_pupil_data = (conditions.LPupil != null);
             rec_Dia_l.measured_at = conditions.ExamDateTime;
 
             // DB登録
@@ -122,6 +124,12 @@ namespace BlazorDbTest.Controllers {
           Query += DBCommonController._col(DBCommonController.COLNAME_ExamList[(int)DBCommonController.eExamList.pt_uuid]);
           Query += " = ";
           Query += DBCommonController._val(uuid);
+          Query += " AND ";
+          Query += DBCommonController._table(DBCommonController.DB_TableNames[(int)DBCommonController.eDbTable.EXAM_DIA]);
+          Query += ".";
+          Query += DBCommonController._col(COLNAME_ExamDiaList[(int)eExamDia.is_exam_pupil_data]);
+          Query += " = ";
+          Query += DBCommonController._val("TRUE");
           Query += " )";
           Query += " ORDER BY ";
           Query += DBCommonController._col(COLNAME_ExamDiaList[(int)eExamDia.measured_at]);
@@ -209,8 +217,8 @@ namespace BlazorDbTest.Controllers {
                   // 装置種別AxMのデータを優先する
                   // 装置種別AxMのデータは、1測定日に1つしか登録できない
                   if (!list[j].IsRManualInput) {
-                    if (list[j].RPupil == 0.0) {
-                      // 右眼かつ同じ測定日の右眼が0のとき
+                    if (list[j].RPupil == null) {
+                      // 右眼かつ同じ測定日の右眼がnullのとき
                       list[j].RExamID = DiaDataList[i].ID;
                       list[j].RPupil = DiaDataList[i].Pupil;
                       list[j].IsRManualInput = (DiaDataList[i].DeviceID == 4);  // todo:
@@ -228,8 +236,8 @@ namespace BlazorDbTest.Controllers {
                   }
                 } else if (DiaDataList[i].EyeId == EyeType.left) {
                   if (!list[j].IsLManualInput) {
-                    if (list[j].LPupil == 0.0) {
-                      // 左眼かつ同じ測定日の左眼が0のとき
+                    if (list[j].LPupil == null) {
+                      // 左眼かつ同じ測定日の左眼がnullのとき
                       list[j].LExamID = DiaDataList[i].ID;
                       list[j].LPupil = DiaDataList[i].Pupil;
                       list[j].IsLManualInput = (DiaDataList[i].DeviceID == 4);  // todo:
@@ -255,8 +263,8 @@ namespace BlazorDbTest.Controllers {
                 PatientID = pt_id,
                 RExamID = string.Empty,
                 LExamID = string.Empty,
-                RPupil = 0.0,
-                LPupil = 0.0,
+                RPupil = null,
+                LPupil = null,
                 ExamDateTime = DiaDataList[i].ExamDateTime,
                 IsRManualInput = false,
                 IsLManualInput = false,
@@ -335,6 +343,7 @@ namespace BlazorDbTest.Controllers {
       stringBuilder.Append(DBCommonController._onconflict("pk_exam_dia"));
       stringBuilder.Append(DBCommonController._doupdateexam(COLNAME_ExamDiaList[(int)eExamDia.updated_at], DateTime.Now));
       stringBuilder.Append(DBCommonController._doupdatevalue(COLNAME_ExamDiaList[(int)eExamDia.pupil_mm], aExamDiaRec.pupil_mm.ToString()));
+      stringBuilder.Append(DBCommonController._doupdatevalue(COLNAME_ExamDiaList[(int)eExamDia.is_exam_pupil_data], aExamDiaRec.is_exam_pupil_data.ToString()));
       stringBuilder.Append(";");
       int num = 0;
       using (NpgsqlCommand npgsqlCommand = new NpgsqlCommand(stringBuilder.ToString(), sqlConnection)) {
@@ -403,17 +412,17 @@ namespace BlazorDbTest.Controllers {
 }
 
 public class ExamDiaRec {
-  public int exam_id { get; set; }
-  public int examtype_id { get; set; }
-  public int eye_id { get; set; }
-  public int device_id { get; set; }
-  public bool is_exam_pupil_data { get; set; }
-  public bool is_exam_wtw_data { get; set; }
+  public int? exam_id { get; set; }
+  public int? examtype_id { get; set; }
+  public int? eye_id { get; set; }
+  public int? device_id { get; set; }
+  public bool? is_exam_pupil_data { get; set; }
+  public bool? is_exam_wtw_data { get; set; }
   public string? comment { get; set; }
-  public double pupil_mm { get; set; }
-  public double wtw_mm { get; set; }
-  public double vd_mm { get; set; }
-  public int environment_id { get; set; }
+  public double? pupil_mm { get; set; }
+  public double? wtw_mm { get; set; }
+  public double? vd_mm { get; set; }
+  public int? environment_id { get; set; }
   public string? data_path { get; set; }
   public DateTime? measured_at { get; set; }
   public DateTime? updated_at { get; set; }

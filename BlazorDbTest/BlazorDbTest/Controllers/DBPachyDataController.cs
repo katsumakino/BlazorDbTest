@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Npgsql;
 using System.Data;
 using System.Text;
+using static BlazorDbTest.Controllers.DBAxialDataController;
 
 namespace BlazorDbTest.Controllers {
 
@@ -42,7 +43,8 @@ namespace BlazorDbTest.Controllers {
             var rec_Pachy_r = MakePachyRec(exam_id_r,
                 DBConst.strEyeType[DBConst.eEyeType.RIGHT],
                 sqlConnection);
-            rec_Pachy_r.pachy_um[0] = conditions.RPachy;
+            rec_Pachy_r.pachy_um[0] = conditions.RPachy ?? 0.0;
+            rec_Pachy_r.is_exam_data = (conditions.RPachy != null);
             rec_Pachy_r.measured_at = conditions.ExamDateTime;
 
             // DB登録
@@ -58,7 +60,8 @@ namespace BlazorDbTest.Controllers {
             var rec_Pachy_l = MakePachyRec(exam_id_l,
                 DBConst.strEyeType[DBConst.eEyeType.LEFT],
                 sqlConnection);
-            rec_Pachy_l.pachy_um[0] = conditions.LPachy;
+            rec_Pachy_l.pachy_um[0] = conditions.LPachy ?? 0.0;
+            rec_Pachy_l.is_exam_data = (conditions.LPachy != null);
             rec_Pachy_l.measured_at = conditions.ExamDateTime;
 
             // DB登録
@@ -119,6 +122,12 @@ namespace BlazorDbTest.Controllers {
           Query += DBCommonController._col(DBCommonController.COLNAME_ExamList[(int)DBCommonController.eExamList.pt_uuid]);
           Query += " = ";
           Query += DBCommonController._val(uuid);
+          Query += " AND ";
+          Query += DBCommonController._table(DBCommonController.DB_TableNames[(int)DBCommonController.eDbTable.EXAM_PACHY_CCT]);
+          Query += ".";
+          Query += DBCommonController._col(COLNAME_ExamPachyList[(int)eExamPachy.is_exam_data]);
+          Query += " = ";
+          Query += DBCommonController._val("TRUE");
           Query += " )";
           Query += " ORDER BY ";
           Query += DBCommonController._col(COLNAME_ExamPachyList[(int)eExamPachy.measured_at]);
@@ -203,20 +212,20 @@ namespace BlazorDbTest.Controllers {
                   == DBCommonController._objectToDateOnly(PachyDataList[i].ExamDateTime)) {
 
                 if (PachyDataList[i].EyeId == EyeType.right) {
-                  // 装置種別AxMのデータを優先する
-                  // 装置種別AxMのデータは、1測定日に1つしか登録できない
+                  // 装置種別AXMのデータを優先する
+                  // 装置種別AXMのデータは、1測定日に1つしか登録できない
                   if (!list[j].IsRManualInput) {
-                    if (list[j].RPachy == 0.0) {
-                      // 右眼かつ同じ測定日の右眼が0のとき
+                    if (list[j].RPachy == null) {
+                      // 右眼かつ同じ測定日の右眼がnullのとき
                       list[j].RExamID = PachyDataList[i].ID;
-                      list[j].RPachy = PachyDataList[i].Pachy[0] ?? 0.0;  // todo:
+                      list[j].RPachy = PachyDataList[i].Pachy[0];  // todo:
                       list[j].IsRManualInput = (PachyDataList[i].DeviceID == 4);  // todo:
                       isExist = true;
                       break;
                     } else if (list[j].ExamDateTime < PachyDataList[i].ExamDateTime) {
                       // 右眼かつ同じ測定時間が新しい
                       list[j].RExamID = PachyDataList[i].ID;
-                      list[j].RPachy = PachyDataList[i].Pachy[0] ?? 0.0;  // todo:
+                      list[j].RPachy = PachyDataList[i].Pachy[0];  // todo:
                       list[j].IsRManualInput = (PachyDataList[i].DeviceID == 4);  // todo:
                       list[j].ExamDateTime = PachyDataList[i].ExamDateTime;
                       isExist = true;
@@ -225,17 +234,17 @@ namespace BlazorDbTest.Controllers {
                   }
                 } else if (PachyDataList[i].EyeId == EyeType.left) {
                   if (!list[j].IsLManualInput) {
-                    if (list[j].LPachy == 0.0) {
+                    if (list[j].LPachy == null) {
                       // 左眼かつ同じ測定日の左眼が0のとき
                       list[j].LExamID = PachyDataList[i].ID;
-                      list[j].LPachy = PachyDataList[i].Pachy[0] ?? 0.0;  // todo:
+                      list[j].LPachy = PachyDataList[i].Pachy[0];  // todo:
                       list[j].IsLManualInput = (PachyDataList[i].DeviceID == 4);  // todo:
                       isExist = true;
                       break;
                     } else if (list[j].ExamDateTime < PachyDataList[i].ExamDateTime) {
                       // 左眼かつ同じ測定時間が新しい
                       list[j].LExamID = PachyDataList[i].ID;
-                      list[j].LPachy = PachyDataList[i].Pachy[0] ?? 0.0;  // todo:
+                      list[j].LPachy = PachyDataList[i].Pachy[0];  // todo:
                       list[j].IsLManualInput = (PachyDataList[i].DeviceID == 4);  // todo:
                       list[j].ExamDateTime = PachyDataList[i].ExamDateTime;
                       isExist = true;
@@ -252,19 +261,19 @@ namespace BlazorDbTest.Controllers {
                 PatientID = pt_id,
                 RExamID = string.Empty,
                 LExamID = string.Empty,
-                RPachy = 0.0,
-                LPachy = 0.0,
+                RPachy = null,
+                LPachy = null,
                 ExamDateTime = PachyDataList[i].ExamDateTime,
                 IsRManualInput = false,
                 IsLManualInput = false,
               };
               if (PachyDataList[i].EyeId == EyeType.right) {
                 var.RExamID = PachyDataList[i].ID;
-                var.RPachy = PachyDataList[i].Pachy[0] ?? 0.0;  // todo:
+                var.RPachy = PachyDataList[i].Pachy[0];  // todo:
                 var.IsRManualInput = (PachyDataList[i].DeviceID == 4);  // todo:
               } else if (PachyDataList[i].EyeId == EyeType.left) {
                 var.LExamID = PachyDataList[i].ID;
-                var.LPachy = PachyDataList[i].Pachy[0] ?? 0.0;  // todo:
+                var.LPachy = PachyDataList[i].Pachy[0];  // todo:
                 var.IsLManualInput = (PachyDataList[i].DeviceID == 4);  // todo:
               }
               list.Add(var);
@@ -351,6 +360,7 @@ namespace BlazorDbTest.Controllers {
       stringBuilder.Append(DBCommonController._onconflict("pk_exam_pachy_cct"));
       stringBuilder.Append(DBCommonController._doupdateexam(COLNAME_ExamPachyList[(int)eExamPachy.updated_at], DateTime.Now));
       stringBuilder.Append(DBCommonController._doupdatedoublelist(COLNAME_ExamPachyList[(int)eExamPachy.pachy_um], aExamPachyRec.pachy_um));
+      stringBuilder.Append(DBCommonController._doupdatevalue(COLNAME_ExamPachyList[(int)eExamPachy.is_exam_data], aExamPachyRec.is_exam_data.ToString()));
       stringBuilder.Append(";");
       int num = 0;
       using (NpgsqlCommand npgsqlCommand = new NpgsqlCommand(stringBuilder.ToString(), sqlConnection)) {
@@ -447,29 +457,29 @@ namespace BlazorDbTest.Controllers {
 }
 
 public class ExamPachyRec {
-  public int exam_id { get; set; }
-  public int examtype_id { get; set; }
-  public int eye_id { get; set; }
-  public int device_id { get; set; }
-  public bool is_exam_data { get; set; }
-  public string comment { get; set; }
-  public int select_id { get; set; }
-  public int target_eye_id { get; set; }
-  public int fitting_id { get; set; }
-  public bool is_meas_auto { get; set; }
+  public int? exam_id { get; set; }
+  public int? examtype_id { get; set; }
+  public int? eye_id { get; set; }
+  public int? device_id { get; set; }
+  public bool? is_exam_data { get; set; }
+  public string? comment { get; set; }
+  public int? select_id { get; set; }
+  public int? target_eye_id { get; set; }
+  public int? fitting_id { get; set; }
+  public bool? is_meas_auto { get; set; }
   public List<double?> pachy_um { get; set; } = new List<double?>();
-  public double oct_sd { get; set; }
+  public double? oct_sd { get; set; }
   public List<int?> oct_snr { get; set; } = new List<int?>();
-  public bool is_oct_average_ref_ind { get; set; }
-  public double oct_pachy_ref_ind { get; set; }
-  public bool is_us_velocity { get; set; }
-  public int us_velocity_mpers { get; set; }
-  public bool is_us_bias_offset_um { get; set; }
-  public int us_bias_offset_um { get; set; }
-  public int us_bias_offset_per { get; set; }
-  public bool is_em_us_correction { get; set; }
-  public int em_us_correction_um { get; set; }
-  public bool is_reliabiliy { get; set; }
+  public bool? is_oct_average_ref_ind { get; set; }
+  public double? oct_pachy_ref_ind { get; set; }
+  public bool? is_us_velocity { get; set; }
+  public int? us_velocity_mpers { get; set; }
+  public bool? is_us_bias_offset_um { get; set; }
+  public int? us_bias_offset_um { get; set; }
+  public int? us_bias_offset_per { get; set; }
+  public bool? is_em_us_correction { get; set; }
+  public int? em_us_correction_um { get; set; }
+  public bool? is_reliabiliy { get; set; }
   public List<string?> reliability { get; set; } = new List<string?>();
   public string? data_path { get; set; }
   public DateTime? measured_at { get; set; }

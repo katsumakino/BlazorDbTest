@@ -5,6 +5,7 @@ using Npgsql;
 using System.Data;
 using System.Text;
 using System.Text.Json;
+using static BlazorDbTest.Controllers.DBAxialDataController;
 
 namespace BlazorDbTest.Controllers {
 
@@ -43,7 +44,8 @@ namespace BlazorDbTest.Controllers {
             var rec_Sight_r = MakeSightRec(exam_id_r,
                 DBConst.strEyeType[DBConst.eEyeType.RIGHT],
                 sqlConnection);
-            rec_Sight_r.sight_d = conditions.RSight;
+            rec_Sight_r.sight_d = conditions.RSight ?? 0.0;
+            rec_Sight_r.is_exam_data = (conditions.RSight != null);
             rec_Sight_r.measured_at = conditions.ExamDateTime;
 
             // DB登録
@@ -59,7 +61,8 @@ namespace BlazorDbTest.Controllers {
             var rec_Sight_l = MakeSightRec(exam_id_l,
                 DBConst.strEyeType[DBConst.eEyeType.LEFT],
                 sqlConnection);
-            rec_Sight_l.sight_d = conditions.LSight;
+            rec_Sight_l.sight_d = conditions.LSight ?? 0.0;
+            rec_Sight_l.is_exam_data = (conditions.LSight != null);
             rec_Sight_l.measured_at = conditions.ExamDateTime;
 
             // DB登録
@@ -120,6 +123,12 @@ namespace BlazorDbTest.Controllers {
           Query += DBCommonController._col(DBCommonController.COLNAME_ExamList[(int)DBCommonController.eExamList.pt_uuid]);
           Query += " = ";
           Query += DBCommonController._val(uuid);
+          Query += " AND ";
+          Query += DBCommonController._table(DBCommonController.DB_TableNames[(int)DBCommonController.eDbTable.AXM_EXAM_SIGHT]);
+          Query += ".";
+          Query += DBCommonController._col(COLNAME_ExamSightList[(int)eExamSight.is_exam_data]);
+          Query += " = ";
+          Query += DBCommonController._val("TRUE");
           Query += " )";
           Query += " ORDER BY ";
           Query += DBCommonController._col(COLNAME_ExamSightList[(int)eExamSight.measured_at]);
@@ -204,11 +213,11 @@ namespace BlazorDbTest.Controllers {
                   == DBCommonController._objectToDateOnly(SightDataList[i].ExamDateTime)) {
 
                 if (SightDataList[i].EyeId == EyeType.right) {
-                  // 装置種別AxMのデータを優先する
-                  // 装置種別AxMのデータは、1測定日に1つしか登録できない
+                  // 装置種別AXMのデータを優先する
+                  // 装置種別AXMのデータは、1測定日に1つしか登録できない
 
-                  if (list[j].RSight == 0.0) {    // todo: 0があり得るので要修正
-                    // 右眼かつ同じ測定日の右眼が0のとき
+                  if (list[j].RSight == null) {
+                    // 右眼かつ同じ測定日の右眼がnullのとき
                     list[j].RExamID = SightDataList[i].ID;
                     list[j].RSight = SightDataList[i].Sight;
                     isExist = true;
@@ -222,8 +231,8 @@ namespace BlazorDbTest.Controllers {
                     break;
                   }
                 } else if (SightDataList[i].EyeId == EyeType.left) {
-                  if (list[j].LSight == 0.0) {
-                    // 左眼かつ同じ測定日の左眼が0のとき
+                  if (list[j].LSight == null) {
+                    // 左眼かつ同じ測定日の左眼がnullのとき
                     list[j].LExamID = SightDataList[i].ID;
                     list[j].LSight = SightDataList[i].Sight;
                     isExist = true;
@@ -246,8 +255,8 @@ namespace BlazorDbTest.Controllers {
                 PatientID = pt_id,
                 RExamID = string.Empty,
                 LExamID = string.Empty,
-                RSight = 0.0,
-                LSight = 0.0,
+                RSight = null,
+                LSight = null,
                 ExamDateTime = SightDataList[i].ExamDateTime,
               };
               if (SightDataList[i].EyeId == EyeType.right) {
@@ -314,6 +323,7 @@ namespace BlazorDbTest.Controllers {
       stringBuilder.Append(DBCommonController._onconflict("pk_exam_sight"));
       stringBuilder.Append(DBCommonController._doupdateexam(COLNAME_ExamSightList[(int)eExamSight.updated_at], DateTime.Now));
       stringBuilder.Append(DBCommonController._doupdatevalue(COLNAME_ExamSightList[(int)eExamSight.sight_d], aExamSightRec.sight_d.ToString()));
+      stringBuilder.Append(DBCommonController._doupdatevalue(COLNAME_ExamSightList[(int)eExamSight.is_exam_data], aExamSightRec.is_exam_data.ToString()));
       stringBuilder.Append(";");
       int num = 0;
       using (NpgsqlCommand npgsqlCommand = new NpgsqlCommand(stringBuilder.ToString(), sqlConnection)) {
@@ -368,12 +378,12 @@ namespace BlazorDbTest.Controllers {
 }
 
 public class ExamSightRec {
-  public int exam_id { get; set; }
-  public int examtype_id { get; set; }
-  public int eye_id { get; set; }
-  public int device_id { get; set; }
-  public bool is_exam_data { get; set; }
-  public double sight_d { get; set; }
+  public int? exam_id { get; set; }
+  public int? examtype_id { get; set; }
+  public int? eye_id { get; set; }
+  public int? device_id { get; set; }
+  public bool? is_exam_data { get; set; }
+  public double? sight_d { get; set; }
   public DateTime? measured_at { get; set; }
   public DateTime? updated_at { get; set; }
   public DateTime? created_at { get; set; }

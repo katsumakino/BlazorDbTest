@@ -45,13 +45,15 @@ namespace BlazorDbTest.Controllers {
             var rec_krt_r = MakeKrtRec(exam_id_r,
                 DBConst.strEyeType[DBConst.eEyeType.RIGHT],
                 sqlConnection);
-            rec_krt_r.k1_mm[0] = conditions.RK1_mm;
-            rec_krt_r.k1_d[0] = conditions.RK1_d;
-            rec_krt_r.k2_mm[0] = conditions.RK2_mm;
-            rec_krt_r.k2_d[0] = conditions.RK2_d;
-            rec_krt_r.avek_mm[0] = (conditions.RK1_mm + conditions.RK2_mm) / 2;
-            rec_krt_r.avek_d[0] = (conditions.RK1_d + conditions.RK2_d) / 2;
-            rec_krt_r.cyl_d[0] = conditions.RCyl_d;
+            rec_krt_r.k1_mm[0] = conditions.RK1_mm ?? 0.0;
+            rec_krt_r.k1_d[0] = conditions.RK1_d ?? 0.0;
+            rec_krt_r.k2_mm[0] = conditions.RK2_mm ?? 0.0;
+            rec_krt_r.k2_d[0] = conditions.RK2_d ?? 0.0;
+            rec_krt_r.avek_mm[0] = ((conditions.RK1_mm + conditions.RK2_mm) / 2) ?? 0.0;
+            rec_krt_r.avek_d[0] = ((conditions.RK1_d + conditions.RK2_d) / 2) ?? 0.0;
+            rec_krt_r.cyl_d[0] = conditions.RCyl_d ?? 0.0;
+            rec_krt_r.is_exam_data = ((conditions.RK1_mm != null && conditions.RK2_mm != null && conditions.RCyl_d != null)
+              || (conditions.RK1_d != null && conditions.RK2_d != null && conditions.RCyl_d != null));
             rec_krt_r.measured_at = conditions.ExamDateTime;
 
             // DB登録
@@ -67,13 +69,15 @@ namespace BlazorDbTest.Controllers {
             var rec_krt_l = MakeKrtRec(exam_id_l,
                 DBConst.strEyeType[DBConst.eEyeType.LEFT],
                 sqlConnection);
-            rec_krt_l.k1_mm[0] = conditions.LK1_mm;
-            rec_krt_l.k1_d[0] = conditions.LK1_d;
-            rec_krt_l.k2_mm[0] = conditions.LK2_mm;
-            rec_krt_l.k2_d[0] = conditions.LK2_d;
-            rec_krt_l.avek_mm[0] = (conditions.LK1_mm + conditions.LK2_mm) / 2;
-            rec_krt_l.avek_d[0] = (conditions.LK1_d + conditions.LK2_d) / 2;
-            rec_krt_l.cyl_d[0] = conditions.LCyl_d;
+            rec_krt_l.k1_mm[0] = conditions.LK1_mm ?? 0.0;
+            rec_krt_l.k1_d[0] = conditions.LK1_d ?? 0.0;
+            rec_krt_l.k2_mm[0] = conditions.LK2_mm ?? 0.0;
+            rec_krt_l.k2_d[0] = conditions.LK2_d ?? 0.0;
+            rec_krt_l.avek_mm[0] = ((conditions.LK1_mm + conditions.LK2_mm) / 2) ?? 0.0;
+            rec_krt_l.avek_d[0] = ((conditions.LK1_d + conditions.LK2_d) / 2) ?? 0.0;
+            rec_krt_l.cyl_d[0] = conditions.LCyl_d ?? 0.0;
+            rec_krt_l.is_exam_data = ((conditions.LK1_mm != null && conditions.LK2_mm != null && conditions.LCyl_d != null)
+              || (conditions.LK1_d != null && conditions.LK2_d != null && conditions.LCyl_d != null));
             rec_krt_l.measured_at = conditions.ExamDateTime;
 
             // DB登録
@@ -134,6 +138,12 @@ namespace BlazorDbTest.Controllers {
           Query += DBCommonController._col(DBCommonController.COLNAME_ExamList[(int)DBCommonController.eExamList.pt_uuid]);
           Query += " = ";
           Query += DBCommonController._val(uuid);
+          Query += " AND ";
+          Query += DBCommonController._table(DBCommonController.DB_TableNames[(int)DBCommonController.eDbTable.EXAM_KRT]);
+          Query += ".";
+          Query += DBCommonController._col(COLNAME_ExamKrtList[(int)eExamKrt.is_exam_data]);
+          Query += " = ";
+          Query += DBCommonController._val("TRUE");
           Query += " )";
           Query += " ORDER BY ";
           Query += DBCommonController._col(COLNAME_ExamKrtList[(int)eExamKrt.measured_at]);
@@ -224,32 +234,32 @@ namespace BlazorDbTest.Controllers {
                   == DBCommonController._objectToDateOnly(krtDataList[i].ExamDateTime)) {
 
                 if (krtDataList[i].EyeId == EyeType.right) {
-                  // 装置種別AxMのデータを優先する
-                  // 装置種別AxMのデータは、1測定日に1つしか登録できない
+                  // 装置種別AXMのデータを優先する
+                  // 装置種別AXMのデータは、1測定日に1つしか登録できない
                   if (!list[j].IsRManualInput) {
-                    if (list[j].RK1_mm == 0.0) {
+                    if (list[j].RK1_mm == null) {
                       // 右眼かつ同じ測定日の右眼が0のとき
                       list[j].RExamID = krtDataList[i].ID;
-                      list[j].RK1_mm = krtDataList[i].K1_mm[0] ?? 0.0;    // todo:
-                      list[j].RK1_d = krtDataList[i].K1_d[0] ?? 0.0;
-                      list[j].RK2_mm = krtDataList[i].K2_mm[0] ?? 0.0;
-                      list[j].RK2_d = krtDataList[i].K2_d[0] ?? 0.0;
-                      list[j].RAveK_mm = krtDataList[i].AveK_mm[0] ?? 0.0;
-                      list[j].RAveK_d = krtDataList[i].AveK_d[0] ?? 0.0;
-                      list[j].RCyl_d = krtDataList[i].Cyl_d[0] ?? 0.0;
+                      list[j].RK1_mm = krtDataList[i].K1_mm[0];    // todo:
+                      list[j].RK1_d = krtDataList[i].K1_d[0];
+                      list[j].RK2_mm = krtDataList[i].K2_mm[0];
+                      list[j].RK2_d = krtDataList[i].K2_d[0];
+                      list[j].RAveK_mm = krtDataList[i].AveK_mm[0];
+                      list[j].RAveK_d = krtDataList[i].AveK_d[0];
+                      list[j].RCyl_d = krtDataList[i].Cyl_d[0];
                       list[j].IsRManualInput = (krtDataList[i].DeviceID == 4);  // todo:
                       isExist = true;
                       break;
                     } else if (list[j].ExamDateTime < krtDataList[i].ExamDateTime) {
                       // 右眼かつ同じ測定時間が新しい
                       list[j].RExamID = krtDataList[i].ID;
-                      list[j].RK1_mm = krtDataList[i].K1_mm[0] ?? 0.0;
-                      list[j].RK1_d = krtDataList[i].K1_d[0] ?? 0.0;
-                      list[j].RK2_mm = krtDataList[i].K2_mm[0] ?? 0.0;
-                      list[j].RK2_d = krtDataList[i].K2_d[0] ?? 0.0;
-                      list[j].RAveK_mm = krtDataList[i].AveK_mm[0] ?? 0.0;
-                      list[j].RAveK_d = krtDataList[i].AveK_d[0] ?? 0.0;
-                      list[j].RCyl_d = krtDataList[i].Cyl_d[0] ?? 0.0;
+                      list[j].RK1_mm = krtDataList[i].K1_mm[0];
+                      list[j].RK1_d = krtDataList[i].K1_d[0];
+                      list[j].RK2_mm = krtDataList[i].K2_mm[0];
+                      list[j].RK2_d = krtDataList[i].K2_d[0];
+                      list[j].RAveK_mm = krtDataList[i].AveK_mm[0];
+                      list[j].RAveK_d = krtDataList[i].AveK_d[0];
+                      list[j].RCyl_d = krtDataList[i].Cyl_d[0];
                       list[j].IsRManualInput = (krtDataList[i].DeviceID == 4);  // todo:
                       list[j].ExamDateTime = krtDataList[i].ExamDateTime;
                       isExist = true;
@@ -258,29 +268,29 @@ namespace BlazorDbTest.Controllers {
                   }
                 } else if (krtDataList[i].EyeId == EyeType.left) {
                   if (!list[j].IsLManualInput) {
-                    if (list[j].LK1_mm == 0.0) {
+                    if (list[j].LK1_mm == null) {
                       // 左眼かつ同じ測定日の左眼が0のとき
                       list[j].LExamID = krtDataList[i].ID;
-                      list[j].LK1_mm = krtDataList[i].K1_mm[0] ?? 0.0;
-                      list[j].LK1_d = krtDataList[i].K1_d[0] ?? 0.0;
-                      list[j].LK2_mm = krtDataList[i].K2_mm[0] ?? 0.0;
-                      list[j].LK2_d = krtDataList[i].K2_d[0] ?? 0.0;
-                      list[j].LAveK_mm = krtDataList[i].AveK_mm[0] ?? 0.0;
-                      list[j].LAveK_d = krtDataList[i].AveK_d[0] ?? 0.0;
-                      list[j].LCyl_d = krtDataList[i].Cyl_d[0] ?? 0.0;
+                      list[j].LK1_mm = krtDataList[i].K1_mm[0];
+                      list[j].LK1_d = krtDataList[i].K1_d[0];
+                      list[j].LK2_mm = krtDataList[i].K2_mm[0];
+                      list[j].LK2_d = krtDataList[i].K2_d[0];
+                      list[j].LAveK_mm = krtDataList[i].AveK_mm[0];
+                      list[j].LAveK_d = krtDataList[i].AveK_d[0];
+                      list[j].LCyl_d = krtDataList[i].Cyl_d[0];
                       list[j].IsLManualInput = (krtDataList[i].DeviceID == 4);  // todo:
                       isExist = true;
                       break;
                     } else if (list[j].ExamDateTime < krtDataList[i].ExamDateTime) {
                       // 左眼かつ同じ測定時間が新しい
                       list[j].LExamID = krtDataList[i].ID;
-                      list[j].LK1_mm = krtDataList[i].K1_mm[0] ?? 0.0;
-                      list[j].LK1_d = krtDataList[i].K1_d[0] ?? 0.0;
-                      list[j].LK2_mm = krtDataList[i].K2_mm[0] ?? 0.0;
-                      list[j].LK2_d = krtDataList[i].K2_d[0] ?? 0.0;
-                      list[j].LAveK_mm = krtDataList[i].AveK_mm[0] ?? 0.0;
-                      list[j].LAveK_d = krtDataList[i].AveK_d[0] ?? 0.0;
-                      list[j].LCyl_d = krtDataList[i].Cyl_d[0] ?? 0.0;
+                      list[j].LK1_mm = krtDataList[i].K1_mm[0];
+                      list[j].LK1_d = krtDataList[i].K1_d[0];
+                      list[j].LK2_mm = krtDataList[i].K2_mm[0];
+                      list[j].LK2_d = krtDataList[i].K2_d[0];
+                      list[j].LAveK_mm = krtDataList[i].AveK_mm[0];
+                      list[j].LAveK_d = krtDataList[i].AveK_d[0];
+                      list[j].LCyl_d = krtDataList[i].Cyl_d[0];
                       list[j].IsLManualInput = (krtDataList[i].DeviceID == 4);  // todo:
                       list[j].ExamDateTime = krtDataList[i].ExamDateTime;
                       isExist = true;
@@ -297,43 +307,43 @@ namespace BlazorDbTest.Controllers {
                 PatientID = pt_id,
                 RExamID = string.Empty,
                 LExamID = string.Empty,
-                RK1_mm = 0.0,
-                RK1_d = 0.0,
-                RK2_mm = 0.0,
-                RK2_d = 0.0,
-                RAveK_mm = 0.0,
-                RAveK_d = 0.0,
-                RCyl_d = 0.0,
-                LK1_mm = 0.0,
-                LK1_d = 0.0,
-                LK2_mm = 0.0,
-                LK2_d = 0.0,
-                LAveK_mm = 0.0,
-                LAveK_d = 0.0,
-                LCyl_d = 0.0,
+                RK1_mm = null,
+                RK1_d = null,
+                RK2_mm = null,
+                RK2_d = null,
+                RAveK_mm = null,
+                RAveK_d = null,
+                RCyl_d = null,
+                LK1_mm = null,
+                LK1_d = null,
+                LK2_mm = null,
+                LK2_d = null,
+                LAveK_mm = null,
+                LAveK_d = null,
+                LCyl_d = null,
                 ExamDateTime = krtDataList[i].ExamDateTime,
                 IsRManualInput = false,
                 IsLManualInput = false,
               };
               if (krtDataList[i].EyeId == EyeType.right) {
                 var.RExamID = krtDataList[i].ID;
-                var.RK1_mm = krtDataList[i].K1_mm[0] ?? 0.0;    // todo:
-                var.RK1_d = krtDataList[i].K1_d[0] ?? 0.0;
-                var.RK2_mm = krtDataList[i].K2_mm[0] ?? 0.0;
-                var.RK2_d = krtDataList[i].K2_d[0] ?? 0.0;
-                var.RAveK_mm = krtDataList[i].AveK_mm[0] ?? 0.0;
-                var.RAveK_d = krtDataList[i].AveK_d[0] ?? 0.0;
-                var.RCyl_d = krtDataList[i].Cyl_d[0] ?? 0.0;
+                var.RK1_mm = krtDataList[i].K1_mm[0];    // todo:
+                var.RK1_d = krtDataList[i].K1_d[0];
+                var.RK2_mm = krtDataList[i].K2_mm[0];
+                var.RK2_d = krtDataList[i].K2_d[0];
+                var.RAveK_mm = krtDataList[i].AveK_mm[0];
+                var.RAveK_d = krtDataList[i].AveK_d[0];
+                var.RCyl_d = krtDataList[i].Cyl_d[0];
                 var.IsRManualInput = (krtDataList[i].DeviceID == 4);  // todo:
               } else if (krtDataList[i].EyeId == EyeType.left) {
                 var.LExamID = krtDataList[i].ID;
-                var.LK1_mm = krtDataList[i].K1_mm[0] ?? 0.0;
-                var.LK1_d = krtDataList[i].K1_d[0] ?? 0.0;
-                var.LK2_mm = krtDataList[i].K2_mm[0] ?? 0.0;
-                var.LK2_d = krtDataList[i].K2_d[0] ?? 0.0;
-                var.LAveK_mm = krtDataList[i].AveK_mm[0] ?? 0.0;
-                var.LAveK_d = krtDataList[i].AveK_d[0] ?? 0.0;
-                var.LCyl_d = krtDataList[i].Cyl_d[0] ?? 0.0;
+                var.LK1_mm = krtDataList[i].K1_mm[0];
+                var.LK1_d = krtDataList[i].K1_d[0];
+                var.LK2_mm = krtDataList[i].K2_mm[0];
+                var.LK2_d = krtDataList[i].K2_d[0];
+                var.LAveK_mm = krtDataList[i].AveK_mm[0];
+                var.LAveK_d = krtDataList[i].AveK_d[0];
+                var.LCyl_d = krtDataList[i].Cyl_d[0];
                 var.IsLManualInput = (krtDataList[i].DeviceID == 4);  // todo:
               }
               list.Add(var);
@@ -420,6 +430,7 @@ namespace BlazorDbTest.Controllers {
       stringBuilder.Append(DBCommonController._doupdatedoublelist(COLNAME_ExamKrtList[(int)eExamKrt.avek_mm], aExamKeratoRec.avek_mm));
       stringBuilder.Append(DBCommonController._doupdatedoublelist(COLNAME_ExamKrtList[(int)eExamKrt.avek_d], aExamKeratoRec.avek_d));
       stringBuilder.Append(DBCommonController._doupdatedoublelist(COLNAME_ExamKrtList[(int)eExamKrt.cyl_d], aExamKeratoRec.cyl_d));
+      stringBuilder.Append(DBCommonController._doupdatevalue(COLNAME_ExamKrtList[(int)eExamKrt.is_exam_data], aExamKeratoRec.is_exam_data.ToString()));
       stringBuilder.Append(";");
       int num = 0;
       using (NpgsqlCommand npgsqlCommand = new NpgsqlCommand(stringBuilder.ToString(), sqlConnection)) {
@@ -511,15 +522,15 @@ namespace BlazorDbTest.Controllers {
 }
 
 public class ExamKrtRec {
-  public int exam_id { get; set; }
-  public int examtype_id { get; set; }
-  public int eye_id { get; set; }
-  public int device_id { get; set; }
-  public bool is_exam_data { get; set; }
-  public string comment { get; set; }
-  public int select_id { get; set; }
-  public int phi_id { get; set; }
-  public bool is_meas_auto { get; set; }
+  public int? exam_id { get; set; }
+  public int? examtype_id { get; set; }
+  public int? eye_id { get; set; }
+  public int? device_id { get; set; }
+  public bool? is_exam_data { get; set; }
+  public string? comment { get; set; }
+  public int? select_id { get; set; }
+  public int? phi_id { get; set; }
+  public bool? is_meas_auto { get; set; }
   public List<double?> k1_mm { get; set; } = new List<double?>();
   public List<double?> k1_d { get; set; } = new List<double?>();
   public List<int?> k1_axis_deg { get; set; } = new List<int?>();
@@ -531,7 +542,7 @@ public class ExamKrtRec {
   public double? k_index { get; set; }
   public List<double?> cyl_d { get; set; } = new List<double?>();
   public List<int?> axis_deg { get; set; } = new List<int?>();
-  public bool is_reliabiliy { get; set; }
+  public bool? is_reliabiliy { get; set; }
   public List<string?> reliability { get; set; } = new List<string?>();
   public string? data_path { get; set; }
   public DateTime? measured_at { get; set; }
