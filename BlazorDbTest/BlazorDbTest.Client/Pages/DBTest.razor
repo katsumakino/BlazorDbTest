@@ -55,12 +55,11 @@
   <InputText @bind-Value="PatientInfoModel.UUID" autocomplete=off />
 </div>
 <div>
-    <button @onclick="PatientInfoButtonClick">Register</button>
+  <button @onclick="PatientInfoButtonClick">Register</button>
+  <button @onclick="UpdatePatientListButtonClick">Update</button>
+  <button @onclick="UpdatePatientFlagButtonClick">Flag Set</button>
 </div>
-<br />
-<div>
-    <button @onclick="UpdatePatientListButtonClick">Update</button>
-</div>
+
 @if (patientList == null) {
     <p><em>Loading...</em></p>
 } else {
@@ -413,6 +412,11 @@
     Task.Run(() => GetPatientListAsync());
   }
 
+  void UpdatePatientFlagButtonClick() {
+    // 患者情報フラグ更新
+    Task.Run(() => UpdatePatientFlagAsync());
+  }
+
   void UpdateAxialListButtonClick() {
     // 眼軸長測定値リスト更新
     Task.Run(() => GetAxialListAsync());
@@ -493,6 +497,19 @@
 
     //画面を更新する
     StateHasChanged();
+  }
+
+  /// <summary>
+  /// DBの患者情報フラグを更新
+  /// </summary>
+  /// <returns></returns>
+  protected async Task UpdatePatientFlagAsync() {
+    string url = $"api/DBPatientInfo/UpdatePatientInfoFlag/";
+
+    var conditions = JsonSerializer.Serialize(PatientInfoModel, options);
+    var content = new StringContent(conditions, Encoding.UTF8, "application/json");
+      
+    var response = await HttpClient.PostAsync(url, content);
   }
 
   ////////////////////////////////////////////////////////////////////

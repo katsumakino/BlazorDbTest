@@ -9,6 +9,7 @@ using static BlazorDbTest.Controllers.DBCommonController;
 using static BlazorDbTest.Controllers.DBAxmCommentController;
 using static BlazorDbTest.Controllers.DBAxialDataController;
 using static BlazorDbTest.Controllers.DBTreatmentController;
+using System;
 
 namespace BlazorDbTest.Controllers {
 
@@ -424,6 +425,52 @@ namespace BlazorDbTest.Controllers {
       return DataSource;
     }
 
+    // フラグ情報変更
+    [HttpPost("UpdatePatientInfoFlag")]
+    public void UpdatePatientInfoFlag([FromBody] PatientInfo conditions) {
+      try {
+        if (conditions == null) return;
+        if (conditions.ID == null || conditions.ID == string.Empty) return;
+
+        bool result = false;
+        DBAccess dbAccess = DBAccess.GetInstance();
+
+        try {
+          // PostgreSQL Server 通信接続
+          NpgsqlConnection sqlConnection = dbAccess.GetSqlConnection();
+
+          // UUIDの有無を確認(true:update / false:insert)
+          var uuid = Select_PTUUID_by_PTID(sqlConnection, conditions.ID);
+          if (uuid == string.Empty) {
+            // UUIDが取得できない場合は、処理終了
+            return;
+          } else {
+            // Update
+            DateTime dateTime = DateTime.Now;
+            AxmPatientRec axmPatientRec = new() {
+              pt_uuid = uuid,
+              axm_flag = conditions.Mark,
+              updated_at = dateTime
+            };
+
+            result = UpdateAxmPatientFlag(sqlConnection, axmPatientRec);
+          }
+        } catch {
+        } finally {
+          if (!result) {
+            // todo: Error通知
+          }
+
+          // PostgreSQL Server 通信切断
+          dbAccess.CloseSqlConnection();
+        }
+
+      } catch {
+      }
+
+      return;
+    }
+
     // 主キー重複時Update
     private bool Insert(NpgsqlConnection sqlConnection, PatientRec aPatientRec) {
       int num = 0;
@@ -614,6 +661,49 @@ namespace BlazorDbTest.Controllers {
         npgsqlCommand.Parameters.AddWithValue(COLNAME_AxmPatientList[(int)eAxmPatientList.axm_same_pt_id], aPatientRec.axm_same_pt_id);
         npgsqlCommand.Parameters.AddWithValue(COLNAME_AxmPatientList[(int)eAxmPatientList.updated_at], _DateTimeToObject(aPatientRec.updated_at));
         npgsqlCommand.Parameters.AddWithValue(COLNAME_AxmPatientList[(int)eAxmPatientList.created_at], _DateTimeToObject(aPatientRec.created_at));
+        num = npgsqlCommand.ExecuteNonQuery();
+      }
+
+      return num != 0;
+    }
+
+    private static bool UpdateAxmPatientFlag(NpgsqlConnection sqlConnection, AxmPatientRec aPatientRec) {
+      int num = 0;
+
+      StringBuilder stringBuilder = new();
+      stringBuilder.Append("update ");
+      stringBuilder.Append(_table(DB_TableNames[(int)eDbTable.AXM_PATIENT_LIST]));
+      stringBuilder.Append(" set ");
+
+      string text = " (";
+      string text2 = " (";
+      for (int i = 0; i < COLNAME_AxmPatientList.Count(); i++) {
+        if (i == (int)eAxmPatientList.axm_flag
+          || i == (int)eAxmPatientList.updated_at) {
+          text += _col(COLNAME_AxmPatientList[i]);
+          text2 += _bind(COLNAME_AxmPatientList[i]);
+        }
+
+        if (i == (int)eAxmPatientList.axm_flag) {
+          text += ",";
+          text2 += ",";
+        }
+      }
+      text += ")";
+      text2 += ")";
+
+      stringBuilder.Append(text);
+      stringBuilder.Append(" = ");
+      stringBuilder.Append(text2);
+      stringBuilder.Append(" where ");
+      stringBuilder.Append(_col(COLNAME_AxmPatientList[(int)eAxmPatientList.pt_uuid]));
+      stringBuilder.Append(" = ");
+      stringBuilder.Append(_val(aPatientRec.pt_uuid));
+      stringBuilder.Append(";");
+
+      using (NpgsqlCommand npgsqlCommand = new NpgsqlCommand(stringBuilder.ToString(), sqlConnection)) {
+        npgsqlCommand.Parameters.AddWithValue(COLNAME_AxmPatientList[(int)eAxmPatientList.axm_flag], aPatientRec.axm_flag);
+        npgsqlCommand.Parameters.AddWithValue(COLNAME_AxmPatientList[(int)eAxmPatientList.updated_at], _DateTimeToObject(aPatientRec.updated_at));
         num = npgsqlCommand.ExecuteNonQuery();
       }
 
