@@ -644,9 +644,11 @@
   /// </summary>
   /// <returns></returns>
   protected async Task DeleteTreatmentMethodAsync() {
-    string content = $"api/DBTreatment/DeleteTreatmentInfoData/";
+    string url = $"api/DBTreatment/DeleteTreatmentInfoData/";
 
-    await HttpClient.GetAsync(content + TreatmentMethodModel.ID);
+    var conditions = JsonSerializer.Serialize(TreatmentMethodModel.ID, options);
+    var content = new StringContent(conditions, Encoding.UTF8, "application/json");
+    var response = await HttpClient.PostAsync(url, content);
   }
 
   /// <summary>
@@ -688,9 +690,11 @@
   /// </summary>
   /// <returns></returns>
   protected async Task DeleteTreatmentAsync() {
-    string content = $"api/DBTreatment/DeleteTreatmentData/";
+    string url = $"api/DBTreatment/DeleteTreatmentData/";
 
-    await HttpClient.GetAsync(content + TreatmentModel.ID);
+    var conditions = JsonSerializer.Serialize(TreatmentModel.ID, options);
+    var content = new StringContent(conditions, Encoding.UTF8, "application/json");
+    var response = await HttpClient.PostAsync(url, content);
   }
 
   /// <summary>

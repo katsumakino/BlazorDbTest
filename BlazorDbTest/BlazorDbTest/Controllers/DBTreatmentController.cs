@@ -235,8 +235,8 @@ namespace BlazorDbTest.Controllers {
     }
 
     // 治療状況削除
-    [HttpGet("DeleteTreatmentData/{treatmentId}/")]
-    public void DeleteTreatmentData(int treatmentId) {
+    [HttpPost("DeleteTreatmentData")]
+    public void DeleteTreatmentData([FromBody]int treatmentId) {
       try {
         DBAccess dbAccess = DBAccess.GetInstance();
 
@@ -265,8 +265,8 @@ namespace BlazorDbTest.Controllers {
     }
 
     // 治療方法削除
-    [HttpGet("DeleteTreatmentInfoData/{treatmentTypeId}/")]
-    public void DeleteTreatmentInfoData(int treatmentTypeId) {
+    [HttpPost("DeleteTreatmentInfoData")]
+    public void DeleteTreatmentInfoData([FromBody]int treatmentTypeId) {
       try {
         DBAccess dbAccess = DBAccess.GetInstance();
 
