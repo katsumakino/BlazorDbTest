@@ -45,7 +45,7 @@ namespace BlazorDbTest.Controllers {
             var rec_krt_r = MakeKrtRec(exam_id_r,
                 DBConst.strEyeType[DBConst.eEyeType.RIGHT],
                 sqlConnection);
-            rec_krt_r.k1_mm[0] = conditions.RK1_mm ?? 0.0;
+            rec_krt_r.k1_mm[0] = conditions.RK1_mm ?? 0.0;  // todo: 設定取得
             rec_krt_r.k1_d[0] = conditions.RK1_d ?? 0.0;
             rec_krt_r.k2_mm[0] = conditions.RK2_mm ?? 0.0;
             rec_krt_r.k2_d[0] = conditions.RK2_d ?? 0.0;
@@ -364,7 +364,7 @@ namespace BlazorDbTest.Controllers {
         recKrt.eye_id = DBCommonController.Select_Eye_ID(sqlConnection, posEye);
         recKrt.device_id = DBCommonController.Select_Device_ID(sqlConnection, "AXM2");
 
-        recKrt.is_exam_data = true;   // todo: 要確認
+        recKrt.is_exam_data = true; 
         recKrt.comment = ""; // タグが無いので空文字
         recKrt.select_id = 0; // 0固定でよい
 

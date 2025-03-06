@@ -220,7 +220,7 @@ namespace BlazorDbTest.Controllers {
                     if (list[j].RAxial == null) {
                       // 右眼かつ同じ測定日の右眼がnullのとき
                       list[j].RExamID = axialDataList[i].ID;
-                      list[j].RAxial = axialDataList[i].Axial[0] ?? null;
+                      list[j].RAxial = axialDataList[i].Axial[0] ?? null;         // todo: 取得位置
                       list[j].IsRManualInput = (axialDataList[i].DeviceID == 4);  // todo:
                       isExist = true;
                       break;
@@ -404,6 +404,12 @@ namespace BlazorDbTest.Controllers {
     /// <returns></returns>
     public static double GetLatestAxialData(string pt_uuid, int eye_id, DateOnly examdate, double min, double max, NpgsqlConnection sqlConnection) {
       double axial_mm = -1;
+
+      // todo: 呼び出し位置が違う(ここだと毎回呼び出しになる)
+      // todo: 設定に合わせた位置と比較(※DBのIndexは1から)
+      //int fitting_id = DBCommonController.Select_FittingId_By_FittingType(sqlConnection, "none");
+      int fitting_id = 1;
+
       try {
         // 実行するクエリコマンド定義
         string Query = "SELECT * FROM ";
@@ -433,12 +439,16 @@ namespace BlazorDbTest.Controllers {
         Query += eye_id;
         Query += " AND ";
         Query += DBCommonController._col(COLNAME_ExamOptaxialList[(int)eExamOptAxial.axial_mm]);
-        Query += "[1] ";    // todo: 設定に合わせた位置と比較(※DBのIndexは1から)
+        Query += "[";
+        Query += fitting_id;
+        Query += "] ";
         Query += " >= ";
         Query += min;
         Query += " AND ";
         Query += DBCommonController._col(COLNAME_ExamOptaxialList[(int)eExamOptAxial.axial_mm]);
-        Query += "[1] ";    // todo: 設定に合わせた位置と比較(※DBのIndexは1から)
+        Query += "[";
+        Query += fitting_id;
+        Query += "] ";
         Query += " <= ";
         Query += max;
         Query += " ORDER BY ";

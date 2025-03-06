@@ -44,7 +44,7 @@ namespace BlazorDbTest.Controllers {
             var rec_Ref_r = MakeRefRec(exam_id_r,
                 DBConst.strEyeType[DBConst.eEyeType.RIGHT],
                 sqlConnection);
-            rec_Ref_r.s_d[0] = conditions.RS_d ?? 0.0;
+            rec_Ref_r.s_d[0] = conditions.RS_d ?? 0.0;    // todo: 取得位置
             rec_Ref_r.c_d[0] = conditions.RC_d ?? 0.0;
             rec_Ref_r.a_deg[0] = conditions.RA_deg ?? 0;
             rec_Ref_r.se_d[0] = (conditions.RS_d + (conditions.RC_d / 2)) ?? 0.0;
@@ -328,7 +328,7 @@ namespace BlazorDbTest.Controllers {
         recRef.eye_id = DBCommonController.Select_Eye_ID(sqlConnection, posEye);
         recRef.device_id = DBCommonController.Select_Device_ID(sqlConnection, "AXM2");
 
-        recRef.is_exam_data = true;   // todo: 要確認
+        recRef.is_exam_data = true;
         recRef.comment = ""; // タグが無いので空文字
         recRef.select_id = 0; // 0固定でよい
 
