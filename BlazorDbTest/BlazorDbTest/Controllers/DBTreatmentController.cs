@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using Npgsql;
 using System.Data;
 using System.Text;
-using System.Text.Json;
 using static BlazorDbTest.Controllers.DBCommonController;
 
 namespace BlazorDbTest.Controllers {
@@ -236,7 +235,7 @@ namespace BlazorDbTest.Controllers {
 
     // 治療状況削除
     [HttpPost("DeleteTreatmentData")]
-    public void DeleteTreatmentData([FromBody]int treatmentId) {
+    public void DeleteTreatmentData([FromBody] int treatmentId) {
       try {
         DBAccess dbAccess = DBAccess.GetInstance();
 
@@ -266,7 +265,7 @@ namespace BlazorDbTest.Controllers {
 
     // 治療方法削除
     [HttpPost("DeleteTreatmentInfoData")]
-    public void DeleteTreatmentInfoData([FromBody]int treatmentTypeId) {
+    public void DeleteTreatmentInfoData([FromBody] int treatmentTypeId) {
       try {
         DBAccess dbAccess = DBAccess.GetInstance();
 
@@ -295,6 +294,95 @@ namespace BlazorDbTest.Controllers {
       }
 
       return;
+    }
+
+    // 治療方法分離
+    [HttpPost("SeparateTreatmentInfoData")]
+    public void SeparateTreatmentInfoData([FromBody] TreatmentDataSeparateRequest conditions) {
+      try {
+        if (conditions == null) return;
+
+        DBAccess dbAccess = DBAccess.GetInstance();
+
+        bool result = false;
+
+        try {
+          // PostgreSQL Server 通信接続
+          NpgsqlConnection sqlConnection = dbAccess.GetSqlConnection();
+
+          // クエリコマンド実行
+          // AXM_TREATMENTテーブルからから全treatment_id取得
+          List<TreatmentData> list = GetDBTreatmentDataListFromType(conditions.TreatID, sqlConnection);
+
+          if(list.Count == 0) return;
+          bool separateResult = true;
+          for (int j = 0; j < list.Count; j++) {
+            // 全てのtreatment_idに対して、新しいtreatmenttype_idを割り当てる
+            for (int i = 0; i < conditions.SeparateTreatCount; i++) {
+              if (separate_treatment_by_treatmentTypeId(conditions.SeparateTreatID[i], SelectMaxTreatmentId(sqlConnection), list[j].ID, sqlConnection) == 0) {
+                separateResult = false;
+                break;
+              }
+            }
+
+            if(!separateResult) {
+              break;
+            }
+          }
+
+          if (separateResult) {
+            // AXM_TREATMENTテーブルからから全データ削除
+            if (delete_treatment_by_treatmentTypeId(conditions.TreatID, sqlConnection) != 0) {
+              // AXM_TREATMENT_INFOテーブルからから削除
+              result = (delete_treatmentinfo_by_treatmentTypeId(conditions.TreatID, sqlConnection) != 0);
+            }
+          }
+
+        } catch {
+        } finally {
+          if (!result) {
+            // todo: Error通知
+          }
+
+          // PostgreSQL Server 通信切断
+          dbAccess.CloseSqlConnection();
+        }
+      } catch {
+      }
+
+      return;
+    }
+
+    private List<TreatmentData> GetDBTreatmentDataListFromType(int treatmenttype_id, NpgsqlConnection sqlConnection) {
+      List<TreatmentData> DataSource = new();
+
+      try {
+        // クエリコマンド実行
+        // 実行するクエリコマンド定義
+        string Query = "SELECT * FROM ";
+        Query += _table(DB_TableNames[(int)eDbTable.AXM_TREATMENT]);
+        Query += " WHERE ";
+        Query += _col(COLNAME_AxmTreatmentList[(int)eAxmTreatment.treatmenttype_id]);
+        Query += " = ";
+        Query += _val(treatmenttype_id.ToString());
+
+        NpgsqlCommand Command = new(Query, sqlConnection);
+        NpgsqlDataAdapter DataAdapter = new(Command);
+        DataTable DataTable = new();
+        DataAdapter.Fill(DataTable);
+
+        DataSource = (from DataRow data in DataTable.Rows
+                      select new TreatmentData() {
+                        ID = _objectToInt(data[COLNAME_AxmTreatmentList[(int)eAxmTreatment.treatment_id]]),
+                        TreatID = _objectToInt(data[COLNAME_AxmTreatmentList[(int)eAxmTreatment.treatmenttype_id]]),
+                        StartDateTime = _objectToDateTime(data[COLNAME_AxmTreatmentList[(int)eAxmTreatment.start_at]]),
+                        EndDateTime = _objectToDateTime(data[COLNAME_AxmTreatmentList[(int)eAxmTreatment.end_at]])
+                      }).ToList();
+      } catch {
+      } finally {
+      }
+
+      return DataSource;
     }
 
     public static bool InsertTreatmentInfo(TreatmentInfoRec rec, NpgsqlConnection sqlConnection) {
@@ -591,6 +679,52 @@ namespace BlazorDbTest.Controllers {
       stringBuilder.Append(";");
       using NpgsqlCommand npgsqlCommand = new NpgsqlCommand(stringBuilder.ToString(), sqlConnection);
       npgsqlCommand.Parameters.AddWithValue(COLNAME_AxmTreatmentInfoList[(int)eAxmTreatmentInfo.treatmenttype_id], treatmentTypeId);
+      return npgsqlCommand.ExecuteNonQuery();
+    }
+
+    public int separate_treatment_by_treatmentTypeId(int newTreatmentTypeId, int newTreatId, int oldTreatId, NpgsqlConnection sqlConnection) {
+      StringBuilder stringBuilder = new StringBuilder();
+      stringBuilder.Append("insert into ");
+      stringBuilder.Append(_table(DB_TableNames[(int)eDbTable.AXM_TREATMENT]));
+      string text = " (";
+      for (int i = 0; i < COLNAME_AxmTreatmentList.Count(); i++) {
+        if (i != 0) {
+          text += ",";
+        }
+
+        text += _col(COLNAME_AxmTreatmentList[i]);
+      }
+
+      text += ")";
+      stringBuilder.Append(text);
+      stringBuilder.Append(" select ");
+
+      string text2 = _bind(COLNAME_AxmTreatmentList[(int)eAxmTreatment.treatment_id]);
+      text2 += ", ";
+      text2 += _bind(COLNAME_AxmTreatmentList[(int)eAxmTreatment.treatmenttype_id]);
+      text2 += ", ";
+      text2 += _col(COLNAME_AxmTreatmentList[(int)eAxmTreatment.pt_uuid]);
+      text2 += ", ";
+      text2 += _col(COLNAME_AxmTreatmentList[(int)eAxmTreatment.start_at]);
+      text2 += ", ";
+      text2 += _col(COLNAME_AxmTreatmentList[(int)eAxmTreatment.end_at]);
+      text2 += ", ";
+      text2 += _col(COLNAME_AxmTreatmentList[(int)eAxmTreatment.updated_at]);
+      text2 += ", ";
+      text2 += _col(COLNAME_AxmTreatmentList[(int)eAxmTreatment.created_at]);
+
+      stringBuilder.Append(text2);
+      stringBuilder.Append(" from ");
+      stringBuilder.Append(_table(DB_TableNames[(int)eDbTable.AXM_TREATMENT]));
+      stringBuilder.Append(" where ");
+      stringBuilder.Append(_col(COLNAME_AxmTreatmentList[(int)eAxmTreatment.treatment_id]));
+      stringBuilder.Append(" = ");
+      stringBuilder.Append(oldTreatId);
+      stringBuilder.Append(";");
+
+      using NpgsqlCommand npgsqlCommand = new NpgsqlCommand(stringBuilder.ToString(), sqlConnection);
+      npgsqlCommand.Parameters.AddWithValue(COLNAME_AxmTreatmentList[(int)eAxmTreatment.treatment_id], newTreatId);
+      npgsqlCommand.Parameters.AddWithValue(COLNAME_AxmTreatmentList[(int)eAxmTreatment.treatmenttype_id], newTreatmentTypeId);
       return npgsqlCommand.ExecuteNonQuery();
     }
 

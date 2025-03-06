@@ -273,6 +273,12 @@
     public TreatmentData TreatmentData { get; set; } = default!;
   }
 
+  public class TreatmentDataSeparateRequest {
+    public int TreatID { get; set; } = 0;                               //治療方法ID(分離前)
+    public List<int> SeparateTreatID { get; set; } = new List<int>();   //治療方法ID(分離後)
+    public int SeparateTreatCount { get; set; }                         //分離後の治療方法数
+  }
+
   public class AxmComment {
       public int ID { get; set; } = default!;                 //AXM用コメントデータID
       public AxmCommentType CommentType { get; set; } = 0;    //コメントタイプ

@@ -1,0 +1,338 @@
+﻿@page "/dbtreatment"
+@* HttpClient を受け取る *@
+@inject HttpClient HttpClient
+@using System.Text.Json;
+
+@using System.Text.Encodings.Web;
+@using System.Text.Unicode;
+
+<h3>DBTreatmentTest</h3>
+
+@* Treatment *@
+
+<h4>○ 治療方法登録</h4>
+<div class="part-group">
+  <label>Treat Name:</label>
+  <InputText @bind-Value="TreatmentMethodModel.TreatName" autocomplete=off />
+</div>
+<div class="part-group">
+  <label>RED:</label>
+  <input type="number" @bind-value=TreatmentMethodModel.RGBAColor.R />
+</div>
+<div class="part-group">
+  <label>Green:</label>
+  <input type="number" @bind-value=TreatmentMethodModel.RGBAColor.G />
+</div>
+<div class="part-group">
+  <label>Blue:</label>
+  <input type="number" @bind-value=TreatmentMethodModel.RGBAColor.B />
+</div>
+<div class="part-group">
+  <label>Alpha:</label>
+  <input type="number" @bind-value=TreatmentMethodModel.RGBAColor.A />
+</div>
+<div class="part-group">
+  <label>Suppression Rate:</label>
+  <input type="number" @bind-value=TreatmentMethodModel.SuppresionRate />
+</div>
+<div>
+  <button @onclick="TreatmentMethodButtonClick">Register</button>
+</div>
+
+<br />
+<div>
+  <button @onclick="UpdateTreatmentMethodListButtonClick">Update</button>
+</div>
+@if (treatmentMethodList == null) {
+  <p><em>Loading...</em></p>
+} else {
+  <table class="table">
+    <thead>
+      <tr>
+        <th>TreatmentType ID</th>
+        <th>Treatment Name</th>
+        <th>Red</th>
+        <th>Green</th>
+        <th>Blue</th>
+        <th>Alpha</th>
+        <th>Suppression Rate</th>
+      </tr>
+    </thead>
+    <tbody>
+      @foreach (var treatMethod in treatmentMethodList) {
+        <tr>
+          <td>@treatMethod.ID</td>
+          <td>@treatMethod.TreatName</td>
+          <td>@treatMethod.RGBAColor.R</td>
+          <td>@treatMethod.RGBAColor.G</td>
+          <td>@treatMethod.RGBAColor.B</td>
+          <td>@treatMethod.RGBAColor.A</td>
+          <td>@treatMethod.SuppresionRate</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}
+<div>
+  <label>ID:</label>
+  <input type="number" @bind-value=TreatmentMethodModel.ID />
+  <button @onclick="DeleteTreatmentMethodButtonClick">Delete</button>
+</div>
+
+<br/>
+<h4>○ 治療状況登録</h4>
+<div class="part-group">
+  <label>Patient ID:</label>
+  <InputText @bind-Value="PatientID" autocomplete=off />
+</div>
+
+<div>
+  <label>Start Date:</label>
+  <InputDate @bind-Value="TreatmentModel.StartDateTime" max="@DateTime.Today.ToString("yyyy-MM-dd")" min="@MinDate" />
+</div>
+<div>
+  <label>End Date:</label>
+  <InputDate @bind-Value="TreatmentModel.EndDateTime" max="@DateTime.Today.ToString("yyyy-MM-dd")" min="@MinDate" />
+</div>
+<div>
+  <label>Treat ID:</label>
+  <input type="number" @bind-value=TreatmentMethodModelID />
+  <button @onclick="TreatmentButtonClick">Register</button>
+</div>
+
+<br />
+<div>
+  <button @onclick="UpdateTreatmentListButtonClick">Update</button>
+</div>
+@if (treatmentList == null) {
+  <p><em>Loading...</em></p>
+} else {
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Treatment ID</th>
+        <th>TreatmentType ID</th>
+        <th>Start</th>
+        <th>End</th>
+      </tr>
+    </thead>
+    <tbody>
+      @foreach (var treatment in treatmentList) {
+        <tr>
+          <td>@treatment.ID</td>
+          <td>@treatment.TreatID</td>
+          <td>@treatment.StartDateTime</td>
+          <td>@treatment.EndDateTime</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}
+<div>
+  <label>ID:</label>
+  <input type="number" @bind-value=TreatmentModel.ID />
+  <button @onclick="DeleteTreatmentButtonClick">Delete</button>
+</div>
+
+<br />
+<h4>○ 治療方法分離</h4>
+<div class="part-group">
+  <label>分離前TreatmentType ID:</label>
+  <input type="number" @bind-value=BeforeTreatmentTypeID />
+</div>
+<div class="part-group">
+  <label>分離後TreatmentType ID:</label>
+  <input type="number" @bind-value=AfterTreatmentTypeID_0 />
+  <input type="number" @bind-value=AfterTreatmentTypeID_1 />
+  <input type="number" @bind-value=AfterTreatmentTypeID_2 />
+  <input type="number" @bind-value=AfterTreatmentTypeID_3 />
+  <input type="number" @bind-value=AfterTreatmentTypeID_4 />
+</div>
+<div class="part-group">
+  <label>分離数:</label>
+  <input type="number" @bind-value=SeparateCount />
+</div>
+<div>
+  <button @onclick="SeparateTreatmentButtonClick">Separate</button>
+</div>
+
+
+@code {
+  private TreatmentData[]? treatmentList;
+  private TreatmentMethodSetting[]? treatmentMethodList;
+  private string MinDate = new DateTime(1990, 1, 1).ToString("yyyy-MM-dd");
+
+  [SupplyParameterFromForm]
+  private string PatientID { get; set; } = default!;
+  private int TreatmentMethodModelID { get; set; } = default!;
+  private int BeforeTreatmentTypeID { get; set; } = default!;
+  private int AfterTreatmentTypeID_0 { get; set; } = default;
+  private int AfterTreatmentTypeID_1 { get; set; } = default;
+  private int AfterTreatmentTypeID_2 { get; set; } = default;
+  private int AfterTreatmentTypeID_3 { get; set; } = default;
+  private int AfterTreatmentTypeID_4 { get; set; } = default;
+  private int SeparateCount { get; set; } = default!;
+  private TreatmentData TreatmentModel { get; set; } = default!;
+  private TreatmentMethodSetting TreatmentMethodModel { get; set; } = default!;
+  private EditContext editContextTreatmentMethod { get; set; } = default!;
+  private EditContext editContextTreatment { get; set; } = default!;
+
+  protected override async Task OnInitializedAsync() {
+    TreatmentMethodModel ??= new();
+    TreatmentMethodModel.RGBAColor = new();
+    editContextTreatmentMethod = new(TreatmentMethodModel);
+
+    TreatmentModel ??= new();
+    TreatmentModel.StartDateTime = DateTime.Today;
+    TreatmentModel.EndDateTime = DateTime.Today;
+    editContextTreatment = new(TreatmentModel);
+  }
+
+  private JsonSerializerOptions options = new JsonSerializerOptions {
+      Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
+    };
+
+  void TreatmentMethodButtonClick() {
+    // 治療方法データをDBに書込み
+    Task.Run(() => SetTreatmentMethodAsync());
+  }
+
+  /// <summary>
+  /// DBへ治療方法を書込み
+  /// </summary>
+  /// <returns></returns>
+  protected async Task SetTreatmentMethodAsync() {
+    string url = $"api/DBTreatment/SetTreatmentMethod/";
+
+    var conditions = JsonSerializer.Serialize(TreatmentMethodModel, options);
+    var content = new StringContent(conditions, Encoding.UTF8, "application/json");
+
+    var response = await HttpClient.PostAsync(url, content);
+  }
+
+  void UpdateTreatmentMethodListButtonClick() {
+    // 治療方法リスト更新
+    Task.Run(() => GetTreatmentMethodListAsync());
+  }
+
+  /// <summary>
+  /// DBから治療方法を取得
+  /// </summary>
+  /// <returns></returns>
+  protected async Task GetTreatmentMethodListAsync() {
+    string content = $"api/DBTreatment/GetTreatmentMethodList";
+    treatmentMethodList = await HttpClient.GetFromJsonAsync<TreatmentMethodSetting[]>(content);
+
+    //画面を更新する
+    StateHasChanged();
+  }
+
+  void DeleteTreatmentMethodButtonClick() {
+    // 治療状況リストから削除
+    Task.Run(() => DeleteTreatmentMethodAsync());
+  }
+
+  /// <summary>
+  /// DBから治療方法を削除
+  /// </summary>
+  /// <returns></returns>
+  protected async Task DeleteTreatmentMethodAsync() {
+    string url = $"api/DBTreatment/DeleteTreatmentInfoData/";
+
+    var conditions = JsonSerializer.Serialize(TreatmentMethodModel.ID, options);
+    var content = new StringContent(conditions, Encoding.UTF8, "application/json");
+    var response = await HttpClient.PostAsync(url, content);
+  }
+
+  void TreatmentButtonClick() {
+    // 治療状況データをDBに書込み
+    Task.Run(() => SetTreatmentDataAsync());
+  }
+
+  /// <summary>
+  /// DBへ治療状況を書込み
+  /// </summary>
+  /// <returns></returns>
+  protected async Task SetTreatmentDataAsync() {
+    string url = $"api/DBTreatment/SetTreatment/";
+
+    TreatmentModel.TreatID = TreatmentMethodModelID;
+
+    TreatmentDataRequest treatmentRequestModel = new TreatmentDataRequest {
+        PatientID = PatientID,
+        TreatmentData = TreatmentModel
+      };
+
+    var conditions = JsonSerializer.Serialize(treatmentRequestModel, options);
+    var content = new StringContent(conditions, Encoding.UTF8, "application/json");
+
+    var response = await HttpClient.PostAsync(url, content);
+  }
+
+  void UpdateTreatmentListButtonClick() {
+    // 治療状況リスト更新
+    Task.Run(() => GetTreatmentDataListAsync());
+  }
+
+  /// <summary>
+  /// DBから治療状況を取得
+  /// </summary>
+  /// <returns></returns>
+  protected async Task GetTreatmentDataListAsync() {
+    string content = $"api/DBTreatment/GetTreatmentList/";
+    content += PatientID;
+
+    treatmentList = await HttpClient.GetFromJsonAsync<TreatmentData[]>(content);
+
+    //画面を更新する
+    StateHasChanged();
+  }
+
+  void DeleteTreatmentButtonClick() {
+    // 治療方法リストから削除
+    Task.Run(() => DeleteTreatmentAsync());
+  }
+
+  /// <summary>
+  /// DBから治療状況を削除
+  /// </summary>
+  /// <returns></returns>
+  protected async Task DeleteTreatmentAsync() {
+    string url = $"api/DBTreatment/DeleteTreatmentData/";
+
+    var conditions = JsonSerializer.Serialize(TreatmentModel.ID, options);
+    var content = new StringContent(conditions, Encoding.UTF8, "application/json");
+    var response = await HttpClient.PostAsync(url, content);
+  }
+
+  void SeparateTreatmentButtonClick() {
+    // 治療方法分離
+    Task.Run(() => SeparateTreatmentAsync());
+  }
+
+  /// <summary>
+  /// DBの治療状況から治療情報を分離
+  /// </summary>
+  /// <returns></returns>
+  protected async Task SeparateTreatmentAsync() {
+    string url = $"api/DBTreatment/SeparateTreatmentInfoData/";
+
+    List<int> separateTreatID = new();
+    separateTreatID.Add(AfterTreatmentTypeID_0);
+    separateTreatID.Add(AfterTreatmentTypeID_1);
+    separateTreatID.Add(AfterTreatmentTypeID_2);
+    separateTreatID.Add(AfterTreatmentTypeID_3);
+    separateTreatID.Add(AfterTreatmentTypeID_4);
+
+    TreatmentDataSeparateRequest request = new TreatmentDataSeparateRequest {
+				TreatID = BeforeTreatmentTypeID,
+        SeparateTreatID = separateTreatID,
+        SeparateTreatCount = SeparateCount
+		};
+
+    var conditions = JsonSerializer.Serialize(request, options);
+    var content = new StringContent(conditions, Encoding.UTF8, "application/json");
+    var response = await HttpClient.PostAsync(url, content);
+  }
+
+}
