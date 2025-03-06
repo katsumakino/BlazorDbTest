@@ -512,6 +512,59 @@ namespace BlazorDbTest.Controllers {
       return num != 0;
     }
 
+    // 測定データ時の被検者ID新規登録
+    public static bool InsertPatientId(NpgsqlConnection sqlConnection, string pt_id) {
+      int num = 0;
+
+      DateTime dateTime = DateTime.Now;
+      PatientRec aPatientRec = new() {
+        pt_id = pt_id,
+        pt_lastname = string.Empty,
+        pt_firstname = string.Empty,
+        gender_id = Select_GenderId(sqlConnection, GENDER_TYPE[(int)GenderType.other]),
+        pt_dob = null,
+        pt_description = string.Empty,
+        pt_updated_at = dateTime,
+        pt_created_at = dateTime
+      };
+
+      StringBuilder stringBuilder = new();
+      stringBuilder.Append("insert into ");
+      stringBuilder.Append(_table(DB_TableNames[(int)eDbTable.PATIENT_LIST]));
+      string text = " (";
+      string text2 = " (";
+      for (int i = 1; i < COLNAME_PatientList.Count(); i++) {
+        if (i != 1) {
+          text += ",";
+          text2 += ",";
+        }
+
+        text += _col(COLNAME_PatientList[i]);
+        text2 += _bind(COLNAME_PatientList[i]);
+      }
+
+      text += ")";
+      text2 += ")";
+      stringBuilder.Append(text);
+      stringBuilder.Append(" values ");
+      stringBuilder.Append(text2);
+      stringBuilder.Append(";");
+
+      using (NpgsqlCommand npgsqlCommand = new NpgsqlCommand(stringBuilder.ToString(), sqlConnection)) {
+        npgsqlCommand.Parameters.AddWithValue(COLNAME_PatientList[(int)ePatientList.pt_id], aPatientRec.pt_id);
+        npgsqlCommand.Parameters.AddWithValue(COLNAME_PatientList[(int)ePatientList.pt_lastname], aPatientRec.pt_lastname);
+        npgsqlCommand.Parameters.AddWithValue(COLNAME_PatientList[(int)ePatientList.pt_firstname], aPatientRec.pt_firstname);
+        npgsqlCommand.Parameters.AddWithValue(COLNAME_PatientList[(int)ePatientList.gender_id], aPatientRec.gender_id);
+        npgsqlCommand.Parameters.AddWithValue(COLNAME_PatientList[(int)ePatientList.pt_dob], _DateTimeToObject(aPatientRec.pt_dob));
+        npgsqlCommand.Parameters.AddWithValue(COLNAME_PatientList[(int)ePatientList.pt_description], aPatientRec.pt_description);
+        npgsqlCommand.Parameters.AddWithValue(COLNAME_PatientList[(int)ePatientList.updated_at], _DateTimeToObject(aPatientRec.pt_updated_at));
+        npgsqlCommand.Parameters.AddWithValue(COLNAME_PatientList[(int)ePatientList.created_at], _DateTimeToObject(aPatientRec.pt_created_at));
+        num = npgsqlCommand.ExecuteNonQuery();
+      }
+
+      return num != 0;
+    }
+
     private bool Update(NpgsqlConnection sqlConnection, PatientRec aPatientRec) {
       int num = 0;
       StringBuilder stringBuilder = new StringBuilder();
@@ -675,6 +728,13 @@ namespace BlazorDbTest.Controllers {
     }
 
     public static string[] GENDER_TYPE = ["", "male", "female", "other"];
+
+    public enum GenderType {
+      none = 0,
+      male,
+      female,
+      other,
+    }
 
     public static string[] COLNAME_SearchPatientList = {
       COLNAME_PatientList[(int)ePatientList.pt_uuid],

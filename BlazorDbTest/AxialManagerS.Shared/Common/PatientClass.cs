@@ -222,6 +222,19 @@
     public DateTime? ExamDateTime { get; set; }                     //測定日時
   }
 
+  // 測定データ移動用クラス
+  public class MoveExamData {
+    public string? RExamID { get; set; } = default!;           // 測定データID(右)
+    public string? LExamID { get; set; } = default!;           // 測定データID(左)
+    public string? ChangePatientID { get; set; } = default!;  // 移動先被検者ID
+  }
+
+  // コメントデータ移動用クラス
+  public class MoveCommentData {
+    public string? CommentID { get; set; } = default!;           // 測定データID
+    public string? ChangePatientID { get; set; } = default!;  // 移動先被検者ID
+  }
+
   // ↑ ここまで追加項目
 
   // todo: 古い定義を使用しているため、修正が必要

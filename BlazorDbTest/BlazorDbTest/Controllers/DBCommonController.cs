@@ -188,6 +188,26 @@ namespace BlazorDbTest.Controllers {
       return num != 0;
     }
 
+    // 測定データの被検者IDを変更する
+    public static bool MoveExamData(NpgsqlConnection sqlConnection, string pt_uuid, string examId) {
+      int num = 0;
+      StringBuilder stringBuilder = new StringBuilder();
+      stringBuilder.Append("update ");
+      stringBuilder.Append(_table(DB_TableNames[(int)eDbTable.EXAM_LIST]));
+      stringBuilder.Append("set ");
+      stringBuilder.Append(_col(COLNAME_ExamList[(int)eExamList.pt_uuid]));
+      stringBuilder.Append("= ");
+      stringBuilder.Append(_val(pt_uuid));
+      stringBuilder.Append("where ");
+      stringBuilder.Append(_col(COLNAME_ExamList[(int)eExamList.exam_id]));
+      stringBuilder.Append("= ");
+      stringBuilder.Append(_val(examId));
+      stringBuilder.Append(";");
+      using NpgsqlCommand npgsqlCommand = new NpgsqlCommand(stringBuilder.ToString(), sqlConnection);
+      num = npgsqlCommand.ExecuteNonQuery();
+      return num != 0;
+    }
+
     public static int Select_GenderId(NpgsqlConnection sqlConnection, string gender) {
       int result = -1;
       StringBuilder stringBuilder = new StringBuilder();

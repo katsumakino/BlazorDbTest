@@ -143,6 +143,11 @@
   <input type="number" @bind-value=AxialModel.LExamID />
   <button @onclick="DeleteAxialListButtonClick">Delete</button>
 </div>
+<div class="part-group">
+  <label>Change ID:</label>
+  <InputText @bind-Value="MoveId" autocomplete=off />
+  <button @onclick="MoveAxialListButtonClick">Move</button>
+</div>
 
 <br />
 <h4>○ 治療名称</h4>
@@ -328,6 +333,11 @@
   <input type="number" @bind-value=AxmCommentModel.ID />
   <button @onclick="DeleteCommentListButtonClick">Delete</button>
 </div>
+<div class="part-group">
+  <label>Change ID:</label>
+  <InputText @bind-Value="MoveId" autocomplete=off />
+  <button @onclick="MoveCommentListButtonClick">Move</button>
+</div>
 
 @code {
 
@@ -352,6 +362,7 @@
   private EditContext editContextTreatment { get; set; } = default!;
   private EditContext editContextAxmComment { get; set; } = default!;
   private ValidationMessageStore ValidationMessageStore { get; set; } = default!;
+  private string MoveId { get; set; } = default!;
 
   protected override async Task OnInitializedAsync() {
      
@@ -455,6 +466,16 @@
   void DeleteCommentListButtonClick() {
     // コメントリストから削除
     Task.Run(() => DeleteCommentListAsync());
+  }
+
+  void MoveAxialListButtonClick() {
+    // 眼軸長測定値リストから被検者ID変更
+    Task.Run(() => MoveAxialListAsync());
+  }
+
+  void MoveCommentListButtonClick() {
+    // コメントリストから被検者ID変更
+    Task.Run(() => MoveCommentListAsync());
   }
 
   private JsonSerializerOptions options = new JsonSerializerOptions {
@@ -561,10 +582,36 @@
   /// </summary>
   /// <returns></returns>
   protected async Task DeleteAxialListAsync() {
-    string content = $"api/DBAxialData/DeleteOptAxialData/";
+    string url = $"api/DBAxialData/DeleteOptAxialData/";
 
-    await HttpClient.GetAsync(content + AxialModel.RExamID);
-    await HttpClient.GetAsync(content + AxialModel.LExamID);
+    // 右眼
+    var conditions = JsonSerializer.Serialize(AxialModel.RExamID, options);
+    var content = new StringContent(conditions, Encoding.UTF8, "application/json");
+    var response = await HttpClient.PostAsync(url, content);
+
+    // 左眼
+    conditions = JsonSerializer.Serialize(AxialModel.LExamID, options);
+    content = new StringContent(conditions, Encoding.UTF8, "application/json");
+    response = await HttpClient.PostAsync(url, content);
+  }
+
+  /// <summary>
+  /// DBから眼軸長測定値を別の被検者IDに移動
+  /// </summary>
+  /// <returns></returns>
+  protected async Task MoveAxialListAsync() {
+    MoveExamData moveData = new MoveExamData {
+				RExamID = AxialModel.RExamID,
+        LExamID = AxialModel.LExamID,
+        ChangePatientID = MoveId
+		};
+
+    string url = $"api/DBAxialData/MoveOptAxialData/";
+
+    var conditions = JsonSerializer.Serialize(moveData, options);
+    var content = new StringContent(conditions, Encoding.UTF8, "application/json");
+
+    var response = await HttpClient.PostAsync(url, content);
   }
 
   /// <summary>
@@ -683,9 +730,28 @@
   /// </summary>
   /// <returns></returns>
   protected async Task DeleteCommentListAsync() {
-    string content = $"api/DBAxmComment/DeleteAxmCommentData/";
+    string url = $"api/DBAxmComment/DeleteAxmCommentData/";
 
-    await HttpClient.GetAsync(content + AxmCommentModel.ID);
+    var conditions = JsonSerializer.Serialize(AxmCommentModel.ID, options);
+    var content = new StringContent(conditions, Encoding.UTF8, "application/json");
+    var response = await HttpClient.PostAsync(url, content);
+  }
+
+  /// <summary>
+  /// DBからコメントを移動
+  /// </summary>
+  /// <returns></returns>
+  protected async Task MoveCommentListAsync() {
+    MoveCommentData moveData = new MoveCommentData {
+        CommentID = AxmCommentModel.ID.ToString(),
+        ChangePatientID = MoveId
+    };
+
+    string url = $"api/DBAxmComment/MoveAxmCommentData/";
+
+    var conditions = JsonSerializer.Serialize(moveData, options);
+    var content = new StringContent(conditions, Encoding.UTF8, "application/json");
+    var response = await HttpClient.PostAsync(url, content);
   }
 
   // 測定日時の日付部分のみ取得
