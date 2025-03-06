@@ -171,8 +171,8 @@ namespace BlazorDbTest.Controllers {
     }
 
     // レフ(他覚)測定値削除
-    [HttpGet("DeleteRefData/{examId}/")]
-    public void DeleteRefData(int examId) {
+    [HttpPost("DeleteRefData")]
+    public void DeleteRefData([FromBody] int examId) {
       try {
         DBAccess dbAccess = DBAccess.GetInstance();
 
@@ -187,6 +187,54 @@ namespace BlazorDbTest.Controllers {
           if (delete_by_examId(examId, sqlConnection) != 0) {
             // EXAM_LISTテーブルから削除
             result = (DBCommonController.delete_by_ExamId(examId, sqlConnection) != 0);
+          }
+        } catch {
+        } finally {
+          if (!result) {
+            // todo: Error通知
+          }
+
+          // PostgreSQL Server 通信切断
+          dbAccess.CloseSqlConnection();
+        }
+      } catch {
+      }
+
+      return;
+    }
+
+    // レフ(他覚)測定値移動
+    [HttpPost("MoveRefData")]
+    public void MoveRefData([FromBody] MoveExamData conditions) {
+      try {
+        if (conditions == null) return;
+        if (conditions.ChangePatientID == null || conditions.ChangePatientID == string.Empty) return;
+
+        bool result = false;
+        DBAccess dbAccess = DBAccess.GetInstance();
+
+        try {
+          // PostgreSQL Server 通信接続
+          NpgsqlConnection sqlConnection = dbAccess.GetSqlConnection();
+
+          // クエリコマンド実行
+          // UUIDの有無を確認(true:update / false:insert)
+          var uuid = DBCommonController.Select_PTUUID_by_PTID(sqlConnection, conditions.ChangePatientID);
+          if (uuid == string.Empty) {
+            // uuidが無ければ、被検者を新規登録
+            DBPatientInfoController.InsertPatientId(sqlConnection, conditions.ChangePatientID);
+            uuid = DBCommonController.Select_PTUUID_by_PTID(sqlConnection, conditions.ChangePatientID);
+          }
+
+          if (uuid != string.Empty) {
+            // EXAM_LISTの被検者IDを変更
+            if (conditions.RExamID != null && conditions.RExamID != string.Empty) {
+              result &= DBCommonController.MoveExamData(sqlConnection, uuid, conditions.RExamID);
+            }
+
+            if (conditions.LExamID != null && conditions.LExamID != string.Empty) {
+              result &= DBCommonController.MoveExamData(sqlConnection, uuid, conditions.LExamID);
+            }
           }
         } catch {
         } finally {

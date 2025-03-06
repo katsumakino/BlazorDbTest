@@ -65,6 +65,11 @@
   <input type="number" @bind-value=DiaListModel.LExamID />
   <button @onclick="DeleteDiaListButtonClick">Delete</button>
 </div>
+<div class="part-group">
+  <label>ID:</label>
+  <InputText @bind-Value="MoveId" autocomplete=off />
+  <button @onclick="MoveDiaListButtonClick">Move</button>
+</div>
 
 @code {
     private DiaList[]? diaList;
@@ -75,6 +80,7 @@
   private DiaList DiaListModel { get; set; } = default!;
   private EditContext editContextPatientInfo { get; set; } = default!;
   private EditContext editContextDiaList { get; set; } = default!;
+  private string MoveId { get; set; } = default!;
 
   protected override async Task OnInitializedAsync() {
     PatientInfoModel ??= new();
@@ -138,10 +144,40 @@
   /// </summary>
   /// <returns></returns>
   protected async Task DeleteDiaListAsync() {
-    string content = $"api/DBDiaData/DeleteDiaData/";
+    string url = $"api/DBDiaData/DeleteDiaData/";
 
-    await HttpClient.GetAsync(content + DiaListModel.RExamID);
-    await HttpClient.GetAsync(content + DiaListModel.LExamID);
+    // 右眼
+    var conditions = JsonSerializer.Serialize(DiaListModel.RExamID, options);
+    var content = new StringContent(conditions, Encoding.UTF8, "application/json");
+    var response = await HttpClient.PostAsync(url, content);
+
+    // 左眼
+    conditions = JsonSerializer.Serialize(DiaListModel.LExamID, options);
+    content = new StringContent(conditions, Encoding.UTF8, "application/json");
+    response = await HttpClient.PostAsync(url, content);
   }
 
+  void MoveDiaListButtonClick() {
+    // 瞳孔径測定値リストから削除
+    Task.Run(() => MoveDiaListAsync());
+  }
+
+  /// <summary>
+  /// DBから瞳孔径測定値を別の被検者IDに移動
+  /// </summary>
+  /// <returns></returns>
+  protected async Task MoveDiaListAsync() {
+    MoveExamData moveData = new MoveExamData {
+        RExamID = DiaListModel.RExamID,
+        LExamID = DiaListModel.LExamID,
+        ChangePatientID = MoveId
+      };
+
+    string url = $"api/DBDiaData/MoveDiaData/";
+
+    var conditions = JsonSerializer.Serialize(moveData, options);
+    var content = new StringContent(conditions, Encoding.UTF8, "application/json");
+
+    var response = await HttpClient.PostAsync(url, content);
+  }
 }

@@ -87,6 +87,11 @@
   <input type="number" @bind-value=RefListModel.LExamID />
   <button @onclick="DeleteRefListButtonClick">Delete</button>
 </div>
+<div class="part-group">
+  <label>ID:</label>
+  <InputText @bind-Value="MoveId" autocomplete=off />
+  <button @onclick="MoveRefListButtonClick">Move</button>
+</div>
 
 <h4>Ref(自覚)測定値</h4>
 <div>
@@ -140,6 +145,11 @@
   <input type="number" @bind-value=RefListModel.LExamID />
   <button @onclick="DeleteSciRefListButtonClick">Delete</button>
 </div>
+<div class="part-group">
+  <label>ID:</label>
+  <InputText @bind-Value="MoveId2" autocomplete=off />
+  <button @onclick="MoveSciRefListButtonClick">Move</button>
+</div>
 
 @code {
   private RefList[]? refList;
@@ -151,6 +161,8 @@
   private RefList RefListModel { get; set; } = default!;
   private EditContext editContextPatientInfo { get; set; } = default!;
   private EditContext editContextRefList { get; set; } = default!;
+  private string MoveId { get; set; } = string.Empty;
+  private string MoveId2 { get; set; } = string.Empty;
   
   protected override async Task OnInitializedAsync() {
     PatientInfoModel ??= new();
@@ -214,10 +226,41 @@
   /// </summary>
   /// <returns></returns>
   protected async Task DeleteRefListAsync() {
-    string content = $"api/DBRefData/DeleteRefData/";
+    string url = $"api/DBRefData/DeleteRefData/";
 
-    await HttpClient.GetAsync(content + RefListModel.RExamID);
-    await HttpClient.GetAsync(content + RefListModel.LExamID);
+    // 右眼
+    var conditions = JsonSerializer.Serialize(RefListModel.RExamID, options);
+    var content = new StringContent(conditions, Encoding.UTF8, "application/json");
+    var response = await HttpClient.PostAsync(url, content);
+
+    // 左眼
+    conditions = JsonSerializer.Serialize(RefListModel.LExamID, options);
+    content = new StringContent(conditions, Encoding.UTF8, "application/json");
+    response = await HttpClient.PostAsync(url, content);
+  }
+
+  void MoveRefListButtonClick() {
+    // Ref(他覚)測定値リストから移動
+    Task.Run(() => MoveRefListAsync());
+  }
+
+  /// <summary>
+  /// DBからレフ(他覚)測定値を別の被検者IDに移動
+  /// </summary>
+  /// <returns></returns>
+  protected async Task MoveRefListAsync() {
+    MoveExamData moveData = new MoveExamData {
+        RExamID = RefListModel.RExamID,
+        LExamID = RefListModel.LExamID,
+        ChangePatientID = MoveId
+      };
+
+    string url = $"api/DBRefData/MoveRefData/";
+
+    var conditions = JsonSerializer.Serialize(moveData, options);
+    var content = new StringContent(conditions, Encoding.UTF8, "application/json");
+
+    var response = await HttpClient.PostAsync(url, content);
   }
 
   void SciRefRegisterButtonClick() {
@@ -267,10 +310,41 @@
   /// </summary>
   /// <returns></returns>
   protected async Task DeleteSciRefListAsync() {
-    string content = $"api/DBSciRefData/DeleteSciRefData/";
+    string url = $"api/DBSciRefData/DeleteSciRefData/";
 
-    await HttpClient.GetAsync(content + RefListModel.RExamID);
-    await HttpClient.GetAsync(content + RefListModel.LExamID);
+    // 右眼
+    var conditions = JsonSerializer.Serialize(RefListModel.RExamID, options);
+    var content = new StringContent(conditions, Encoding.UTF8, "application/json");
+    var response = await HttpClient.PostAsync(url, content);
+
+    // 左眼
+    conditions = JsonSerializer.Serialize(RefListModel.LExamID, options);
+    content = new StringContent(conditions, Encoding.UTF8, "application/json");
+    response = await HttpClient.PostAsync(url, content);
+  }
+
+  void MoveSciRefListButtonClick() {
+    // Ref(自覚)測定値リストから移動
+    Task.Run(() => MoveSciRefListAsync());
+  }
+
+  /// <summary>
+  /// DBからレフ(自覚)測定値を別の被検者IDに移動
+  /// </summary>
+  /// <returns></returns>
+  protected async Task MoveSciRefListAsync() {
+    MoveExamData moveData = new MoveExamData {
+        RExamID = RefListModel.RExamID,
+        LExamID = RefListModel.LExamID,
+        ChangePatientID = MoveId
+      };
+
+    string url = $"api/DBSciRefData/MoveSciRefData/";
+
+    var conditions = JsonSerializer.Serialize(moveData, options);
+    var content = new StringContent(conditions, Encoding.UTF8, "application/json");
+
+    var response = await HttpClient.PostAsync(url, content);
   }
 
 }

@@ -87,6 +87,11 @@
   <input type="number" @bind-value=KrtListModel.LExamID />
   <button @onclick="DeleteKrtListButtonClick">Delete</button>
 </div>
+<div class="part-group">
+  <label>ID:</label>
+  <InputText @bind-Value="MoveId" autocomplete=off />
+  <button @onclick="MoveKrtListButtonClick">Move</button>
+</div>
 
 @code {
   private KrtList[]? krtList;
@@ -97,6 +102,7 @@
   private KrtList KrtListModel { get; set; } = default!;
   private EditContext editContextPatientInfo { get; set; } = default!;
   private EditContext editContextKrtList { get; set; } = default!;
+  private string MoveId { get; set; } = string.Empty;
 
   protected override async Task OnInitializedAsync() {
     PatientInfoModel ??= new();
@@ -160,10 +166,42 @@
   /// </summary>
   /// <returns></returns>
   protected async Task DeleteKrtListAsync() {
-    string content = $"api/DBKrtData/DeleteKrtData/";
+    string url = $"api/DBKrtData/DeleteKrtData/";
 
-    await HttpClient.GetAsync(content + KrtListModel.RExamID);
-    await HttpClient.GetAsync(content + KrtListModel.LExamID);
+    // 右眼
+    var conditions = JsonSerializer.Serialize(KrtListModel.RExamID, options);
+    var content = new StringContent(conditions, Encoding.UTF8, "application/json");
+    var response = await HttpClient.PostAsync(url, content);
+
+    // 左眼
+    conditions = JsonSerializer.Serialize(KrtListModel.LExamID, options);
+    content = new StringContent(conditions, Encoding.UTF8, "application/json");
+    response = await HttpClient.PostAsync(url, content);
+  }
+
+  void MoveKrtListButtonClick() {
+    // ケラト測定値リストから別の被検者に移動
+    Task.Run(() => MoveKrtListAsync());
+  }
+
+  /// <summary>
+  /// DBからケラト測定値を別の被検者に移動
+  /// </summary>
+  /// <returns></returns>
+  protected async Task MoveKrtListAsync() {
+    MoveExamData moveData = new MoveExamData {
+        RExamID = KrtListModel.RExamID,
+        LExamID = KrtListModel.LExamID,
+        ChangePatientID = MoveId
+      };
+
+    string url = $"api/DBKrtData/MoveKrtData/";
+
+    var conditions = JsonSerializer.Serialize(moveData, options);
+    var content = new StringContent(conditions, Encoding.UTF8, "application/json");
+
+    var response = await HttpClient.PostAsync(url, content);
+
   }
 
 }
