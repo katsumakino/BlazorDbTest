@@ -1,4 +1,5 @@
-﻿using Npgsql;
+﻿using BlazorDbTest.Common;
+using Npgsql;
 using System.Data;
 using System.Text;
 
@@ -120,7 +121,7 @@ namespace BlazorDbTest.Controllers {
         examrec.exam_operator_firstname = string.Empty;
 
         // デバイスID
-        examrec.device_id = Select_Device_ID(sqlConnection, "AXM2");
+        examrec.device_id = Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
 
         // 検査日時
         examrec.measured_at = exam_datetime;

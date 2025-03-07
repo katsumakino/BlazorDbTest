@@ -342,7 +342,7 @@ namespace BlazorDbTest.Controllers {
         recDia.exam_id = examId;
         recDia.examtype_id = DBCommonController.Select_Examtype_ID(sqlConnection, DBConst.strMstDataType[DBConst.eMSTDATATYPE.DIA]);
         recDia.eye_id = DBCommonController.Select_Eye_ID(sqlConnection, posEye);
-        recDia.device_id = DBCommonController.Select_Device_ID(sqlConnection, "AXM2");
+        recDia.device_id = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
 
         recDia.is_exam_pupil_data = true;   // todo: 要確認
         recDia.is_exam_wtw_data = true;     // todo: 要確認

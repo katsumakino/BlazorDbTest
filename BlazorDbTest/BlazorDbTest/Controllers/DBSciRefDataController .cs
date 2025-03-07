@@ -373,7 +373,7 @@ namespace BlazorDbTest.Controllers {
         recRef.exam_id = examId;
         recRef.examtype_id = DBCommonController.Select_Examtype_ID(sqlConnection, DBConst.strMstDataType[DBConst.eMSTDATATYPE.SCI_REF]);
         recRef.eye_id = DBCommonController.Select_Eye_ID(sqlConnection, posEye);
-        recRef.device_id = DBCommonController.Select_Device_ID(sqlConnection, "AXM2");
+        recRef.device_id = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
 
         recRef.is_exam_data = true;
         recRef.comment = "";

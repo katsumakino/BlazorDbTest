@@ -330,7 +330,7 @@ namespace BlazorDbTest.Controllers {
         recSight.exam_id = examId;
         recSight.examtype_id = DBCommonController.Select_Examtype_ID(sqlConnection, DBConst.strMstDataType[DBConst.eMSTDATATYPE.SIGHT]);
         recSight.eye_id = DBCommonController.Select_Eye_ID(sqlConnection, posEye);
-        recSight.device_id = DBCommonController.Select_Device_ID(sqlConnection, "AXM2");
+        recSight.device_id = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
 
         recSight.is_exam_data = true;
         recSight.sight_d = 0.0;

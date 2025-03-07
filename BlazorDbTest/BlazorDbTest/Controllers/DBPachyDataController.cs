@@ -340,7 +340,7 @@ namespace BlazorDbTest.Controllers {
         recPachy.exam_id = examId;
         recPachy.examtype_id = DBCommonController.Select_Examtype_ID(sqlConnection, DBConst.strMstDataType[DBConst.eMSTDATATYPE.PACHY_CCT]);
         recPachy.eye_id = DBCommonController.Select_Eye_ID(sqlConnection, posEye);
-        recPachy.device_id = DBCommonController.Select_Device_ID(sqlConnection, "AXM2");
+        recPachy.device_id = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
 
         recPachy.is_exam_data = true;   // todo: 要確認
         recPachy.comment = ""; // タグが無いので空文字

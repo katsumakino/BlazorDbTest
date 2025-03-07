@@ -1,153 +1,151 @@
-﻿using System.Collections.ObjectModel;
-using System.Drawing;
-using System.Text;
+﻿using System.Text;
 
 namespace BlazorDbTest.Common {
-    public class DBConst {
+  public class DBConst {
 
-        // データタイプタグ一覧 ----------------------------------
-        #region データタイプ
-        public enum eDATATYPE {
-            /// <summary>
-            /// データヘッダ
-            /// </summary>
-            HEADER_TAG = 0,
-            /// <summary>
-            /// Ａモード診断(UD-6000)
-            /// </summary>
-            ADIAG,
-            /// <summary>
-            /// Ａモード診断(AL-4000・4050/UD-8000)
-            /// </summary>
-            ADIAG2,
-            /// <summary>
-            /// 眼軸長測定
-            /// </summary>
-            AXIAL,
-            /// <summary>
-            /// Ａモード診断(UD-6000)
-            /// </summary>
-            BAXIAL,
-            /// <summary>
-            /// Ａモード診断(UD-8000)
-            /// </summary>
-            BAXIAL2,
-            /// <summary>
-            /// Ｂモード診断（UD-6000）
-            /// </summary>
-            BDIAG,
-            /// <summary>
-            /// Ｂモード診断（UD-8000）
-            /// </summary>
-            BDIAG2,
-            /// <summary>
-            /// 瞳孔径・角膜径測定
-            /// </summary>
-            DIA,
-            /// <summary>
-            /// 電気生理
-            /// </summary>
-            ERG_VEP,
-            /// <summary>
-            /// Ｂモード診断グループ（UD-8000）
-            /// </summary>
-            GROUP_BDIAG2,
-            BDIAG2_GROUP,
-            /// <summary>
-            /// ケラト
-            /// </summary>
-            KERATO,
-            /// <summary>
-            /// レンズメータ
-            /// </summary>
-            LENS,
-            /// <summary>
-            /// 眼圧測定
-            /// </summary>
-            NT,
-            /// <summary>
-            /// OKULIX
-            /// </summary>
-            OKULIX,
-            /// <summary>
-            /// 光干渉式眼軸長測定
-            /// </summary>
-            OPTAXIAL,
-            /// <summary>
-            /// 角膜厚測定
-            /// </summary>
-            PACHY,
-            /// <summary>
-            /// レフ
-            /// </summary>
-            REF,
-            /// <summary>
-            /// 断面測定
-            /// </summary>
-            SLIT,
-            /// <summary>
-            /// スペキュラー
-            /// </summary>
-            SPECULAR,
-            /// <summary>
-            /// スペキュラー
-            /// </summary>
-            SPECULAR2,
-            /// <summary>
-            /// 前眼部OCT
-            /// </summary>
-            SSOCT,
-            /// <summary>
-            /// 手術情報
-            /// </summary>
-            SURGERRY,
-            /// <summary>
-            /// サーモ
-            /// </summary>
-            THERMO,
-            /// <summary>
-            /// TMSスライドタイプ
-            /// </summary>
-            TMS_SLIDE,
-            /// <summary>
-            /// トポ
-            /// </summary>
-            TOPO,
-            /// <summary>
-            /// TMS/CASIAトポ測定
-            /// </summary>
-            TOPO2,
-            /// <summary>
-            /// TSAS
-            /// </summary>
-            TSAS,
-            /// <summary>
-            /// Aモード診断
-            /// </summary>
-            UD_AD,
-            /// <summary>
-            /// Bアキシャル
-            /// </summary>
-            UD_BA,
-            /// <summary>
-            /// Bモード診断
-            /// </summary>
-            UD_BD,
-            /// <summary>
-            /// 眼軸長測定（超音波）
-            /// </summary>
-            USAXIAL,
-            /// <summary>
-            /// 角膜厚測定（超音波）
-            /// </summary>
-            USPACHY,
-            /// <summary>
-            /// VERIS
-            /// </summary>
-            VERIS
-        }
-        public static Dictionary<eDATATYPE, string> strDataType = new()
-        {
+    // データタイプタグ一覧 ----------------------------------
+    #region データタイプ
+    public enum eDATATYPE {
+      /// <summary>
+      /// データヘッダ
+      /// </summary>
+      HEADER_TAG = 0,
+      /// <summary>
+      /// Ａモード診断(UD-6000)
+      /// </summary>
+      ADIAG,
+      /// <summary>
+      /// Ａモード診断(AL-4000・4050/UD-8000)
+      /// </summary>
+      ADIAG2,
+      /// <summary>
+      /// 眼軸長測定
+      /// </summary>
+      AXIAL,
+      /// <summary>
+      /// Ａモード診断(UD-6000)
+      /// </summary>
+      BAXIAL,
+      /// <summary>
+      /// Ａモード診断(UD-8000)
+      /// </summary>
+      BAXIAL2,
+      /// <summary>
+      /// Ｂモード診断（UD-6000）
+      /// </summary>
+      BDIAG,
+      /// <summary>
+      /// Ｂモード診断（UD-8000）
+      /// </summary>
+      BDIAG2,
+      /// <summary>
+      /// 瞳孔径・角膜径測定
+      /// </summary>
+      DIA,
+      /// <summary>
+      /// 電気生理
+      /// </summary>
+      ERG_VEP,
+      /// <summary>
+      /// Ｂモード診断グループ（UD-8000）
+      /// </summary>
+      GROUP_BDIAG2,
+      BDIAG2_GROUP,
+      /// <summary>
+      /// ケラト
+      /// </summary>
+      KERATO,
+      /// <summary>
+      /// レンズメータ
+      /// </summary>
+      LENS,
+      /// <summary>
+      /// 眼圧測定
+      /// </summary>
+      NT,
+      /// <summary>
+      /// OKULIX
+      /// </summary>
+      OKULIX,
+      /// <summary>
+      /// 光干渉式眼軸長測定
+      /// </summary>
+      OPTAXIAL,
+      /// <summary>
+      /// 角膜厚測定
+      /// </summary>
+      PACHY,
+      /// <summary>
+      /// レフ
+      /// </summary>
+      REF,
+      /// <summary>
+      /// 断面測定
+      /// </summary>
+      SLIT,
+      /// <summary>
+      /// スペキュラー
+      /// </summary>
+      SPECULAR,
+      /// <summary>
+      /// スペキュラー
+      /// </summary>
+      SPECULAR2,
+      /// <summary>
+      /// 前眼部OCT
+      /// </summary>
+      SSOCT,
+      /// <summary>
+      /// 手術情報
+      /// </summary>
+      SURGERRY,
+      /// <summary>
+      /// サーモ
+      /// </summary>
+      THERMO,
+      /// <summary>
+      /// TMSスライドタイプ
+      /// </summary>
+      TMS_SLIDE,
+      /// <summary>
+      /// トポ
+      /// </summary>
+      TOPO,
+      /// <summary>
+      /// TMS/CASIAトポ測定
+      /// </summary>
+      TOPO2,
+      /// <summary>
+      /// TSAS
+      /// </summary>
+      TSAS,
+      /// <summary>
+      /// Aモード診断
+      /// </summary>
+      UD_AD,
+      /// <summary>
+      /// Bアキシャル
+      /// </summary>
+      UD_BA,
+      /// <summary>
+      /// Bモード診断
+      /// </summary>
+      UD_BD,
+      /// <summary>
+      /// 眼軸長測定（超音波）
+      /// </summary>
+      USAXIAL,
+      /// <summary>
+      /// 角膜厚測定（超音波）
+      /// </summary>
+      USPACHY,
+      /// <summary>
+      /// VERIS
+      /// </summary>
+      VERIS
+    }
+    public static Dictionary<eDATATYPE, string> strDataType = new()
+    {
             { eDATATYPE.HEADER_TAG, "[FM_IF]" },
             { eDATATYPE.ADIAG, "ADIAG" },
             { eDATATYPE.ADIAG2, "ADIAG2" },
@@ -185,29 +183,29 @@ namespace BlazorDbTest.Common {
             { eDATATYPE.VERIS, "VERIS" },
         };
 
-        public enum eMSTDATATYPE {
-            NONE,
-            ADIAG,
-            BMODE,
-            BAXIAL,
-            DIA,
-            ERG,
-            FUNDOSCOPY,
-            KRT,
-            OPTAXIAL,
-            OPTACD,
-            OPTLENS,
-            PACHY_CCT,
-            REF,
-            SCI_REF,
-            SPECULAR,
-            TONO,
-            TOPO,
-            USAXIAL,
-            IOL_CALC,
-            TORIC_IOL_CALC,
-            // 以下はAXM用
-            SIGHT
+    public enum eMSTDATATYPE {
+      NONE,
+      ADIAG,
+      BMODE,
+      BAXIAL,
+      DIA,
+      ERG,
+      FUNDOSCOPY,
+      KRT,
+      OPTAXIAL,
+      OPTACD,
+      OPTLENS,
+      PACHY_CCT,
+      REF,
+      SCI_REF,
+      SPECULAR,
+      TONO,
+      TOPO,
+      USAXIAL,
+      IOL_CALC,
+      TORIC_IOL_CALC,
+      // 以下はAXM用
+      SIGHT
     }
     public static Dictionary<eMSTDATATYPE, string> strMstDataType = new()
         {
@@ -233,21 +231,21 @@ namespace BlazorDbTest.Common {
             { eMSTDATATYPE.TORIC_IOL_CALC, "TORIC_IOL_CALC" },
             { eMSTDATATYPE.SIGHT, "SIGHT" }
         };
-        #endregion
-        #region 右眼左眼
-        public enum eEyeType {
-            RIGHT = 1,
-            LEFT,
-            BOTH,
-            NONE,
-            // 以下はSPECULAR2専用
-            RIGHT_LEFT,
-            LEFT_RIGHT,
-            DOUBLE_RIGHT,
-            DOUBLE_LEFT,
-        }
-        public static Dictionary<eEyeType, string> strEyeType = new()
-        {
+    #endregion
+    #region 右眼左眼
+    public enum eEyeType {
+      RIGHT = 1,
+      LEFT,
+      BOTH,
+      NONE,
+      // 以下はSPECULAR2専用
+      RIGHT_LEFT,
+      LEFT_RIGHT,
+      DOUBLE_RIGHT,
+      DOUBLE_LEFT,
+    }
+    public static Dictionary<eEyeType, string> strEyeType = new()
+    {
             // ImageFramR,
             { eEyeType.RIGHT, "R" },
             { eEyeType.LEFT, "L" },
@@ -259,8 +257,41 @@ namespace BlazorDbTest.Common {
             { eEyeType.DOUBLE_RIGHT, "RR" },
             { eEyeType.DOUBLE_LEFT, "LL" },
         };
-        #endregion
+    #endregion
 
-        public static string EmptyText = Convert.ToBase64String(Encoding.UTF8.GetBytes("Noi_Npu_Tva_Lue"));   // todo: Common定義
+    public static string AxmDeviceType = "AXM2";
+
+    public static string EmptyText = Convert.ToBase64String(Encoding.UTF8.GetBytes("Noi_Npu_Tva_Lue"));   // todo: Common定義
+
+    public static string[] FITTINGS_TYPE = ["none", "contact", "immersion", "contact2", "optlength"];
+
+    public enum FittingsType {
+      none = 0,
+      contact,
+      immersion,
+      contact2,
+      optlength
     }
+
+    public static string[] SELECT_TYPE = ["none", "average", "median", "select"];
+
+    public enum SelectType {
+      none = 0,
+      average,
+      median,
+      select
+    }
+
+    public static string[] TARGET_EYE_TYPE = ["none", "Phakic", "Aphakic", "IOL", "Cataract", "ShallowAnteriorChamber", "User_Setting"];
+
+    public enum TargetEyeType {
+      none = 0,
+      Phakic,
+      Aphakic,
+      IOL,
+      Cataract,
+      ShallowAnteriorChamber,
+      User_Setting
+    }
+  }
 }
