@@ -261,8 +261,6 @@ namespace BlazorDbTest.Common {
 
     public static string AxmDeviceType = "AXM2";
 
-    public static string EmptyText = Convert.ToBase64String(Encoding.UTF8.GetBytes("Noi_Npu_Tva_Lue"));   // todo: Common定義
-
     public static string[] FITTINGS_TYPE = ["none", "contact", "immersion", "contact2", "optlength"];
 
     public enum FittingsType {
@@ -292,6 +290,14 @@ namespace BlazorDbTest.Common {
       Cataract,
       ShallowAnteriorChamber,
       User_Setting
+    }
+
+    public static string[] PHI_TYPE = ["3.0", "2.5", "2.0"];
+
+    public enum PhiType {
+      e3_0 = 0,
+      e2_5,
+      e2_0
     }
   }
 }

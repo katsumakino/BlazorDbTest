@@ -4,8 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 using Npgsql;
 using System.Data;
 using System.Text;
-using System.Text.Json;
-using static BlazorDbTest.Controllers.DBAxialDataController;
 
 namespace BlazorDbTest.Controllers {
 
@@ -44,7 +42,7 @@ namespace BlazorDbTest.Controllers {
             var rec_Sight_r = MakeSightRec(exam_id_r,
                 DBConst.strEyeType[DBConst.eEyeType.RIGHT],
                 sqlConnection);
-            rec_Sight_r.sight_d = conditions.RSight ?? 0.0;
+            rec_Sight_r.sight_d = conditions.RSight;
             rec_Sight_r.is_exam_data = (conditions.RSight != null);
             rec_Sight_r.measured_at = conditions.ExamDateTime;
 
@@ -61,7 +59,7 @@ namespace BlazorDbTest.Controllers {
             var rec_Sight_l = MakeSightRec(exam_id_l,
                 DBConst.strEyeType[DBConst.eEyeType.LEFT],
                 sqlConnection);
-            rec_Sight_l.sight_d = conditions.LSight ?? 0.0;
+            rec_Sight_l.sight_d = conditions.LSight;
             rec_Sight_l.is_exam_data = (conditions.LSight != null);
             rec_Sight_l.measured_at = conditions.ExamDateTime;
 
@@ -102,6 +100,8 @@ namespace BlazorDbTest.Controllers {
           // 患者データが無ければ、測定データも存在しない
           return DataSource;
         } else {
+          int deviceId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
+
           // 実行するクエリコマンド定義
           string Query = "SELECT * FROM ";
           Query += DBCommonController._table(DBCommonController.DB_TableNames[(int)DBCommonController.eDbTable.AXM_EXAM_SIGHT]);
@@ -146,7 +146,7 @@ namespace BlazorDbTest.Controllers {
                                Sight = Convert.ToDouble(data[COLNAME_ExamSightList[(int)eExamSight.sight_d]]),
                                EyeId = (EyeType)Enum.ToObject(typeof(EyeType), data[COLNAME_ExamSightList[(int)eExamSight.eye_id]]),
                                IsExamData = (bool)data[COLNAME_ExamSightList[(int)eExamSight.is_exam_data]],
-                               DeviceID = 4,     // todo: 
+                               DeviceID = deviceId, 
                                ExamDateTime = (DateTime)data[COLNAME_ExamSightList[(int)eExamSight.measured_at]],
                              }).ToList();
 

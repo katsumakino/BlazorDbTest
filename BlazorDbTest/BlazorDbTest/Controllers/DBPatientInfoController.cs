@@ -143,63 +143,32 @@ namespace BlazorDbTest.Controllers {
         // Using NpgsqlDataAdapter, process the query string and fill the data into the dataset
         var result = DataAdapter.Fill(DataTable);
 
+        // AXM用患者情報テーブルからも取得
+        Query = "SELECT * FROM ";
+        Query += _table(DB_TableNames[(int)eDbTable.AXM_PATIENT_LIST]);
+        Query += " WHERE ";
+        Query += _col(COLNAME_PatientList[(int)ePatientList.pt_uuid]);
+        Query += " = ";
+        Query += _val(uuid);
+        Command = new(Query, sqlConnection);
+        DataAdapter = new(Command);
+        DataTable AxmDataTable = new();
+        var resultAxm = DataAdapter.Fill(AxmDataTable);
+
         // 患者情報取得結果をreturn
         if (result == 1) {
           DataRow data = DataTable.Rows[0];
           DataSource = new PatientInfo() {
-            Mark = false,
+            Mark = (resultAxm == 1)? (bool)AxmDataTable.Rows[0][COLNAME_AxmPatientList[(int)eAxmPatientList.axm_flag]] : false,
             ID = data[COLNAME_PatientList[(int)ePatientList.pt_id]].ToString() ?? string.Empty,
             FamilyName = data[COLNAME_PatientList[(int)ePatientList.pt_lastname]].ToString() ?? string.Empty,
             FirstName = data[COLNAME_PatientList[(int)ePatientList.pt_firstname]].ToString() ?? string.Empty,
             Gender = (Gender)Enum.ToObject(typeof(Gender), data[COLNAME_PatientList[(int)ePatientList.gender_id]]),
             Age = GetAge(_objectToDateTime(data[COLNAME_PatientList[(int)ePatientList.pt_dob]]), DateTime.Today),
             BirthDate = _objectToDateTime(data[COLNAME_PatientList[(int)ePatientList.pt_dob]]),
-            SameID = default!       // todo: 別Tableから取得
+            SameID = (resultAxm == 1) ? AxmDataTable.Rows[0][COLNAME_AxmPatientList[(int)eAxmPatientList.axm_same_pt_id]].ToString() : string.Empty
           };
         }
-      } catch {
-      } finally {
-        // PostgreSQL Server 通信切断
-        dbAccess.CloseSqlConnection();
-      }
-
-      return DataSource;
-    }
-
-    [HttpGet("GetPatientInfoList")]
-    public List<PatientInfo> GetDBPatientInfoList() {
-      DBAccess dbAccess = DBAccess.GetInstance();
-
-      // 実行するクエリコマンド定義
-      string Query = "SELECT * FROM ";
-      Query += _table(DB_TableNames[(int)eDbTable.PATIENT_LIST]);
-      Query += " ORDER BY ";
-      Query += _col(COLNAME_PatientList[(int)ePatientList.updated_at]);
-
-      List<PatientInfo> DataSource = new();
-
-      try {
-        // PostgreSQL Server 通信接続
-        NpgsqlConnection sqlConnection = dbAccess.GetSqlConnection();
-
-        //Using NpgsqlCommand and Query create connection with database
-        NpgsqlCommand Command = new(Query, sqlConnection);
-        //Using NpgsqlDataAdapter execute the NpgsqlCommand 
-        NpgsqlDataAdapter DataAdapter = new(Command);
-        DataTable DataTable = new();
-        DataAdapter.Fill(DataTable);
-
-        // Cast the data fetched from NpgsqlDataAdapter to List<T>
-        DataSource = (from DataRow data in DataTable.Rows
-                      select new PatientInfo() {
-                        ID = data[COLNAME_PatientList[(int)ePatientList.pt_id]].ToString() ?? string.Empty,
-                        FamilyName = data[COLNAME_PatientList[(int)ePatientList.pt_lastname]].ToString() ?? string.Empty,
-                        FirstName = data[COLNAME_PatientList[(int)ePatientList.pt_firstname]].ToString() ?? string.Empty,
-                        Gender = (Gender)Enum.ToObject(typeof(Gender), data[COLNAME_PatientList[(int)ePatientList.gender_id]]),
-                        Age = GetAge(_objectToDateTime(data[COLNAME_PatientList[(int)ePatientList.pt_dob]]), DateTime.Today),
-                        BirthDate = _objectToDateTime(data[COLNAME_PatientList[(int)ePatientList.pt_dob]]),
-                        SameID = default!       // todo: 別Tableから取得
-                      }).ToList();
       } catch {
       } finally {
         // PostgreSQL Server 通信切断
@@ -223,6 +192,9 @@ namespace BlazorDbTest.Controllers {
         try {
           // PostgreSQL Server 通信接続
           NpgsqlConnection sqlConnection = dbAccess.GetSqlConnection();
+
+          // todo: 設定に合わせた位置と比較(※DBのIndexは1から)
+          int selectId = DBCommonController.Select_SelectTypeID(sqlConnection, DBConst.SELECT_TYPE[(int)DBConst.SelectType.average]);
 
           int eye_id_r = Select_Eye_ID(sqlConnection, DBConst.strEyeType[DBConst.eEyeType.RIGHT]);
           int eye_id_l = Select_Eye_ID(sqlConnection, DBConst.strEyeType[DBConst.eEyeType.LEFT]);
@@ -372,8 +344,8 @@ namespace BlazorDbTest.Controllers {
 
               if (pt_uuid != null && pt_uuid != string.Empty) {
                 // 最新測定日の測定値取得
-                axial_r = GetLatestAxialData(pt_uuid, eye_id_r, examdate, axialMin, axialMax, sqlConnection);
-                axial_l = GetLatestAxialData(pt_uuid, eye_id_l, examdate, axialMin, axialMax, sqlConnection);
+                axial_r = GetLatestAxialData(pt_uuid, eye_id_r, examdate, axialMin, axialMax, selectId, sqlConnection);
+                axial_l = GetLatestAxialData(pt_uuid, eye_id_l, examdate, axialMin, axialMax, selectId, sqlConnection);
 
                 // 眼軸長検索条件ありのとき、両眼測定値無しなら、リストに追加しない
                 if (axial_r < 0 && axial_l < 0 && patientSearch.IsAxial == true) {

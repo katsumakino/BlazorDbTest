@@ -26,6 +26,9 @@ namespace BlazorDbTest.Controllers {
           // PostgreSQL Server 通信接続
           NpgsqlConnection sqlConnection = dbAccess.GetSqlConnection();
 
+          // todo: 設定取得
+          int selectId = DBCommonController.Select_SelectTypeID(sqlConnection, DBConst.SELECT_TYPE[(int)DBConst.SelectType.average]) - 1;
+
           // クエリコマンド実行
           // UUIDの有無を確認(true:update / false:insert)
           var uuid = DBCommonController.Select_PTUUID_by_PTID(sqlConnection, conditions.PatientID);
@@ -43,7 +46,7 @@ namespace BlazorDbTest.Controllers {
             var rec_Pachy_r = MakePachyRec(exam_id_r,
                 DBConst.strEyeType[DBConst.eEyeType.RIGHT],
                 sqlConnection);
-            rec_Pachy_r.pachy_um[0] = conditions.RPachy ?? 0.0;
+            rec_Pachy_r.pachy_um[selectId] = conditions.RPachy;
             rec_Pachy_r.is_exam_data = (conditions.RPachy != null);
             rec_Pachy_r.measured_at = conditions.ExamDateTime;
 
@@ -60,7 +63,7 @@ namespace BlazorDbTest.Controllers {
             var rec_Pachy_l = MakePachyRec(exam_id_l,
                 DBConst.strEyeType[DBConst.eEyeType.LEFT],
                 sqlConnection);
-            rec_Pachy_l.pachy_um[0] = conditions.LPachy ?? 0.0;
+            rec_Pachy_l.pachy_um[selectId] = conditions.LPachy;
             rec_Pachy_l.is_exam_data = (conditions.LPachy != null);
             rec_Pachy_l.measured_at = conditions.ExamDateTime;
 
@@ -101,6 +104,8 @@ namespace BlazorDbTest.Controllers {
           // 患者データが無ければ、測定データも存在しない
           return DataSource;
         } else {
+          int deviceId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
+
           // 実行するクエリコマンド定義
           string Query = "SELECT * FROM ";
           Query += DBCommonController._table(DBCommonController.DB_TableNames[(int)DBCommonController.eDbTable.EXAM_PACHY_CCT]);
@@ -145,11 +150,11 @@ namespace BlazorDbTest.Controllers {
                                Pachy = DBCommonController._objectToDoubleList(data[COLNAME_ExamPachyList[(int)eExamPachy.pachy_um]]),
                                EyeId = (EyeType)Enum.ToObject(typeof(EyeType), data[COLNAME_ExamPachyList[(int)eExamPachy.eye_id]]),
                                IsExamData = (bool)data[COLNAME_ExamPachyList[(int)eExamPachy.is_exam_data]],
-                               DeviceID = 4,     // todo: 
+                               DeviceID = deviceId, 
                                ExamDateTime = (DateTime)data[COLNAME_ExamPachyList[(int)eExamPachy.measured_at]],
                              }).ToList();
 
-          DataSource = SetPachyList(patientId, PachyDataSource.ToArray());
+          DataSource = SetPachyList(patientId, PachyDataSource.ToArray(), sqlConnection);
         }
       } catch {
       } finally {
@@ -249,10 +254,12 @@ namespace BlazorDbTest.Controllers {
     /// ・装置種別AxMのデータは、1測定日に1つしか登録できない
     /// </summary>
     /// <param name="PachyDataList"></param>
-    public List<PachyList> SetPachyList(string pt_id, PachyData[] PachyDataList) {
+    public List<PachyList> SetPachyList(string pt_id, PachyData[] PachyDataList, NpgsqlConnection sqlConnection) {
       List<PachyList> list = new List<PachyList>();
       if (PachyDataList != null) {
         try {
+          int deviceId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
+
           for (int i = 0; i < PachyDataList.Length; i++) {
             bool isExist = false;
             for (int j = 0; j < list.Count; j++) {
@@ -266,15 +273,15 @@ namespace BlazorDbTest.Controllers {
                     if (list[j].RPachy == null) {
                       // 右眼かつ同じ測定日の右眼がnullのとき
                       list[j].RExamID = PachyDataList[i].ID;
-                      list[j].RPachy = PachyDataList[i].Pachy[0];  // todo:
-                      list[j].IsRManualInput = (PachyDataList[i].DeviceID == 4);  // todo:
+                      list[j].RPachy = PachyDataList[i].Pachy[0];  // 0固定で良い
+                      list[j].IsRManualInput = (PachyDataList[i].DeviceID == deviceId);
                       isExist = true;
                       break;
                     } else if (list[j].ExamDateTime < PachyDataList[i].ExamDateTime) {
                       // 右眼かつ同じ測定時間が新しい
                       list[j].RExamID = PachyDataList[i].ID;
-                      list[j].RPachy = PachyDataList[i].Pachy[0];  // todo:
-                      list[j].IsRManualInput = (PachyDataList[i].DeviceID == 4);  // todo:
+                      list[j].RPachy = PachyDataList[i].Pachy[0];
+                      list[j].IsRManualInput = (PachyDataList[i].DeviceID == deviceId);
                       list[j].ExamDateTime = PachyDataList[i].ExamDateTime;
                       isExist = true;
                       break;
@@ -285,15 +292,15 @@ namespace BlazorDbTest.Controllers {
                     if (list[j].LPachy == null) {
                       // 左眼かつ同じ測定日の左眼が0のとき
                       list[j].LExamID = PachyDataList[i].ID;
-                      list[j].LPachy = PachyDataList[i].Pachy[0];  // todo:
-                      list[j].IsLManualInput = (PachyDataList[i].DeviceID == 4);  // todo:
+                      list[j].LPachy = PachyDataList[i].Pachy[0];
+                      list[j].IsLManualInput = (PachyDataList[i].DeviceID == deviceId);
                       isExist = true;
                       break;
                     } else if (list[j].ExamDateTime < PachyDataList[i].ExamDateTime) {
                       // 左眼かつ同じ測定時間が新しい
                       list[j].LExamID = PachyDataList[i].ID;
-                      list[j].LPachy = PachyDataList[i].Pachy[0];  // todo:
-                      list[j].IsLManualInput = (PachyDataList[i].DeviceID == 4);  // todo:
+                      list[j].LPachy = PachyDataList[i].Pachy[0];
+                      list[j].IsLManualInput = (PachyDataList[i].DeviceID == deviceId);
                       list[j].ExamDateTime = PachyDataList[i].ExamDateTime;
                       isExist = true;
                       break;
@@ -317,12 +324,12 @@ namespace BlazorDbTest.Controllers {
               };
               if (PachyDataList[i].EyeId == EyeType.right) {
                 var.RExamID = PachyDataList[i].ID;
-                var.RPachy = PachyDataList[i].Pachy[0];  // todo:
-                var.IsRManualInput = (PachyDataList[i].DeviceID == 4);  // todo:
+                var.RPachy = PachyDataList[i].Pachy[0];
+                var.IsRManualInput = (PachyDataList[i].DeviceID == deviceId);
               } else if (PachyDataList[i].EyeId == EyeType.left) {
                 var.LExamID = PachyDataList[i].ID;
-                var.LPachy = PachyDataList[i].Pachy[0];  // todo:
-                var.IsLManualInput = (PachyDataList[i].DeviceID == 4);  // todo:
+                var.LPachy = PachyDataList[i].Pachy[0];
+                var.IsLManualInput = (PachyDataList[i].DeviceID == deviceId);
               }
               list.Add(var);
             }
@@ -337,17 +344,23 @@ namespace BlazorDbTest.Controllers {
 
       var recPachy = new ExamPachyRec();
       try {
+
+        // todo: 設定ファイルから情報取得
+        // todo: Target_EYESとFITTINGSのDBテーブルを入替
+        int fittingId = DBCommonController.Select_FittingId_By_FittingType(sqlConnection, DBConst.FITTINGS_TYPE[(int)DBConst.FittingsType.none]);
+        int targetEyeId = DBCommonController.Select_TargetEyeId_By_TargetEyeType(sqlConnection, DBConst.TARGET_EYE_TYPE[(int)DBConst.TargetEyeType.none]);
+
         recPachy.exam_id = examId;
         recPachy.examtype_id = DBCommonController.Select_Examtype_ID(sqlConnection, DBConst.strMstDataType[DBConst.eMSTDATATYPE.PACHY_CCT]);
         recPachy.eye_id = DBCommonController.Select_Eye_ID(sqlConnection, posEye);
         recPachy.device_id = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
 
-        recPachy.is_exam_data = true;   // todo: 要確認
+        recPachy.is_exam_data = false;
         recPachy.comment = ""; // タグが無いので空文字
         recPachy.select_id = 0; // 0固定でよい
 
-        recPachy.target_eye_id = 0; // todo: 要確認
-        recPachy.fitting_id = 0; // todo: 要確認
+        recPachy.target_eye_id = targetEyeId;
+        recPachy.fitting_id = fittingId;
 
         recPachy.is_meas_auto = false; // false固定でよい
         recPachy.pachy_um = new List<double?>() { 0, 0, 0 };

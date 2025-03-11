@@ -414,6 +414,28 @@ namespace BlazorDbTest.Controllers {
       return result;
     }
 
+    public static int Select_PhiId_By_PhiType(NpgsqlConnection sqlConnection, string phiType) {
+      int result = -1;
+      StringBuilder stringBuilder = new StringBuilder();
+      stringBuilder.Append("select ");
+      stringBuilder.Append(_col(COLNAME_MstPhiTypesList[0]));
+      stringBuilder.Append("from ");
+      stringBuilder.Append(_table(DB_TableNames[(int)eDbTable.MST_PHITYPES]));
+      stringBuilder.Append(" where ");
+      stringBuilder.Append(_col(COLNAME_MstPhiTypesList[1]));
+      stringBuilder.Append("= ");
+      stringBuilder.Append(_bind(COLNAME_MstPhiTypesList[1]));
+      stringBuilder.Append(";");
+      using NpgsqlCommand npgsqlCommand = new NpgsqlCommand(stringBuilder.ToString(), sqlConnection);
+      npgsqlCommand.Parameters.AddWithValue(COLNAME_MstPhiTypesList[1], phiType);
+      using NpgsqlDataReader npgsqlDataReader = npgsqlCommand.ExecuteReader();
+      while (npgsqlDataReader.Read()) {
+        result = _objectToInt(npgsqlDataReader[0]);
+      }
+
+      return result;
+    }
+
     public static int delete_by_ExamId(int examId, NpgsqlConnection sqlConnection) {
       StringBuilder stringBuilder = new StringBuilder();
       stringBuilder.Append("delete ");
@@ -607,6 +629,7 @@ namespace BlazorDbTest.Controllers {
     public static string[] COLNAME_MstSelecttypesList = ["select_id", "select_type", "updated_at", "created_at"];
     public static string[] COLNAME_MstTargeteyeList = ["target_eye_id", "target_eye_type", "updated_at", "created_at"];
     public static string[] COLNAME_MstIolEyesList = ["iol_eye_id", "iol_eye_type", "updated_at", "created_at"];
+    public static string[] COLNAME_MstPhiTypesList = ["phi_id", "phi_type", "updated_at", "created_at"];
     // 以下、AXM用
     public static string[] COLNAME_AxmPatientList = ["pt_uuid", "axm_pt_id", "axm_flag", "is_axm_same_pt_id", "axm_same_pt_id", "updated_at", "created_at"];
     public static string[] COLNAME_MstAxmCommentTypesList = ["commenttype_id", "commenttype_type", "updated_at", "created_at"];

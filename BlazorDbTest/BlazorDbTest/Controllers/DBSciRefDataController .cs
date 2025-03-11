@@ -43,10 +43,10 @@ namespace BlazorDbTest.Controllers {
             var rec_Ref_r = MakeRefRec(exam_id_r,
                 DBConst.strEyeType[DBConst.eEyeType.RIGHT],
                 sqlConnection);
-            rec_Ref_r.s_d = conditions.RS_d ?? 0.0;
-            rec_Ref_r.c_d = conditions.RC_d ?? 0.0;
-            rec_Ref_r.a_deg = conditions.RA_deg ?? 0;
-            rec_Ref_r.se_d = (conditions.RS_d + (conditions.RC_d / 2)) ?? 0.0;
+            rec_Ref_r.s_d = conditions.RS_d;
+            rec_Ref_r.c_d = conditions.RC_d;
+            rec_Ref_r.a_deg = conditions.RA_deg;
+            rec_Ref_r.se_d = (conditions.RS_d + (conditions.RC_d / 2));
             rec_Ref_r.is_exam_data = (conditions.RS_d != null && conditions.RC_d != null && conditions.RA_deg != null);
             rec_Ref_r.measured_at = conditions.ExamDateTime;
 
@@ -63,10 +63,10 @@ namespace BlazorDbTest.Controllers {
             var rec_Ref_l = MakeRefRec(exam_id_l,
                 DBConst.strEyeType[DBConst.eEyeType.LEFT],
                 sqlConnection);
-            rec_Ref_l.s_d = conditions.LS_d ?? 0.0;
-            rec_Ref_l.c_d = conditions.LC_d ?? 0.0;
-            rec_Ref_l.a_deg = conditions.LA_deg ?? 0;
-            rec_Ref_l.se_d = (conditions.LS_d + (conditions.LC_d / 2)) ?? 0.0;
+            rec_Ref_l.s_d = conditions.LS_d;
+            rec_Ref_l.c_d = conditions.LC_d;
+            rec_Ref_l.a_deg = conditions.LA_deg;
+            rec_Ref_l.se_d = (conditions.LS_d + (conditions.LC_d / 2));
             rec_Ref_l.is_exam_data = (conditions.LS_d != null && conditions.LC_d != null && conditions.LA_deg != null);
             rec_Ref_l.measured_at = conditions.ExamDateTime;
 
@@ -107,6 +107,8 @@ namespace BlazorDbTest.Controllers {
           // 患者データが無ければ、測定データも存在しない
           return DataSource;
         } else {
+          int deviceId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
+
           // 実行するクエリコマンド定義
           string Query = "SELECT * FROM ";
           Query += DBCommonController._table(DBCommonController.DB_TableNames[(int)DBCommonController.eDbTable.EXAM_SCI_REF]);
@@ -154,11 +156,11 @@ namespace BlazorDbTest.Controllers {
                              SE_d = Convert.ToDouble(data[COLNAME_ExamSciRefList[(int)eExamSciRef.se_d]]),
                              EyeId = (EyeType)Enum.ToObject(typeof(EyeType), data[COLNAME_ExamSciRefList[(int)eExamSciRef.eye_id]]),
                              IsExamData = (bool)data[COLNAME_ExamSciRefList[(int)eExamSciRef.is_exam_data]],
-                             DeviceID = 4,     // todo: 
+                             DeviceID = deviceId, 
                              ExamDateTime = (DateTime)data[COLNAME_ExamSciRefList[(int)eExamSciRef.measured_at]],
                            }).ToList();
 
-          DataSource = SetSciRefList(patientId, RefDataSource.ToArray());
+          DataSource = SetSciRefList(patientId, RefDataSource.ToArray(), sqlConnection);
         }
       } catch {
       } finally {
@@ -258,9 +260,12 @@ namespace BlazorDbTest.Controllers {
     /// ・装置種別AxMのデータは、1測定日に1つしか登録できない
     /// </summary>
     /// <param name="SciRefDataList"></param>
-    public List<RefList> SetSciRefList(string pt_id, SciRefData[] SciRefDataList) {
+    public List<RefList> SetSciRefList(string pt_id, SciRefData[] SciRefDataList, NpgsqlConnection sqlConnection) {
       List<RefList> list = new List<RefList>();
       if (SciRefDataList != null) {
+
+        int deviceId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
+
         try {
           for (int i = 0; i < SciRefDataList.Length; i++) {
             bool isExist = false;
@@ -279,17 +284,17 @@ namespace BlazorDbTest.Controllers {
                       list[j].RC_d = SciRefDataList[i].C_d;
                       list[j].RA_deg = SciRefDataList[i].A_deg;
                       list[j].RSE_d = SciRefDataList[i].SE_d;
-                      list[j].IsRManualInput = (SciRefDataList[i].DeviceID == 4);  // todo:
+                      list[j].IsRManualInput = (SciRefDataList[i].DeviceID == deviceId);
                       isExist = true;
                       break;
                     } else if (list[j].ExamDateTime < SciRefDataList[i].ExamDateTime) {
                       // 右眼かつ同じ測定時間が新しい
                       list[j].RExamID = SciRefDataList[i].ID;
-                      list[j].RS_d = SciRefDataList[i].S_d;    // todo:
+                      list[j].RS_d = SciRefDataList[i].S_d;
                       list[j].RC_d = SciRefDataList[i].C_d;
                       list[j].RA_deg = SciRefDataList[i].A_deg;
                       list[j].RSE_d = SciRefDataList[i].SE_d;
-                      list[j].IsRManualInput = (SciRefDataList[i].DeviceID == 4);  // todo:
+                      list[j].IsRManualInput = (SciRefDataList[i].DeviceID == deviceId);
                       list[j].ExamDateTime = SciRefDataList[i].ExamDateTime;
                       isExist = true;
                       break;
@@ -300,21 +305,21 @@ namespace BlazorDbTest.Controllers {
                     if (list[j].LS_d == null) {
                       // 左眼かつ同じ測定日の左眼が0のとき
                       list[j].LExamID = SciRefDataList[i].ID;
-                      list[j].LS_d = SciRefDataList[i].S_d;    // todo:
+                      list[j].LS_d = SciRefDataList[i].S_d;
                       list[j].LC_d = SciRefDataList[i].C_d;
                       list[j].LA_deg = SciRefDataList[i].A_deg;
                       list[j].LSE_d = SciRefDataList[i].SE_d;
-                      list[j].IsLManualInput = (SciRefDataList[i].DeviceID == 4);  // todo:
+                      list[j].IsLManualInput = (SciRefDataList[i].DeviceID == deviceId);
                       isExist = true;
                       break;
                     } else if (list[j].ExamDateTime < SciRefDataList[i].ExamDateTime) {
                       // 左眼かつ同じ測定時間が新しい
                       list[j].LExamID = SciRefDataList[i].ID;
-                      list[j].LS_d = SciRefDataList[i].S_d;    // todo:
+                      list[j].LS_d = SciRefDataList[i].S_d;
                       list[j].LC_d = SciRefDataList[i].C_d;
                       list[j].LA_deg = SciRefDataList[i].A_deg;
                       list[j].LSE_d = SciRefDataList[i].SE_d;
-                      list[j].IsLManualInput = (SciRefDataList[i].DeviceID == 4);  // todo:
+                      list[j].IsLManualInput = (SciRefDataList[i].DeviceID == deviceId);
                       list[j].ExamDateTime = SciRefDataList[i].ExamDateTime;
                       isExist = true;
                       break;
@@ -344,18 +349,18 @@ namespace BlazorDbTest.Controllers {
               };
               if (SciRefDataList[i].EyeId == EyeType.right) {
                 var.RExamID = SciRefDataList[i].ID;
-                var.RS_d = SciRefDataList[i].S_d;    // todo:
+                var.RS_d = SciRefDataList[i].S_d;
                 var.RC_d = SciRefDataList[i].C_d;
                 var.RA_deg = SciRefDataList[i].A_deg;
                 var.RSE_d = SciRefDataList[i].SE_d;
-                var.IsRManualInput = (SciRefDataList[i].DeviceID == 4);  // todo:
+                var.IsRManualInput = (SciRefDataList[i].DeviceID == deviceId);
               } else if (SciRefDataList[i].EyeId == EyeType.left) {
                 var.LExamID = SciRefDataList[i].ID;
-                var.LS_d = SciRefDataList[i].S_d;    // todo:
+                var.LS_d = SciRefDataList[i].S_d;
                 var.LC_d = SciRefDataList[i].C_d;
                 var.LA_deg = SciRefDataList[i].A_deg;
                 var.LSE_d = SciRefDataList[i].SE_d;
-                var.IsLManualInput = (SciRefDataList[i].DeviceID == 4);  // todo:
+                var.IsLManualInput = (SciRefDataList[i].DeviceID == deviceId);
               }
               list.Add(var);
             }

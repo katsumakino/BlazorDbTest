@@ -170,7 +170,7 @@ namespace BlazorDbTest.Controllers {
           // UUIDの有無を確認(true:update / false:insert)
           var uuid = Select_PTUUID_by_PTID(sqlConnection, conditions.ChangePatientID);
           if (uuid == string.Empty) {
-            // todo: uuidが無ければ、被検者を新規登録(DBPatientで実行)
+            // uuidが無ければ、被検者を新規登録(DBPatientで実行)
             DBPatientInfoController.InsertPatientId(sqlConnection, conditions.ChangePatientID);
             uuid = Select_PTUUID_by_PTID(sqlConnection, conditions.ChangePatientID);
           }

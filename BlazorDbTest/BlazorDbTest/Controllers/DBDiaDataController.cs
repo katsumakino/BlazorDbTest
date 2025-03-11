@@ -45,7 +45,7 @@ namespace BlazorDbTest.Controllers {
             var rec_Dia_r = MakeDiaRec(exam_id_r,
                 DBConst.strEyeType[DBConst.eEyeType.RIGHT],
                 sqlConnection);
-            rec_Dia_r.pupil_mm = conditions.RPupil ?? 0.0;
+            rec_Dia_r.pupil_mm = conditions.RPupil;
             rec_Dia_r.is_exam_pupil_data = (conditions.RPupil != null);
             rec_Dia_r.measured_at = conditions.ExamDateTime;
 
@@ -62,7 +62,7 @@ namespace BlazorDbTest.Controllers {
             var rec_Dia_l = MakeDiaRec(exam_id_l,
                 DBConst.strEyeType[DBConst.eEyeType.LEFT],
                 sqlConnection);
-            rec_Dia_l.pupil_mm = conditions.LPupil ?? 0.0;
+            rec_Dia_l.pupil_mm = conditions.LPupil;
             rec_Dia_l.is_exam_pupil_data = (conditions.LPupil != null);
             rec_Dia_l.measured_at = conditions.ExamDateTime;
 
@@ -103,6 +103,8 @@ namespace BlazorDbTest.Controllers {
           // 患者データが無ければ、測定データも存在しない
           return DataSource;
         } else {
+          int deviceId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
+
           // 実行するクエリコマンド定義
           string Query = "SELECT * FROM ";
           Query += DBCommonController._table(DBCommonController.DB_TableNames[(int)DBCommonController.eDbTable.EXAM_DIA]);
@@ -147,11 +149,11 @@ namespace BlazorDbTest.Controllers {
                              Pupil = Convert.ToDouble(data[COLNAME_ExamDiaList[(int)eExamDia.pupil_mm]]),
                              EyeId = (EyeType)Enum.ToObject(typeof(EyeType), data[COLNAME_ExamDiaList[(int)eExamDia.eye_id]]),
                              IsExamData = (bool)data[COLNAME_ExamDiaList[(int)eExamDia.is_exam_pupil_data]],
-                             DeviceID = 4,     // todo: 
+                             DeviceID = deviceId, 
                              ExamDateTime = (DateTime)data[COLNAME_ExamDiaList[(int)eExamDia.measured_at]],
                            }).ToList();
 
-          DataSource = SetDiaList(patientId, DiaDataSource.ToArray());
+          DataSource = SetDiaList(patientId, DiaDataSource.ToArray(), sqlConnection);
         }
       } catch {
       } finally {
@@ -251,9 +253,11 @@ namespace BlazorDbTest.Controllers {
     /// ・装置種別AxMのデータは、1測定日に1つしか登録できない
     /// </summary>
     /// <param name="DiaDataList"></param>
-    public List<DiaList> SetDiaList(string pt_id, DiaData[] DiaDataList) {
+    public List<DiaList> SetDiaList(string pt_id, DiaData[] DiaDataList, NpgsqlConnection sqlConnection) {
       List<DiaList> list = new List<DiaList>();
       if (DiaDataList != null) {
+        int deviceId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
+
         try {
           for (int i = 0; i < DiaDataList.Length; i++) {
             bool isExist = false;
@@ -269,14 +273,14 @@ namespace BlazorDbTest.Controllers {
                       // 右眼かつ同じ測定日の右眼がnullのとき
                       list[j].RExamID = DiaDataList[i].ID;
                       list[j].RPupil = DiaDataList[i].Pupil;
-                      list[j].IsRManualInput = (DiaDataList[i].DeviceID == 4);  // todo:
+                      list[j].IsRManualInput = (DiaDataList[i].DeviceID == deviceId);
                       isExist = true;
                       break;
                     } else if (list[j].ExamDateTime < DiaDataList[i].ExamDateTime) {
                       // 右眼かつ同じ測定時間が新しい
                       list[j].RExamID = DiaDataList[i].ID;
                       list[j].RPupil = DiaDataList[i].Pupil;
-                      list[j].IsRManualInput = (DiaDataList[i].DeviceID == 4);  // todo:
+                      list[j].IsRManualInput = (DiaDataList[i].DeviceID == deviceId);
                       list[j].ExamDateTime = DiaDataList[i].ExamDateTime;
                       isExist = true;
                       break;
@@ -288,14 +292,14 @@ namespace BlazorDbTest.Controllers {
                       // 左眼かつ同じ測定日の左眼がnullのとき
                       list[j].LExamID = DiaDataList[i].ID;
                       list[j].LPupil = DiaDataList[i].Pupil;
-                      list[j].IsLManualInput = (DiaDataList[i].DeviceID == 4);  // todo:
+                      list[j].IsLManualInput = (DiaDataList[i].DeviceID == deviceId);
                       isExist = true;
                       break;
                     } else if (list[j].ExamDateTime < DiaDataList[i].ExamDateTime) {
                       // 左眼かつ同じ測定時間が新しい
                       list[j].LExamID = DiaDataList[i].ID;
                       list[j].LPupil = DiaDataList[i].Pupil;
-                      list[j].IsLManualInput = (DiaDataList[i].DeviceID == 4);  // todo:
+                      list[j].IsLManualInput = (DiaDataList[i].DeviceID == deviceId);
                       list[j].ExamDateTime = DiaDataList[i].ExamDateTime;
                       isExist = true;
                       break;
@@ -320,11 +324,11 @@ namespace BlazorDbTest.Controllers {
               if (DiaDataList[i].EyeId == EyeType.right) {
                 var.RExamID = DiaDataList[i].ID;
                 var.RPupil = DiaDataList[i].Pupil;
-                var.IsRManualInput = (DiaDataList[i].DeviceID == 4);  // todo:
+                var.IsRManualInput = (DiaDataList[i].DeviceID == deviceId);
               } else if (DiaDataList[i].EyeId == EyeType.left) {
                 var.LExamID = DiaDataList[i].ID;
                 var.LPupil = DiaDataList[i].Pupil;
-                var.IsLManualInput = (DiaDataList[i].DeviceID == 4);  // todo:
+                var.IsLManualInput = (DiaDataList[i].DeviceID == deviceId);
               }
               list.Add(var);
             }
@@ -344,8 +348,8 @@ namespace BlazorDbTest.Controllers {
         recDia.eye_id = DBCommonController.Select_Eye_ID(sqlConnection, posEye);
         recDia.device_id = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
 
-        recDia.is_exam_pupil_data = true;   // todo: 要確認
-        recDia.is_exam_wtw_data = true;     // todo: 要確認
+        recDia.is_exam_pupil_data = true;
+        recDia.is_exam_wtw_data = true;
         recDia.comment = ""; // タグが無いので空文字
 
         recDia.pupil_mm = 0.0;

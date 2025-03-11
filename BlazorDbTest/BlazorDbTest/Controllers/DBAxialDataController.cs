@@ -103,6 +103,8 @@ namespace BlazorDbTest.Controllers {
           // 患者データが無ければ、測定データも存在しない
           return DataSource;
         } else {
+          int deviceId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
+
           // 実行するクエリコマンド定義
           string Query = "SELECT * FROM ";
           Query += DBCommonController._table(DBCommonController.DB_TableNames[(int)DBCommonController.eDbTable.EXAM_OPTAXIAL]);
@@ -146,7 +148,7 @@ namespace BlazorDbTest.Controllers {
                                ID = data[COLNAME_ExamOptaxialList[(int)eExamOptAxial.exam_id]].ToString() ?? string.Empty,
                                Axial = DBCommonController._objectToDoubleList(data[COLNAME_ExamOptaxialList[(int)eExamOptAxial.axial_mm]]),
                                EyeId = (EyeType)Enum.ToObject(typeof(EyeType), data[COLNAME_ExamOptaxialList[(int)eExamOptAxial.eye_id]]),
-                               DeviceID = 4,     // todo: 
+                               DeviceID = deviceId, 
                                ExamDateTime = (DateTime)data[COLNAME_ExamOptaxialList[(int)eExamOptAxial.measured_at]],
                              }).ToList();
 
@@ -458,12 +460,8 @@ namespace BlazorDbTest.Controllers {
     /// <param name="max"></param>
     /// <param name="sqlConnection"></param>
     /// <returns></returns>
-    public static double GetLatestAxialData(string pt_uuid, int eye_id, DateOnly examdate, double min, double max, NpgsqlConnection sqlConnection) {
+    public static double GetLatestAxialData(string pt_uuid, int eye_id, DateOnly examdate, double min, double max, int selectId, NpgsqlConnection sqlConnection) {
       double axial_mm = -1;
-
-      // todo: 呼び出し位置が違う(ここだと毎回呼び出しになる)
-      // todo: 設定に合わせた位置と比較(※DBのIndexは1から)
-      int selectId = DBCommonController.Select_SelectTypeID(sqlConnection, DBConst.SELECT_TYPE[(int)DBConst.SelectType.average]);
 
       try {
         // 実行するクエリコマンド定義

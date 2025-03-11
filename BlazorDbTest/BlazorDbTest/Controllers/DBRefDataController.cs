@@ -27,6 +27,9 @@ namespace BlazorDbTest.Controllers {
           // PostgreSQL Server 通信接続
           NpgsqlConnection sqlConnection = dbAccess.GetSqlConnection();
 
+          // todo: 設定取得
+          int selectId = DBCommonController.Select_SelectTypeID(sqlConnection, DBConst.SELECT_TYPE[(int)DBConst.SelectType.average]) - 1;
+
           // クエリコマンド実行
           // UUIDの有無を確認(true:update / false:insert)
           var uuid = DBCommonController.Select_PTUUID_by_PTID(sqlConnection, conditions.PatientID);
@@ -44,10 +47,10 @@ namespace BlazorDbTest.Controllers {
             var rec_Ref_r = MakeRefRec(exam_id_r,
                 DBConst.strEyeType[DBConst.eEyeType.RIGHT],
                 sqlConnection);
-            rec_Ref_r.s_d[0] = conditions.RS_d ?? 0.0;    // todo: 取得位置
-            rec_Ref_r.c_d[0] = conditions.RC_d ?? 0.0;
-            rec_Ref_r.a_deg[0] = conditions.RA_deg ?? 0;
-            rec_Ref_r.se_d[0] = (conditions.RS_d + (conditions.RC_d / 2)) ?? 0.0;
+            rec_Ref_r.s_d[selectId] = conditions.RS_d;
+            rec_Ref_r.c_d[selectId] = conditions.RC_d;
+            rec_Ref_r.a_deg[selectId] = conditions.RA_deg;
+            rec_Ref_r.se_d[selectId] = (conditions.RS_d + (conditions.RC_d / 2));
             rec_Ref_r.is_exam_data = (conditions.RS_d != null && conditions.RC_d != null && conditions.RA_deg != null);
             rec_Ref_r.measured_at = conditions.ExamDateTime;
 
@@ -64,10 +67,10 @@ namespace BlazorDbTest.Controllers {
             var rec_Ref_l = MakeRefRec(exam_id_l,
                 DBConst.strEyeType[DBConst.eEyeType.LEFT],
                 sqlConnection);
-            rec_Ref_l.s_d[0] = conditions.LS_d ?? 0.0;
-            rec_Ref_l.c_d[0] = conditions.LC_d ?? 0.0;
-            rec_Ref_l.a_deg[0] = conditions.LA_deg ?? 0;
-            rec_Ref_l.se_d[0] = (conditions.LS_d + (conditions.LC_d / 2)) ?? 0.0;
+            rec_Ref_l.s_d[selectId] = conditions.LS_d;
+            rec_Ref_l.c_d[selectId] = conditions.LC_d;
+            rec_Ref_l.a_deg[selectId] = conditions.LA_deg;
+            rec_Ref_l.se_d[selectId] = (conditions.LS_d + (conditions.LC_d / 2));
             rec_Ref_l.is_exam_data = (conditions.LS_d != null && conditions.LC_d != null && conditions.LA_deg != null);
             rec_Ref_l.measured_at = conditions.ExamDateTime;
 
@@ -159,7 +162,7 @@ namespace BlazorDbTest.Controllers {
                              ExamDateTime = (DateTime)data[COLNAME_ExamRefList[(int)eExamRef.measured_at]],
                            }).ToList();
 
-          DataSource = SetRefList(patientId, RefDataSource.ToArray());
+          DataSource = SetRefList(patientId, RefDataSource.ToArray(), sqlConnection);
         }
       } catch {
       } finally {
@@ -259,9 +262,14 @@ namespace BlazorDbTest.Controllers {
     /// ・装置種別AxMのデータは、1測定日に1つしか登録できない
     /// </summary>
     /// <param name="RefDataList"></param>
-    public List<RefList> SetRefList(string pt_id, RefData[] RefDataList) {
+    public List<RefList> SetRefList(string pt_id, RefData[] RefDataList, NpgsqlConnection sqlConnection) {
       List<RefList> list = new List<RefList>();
       if (RefDataList != null) {
+
+        int deviceId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
+        // todo: 設定ファイルから取得
+        int selectId = DBCommonController.Select_SelectTypeID(sqlConnection, DBConst.SELECT_TYPE[(int)DBConst.SelectType.average]) - 1;
+
         try {
           for (int i = 0; i < RefDataList.Length; i++) {
             bool isExist = false;
@@ -276,21 +284,21 @@ namespace BlazorDbTest.Controllers {
                     if (list[j].RS_d == null) {
                       // 右眼かつ同じ測定日の右眼が0のとき
                       list[j].RExamID = RefDataList[i].ID;
-                      list[j].RS_d = RefDataList[i].S_d[0];    // todo:
-                      list[j].RC_d = RefDataList[i].C_d[0];
-                      list[j].RA_deg = RefDataList[i].A_deg[0];
-                      list[j].RSE_d = RefDataList[i].SE_d[0];
-                      list[j].IsRManualInput = (RefDataList[i].DeviceID == 4);  // todo:
+                      list[j].RS_d = RefDataList[i].S_d[selectId];
+                      list[j].RC_d = RefDataList[i].C_d[selectId];
+                      list[j].RA_deg = RefDataList[i].A_deg[selectId];
+                      list[j].RSE_d = RefDataList[i].SE_d[selectId];
+                      list[j].IsRManualInput = (RefDataList[i].DeviceID == deviceId);
                       isExist = true;
                       break;
                     } else if (list[j].ExamDateTime < RefDataList[i].ExamDateTime) {
                       // 右眼かつ同じ測定時間が新しい
                       list[j].RExamID = RefDataList[i].ID;
-                      list[j].RS_d = RefDataList[i].S_d[0];    // todo:
-                      list[j].RC_d = RefDataList[i].C_d[0];
-                      list[j].RA_deg = RefDataList[i].A_deg[0];
-                      list[j].RSE_d = RefDataList[i].SE_d[0];
-                      list[j].IsRManualInput = (RefDataList[i].DeviceID == 4);  // todo:
+                      list[j].RS_d = RefDataList[i].S_d[selectId];
+                      list[j].RC_d = RefDataList[i].C_d[selectId];
+                      list[j].RA_deg = RefDataList[i].A_deg[selectId];
+                      list[j].RSE_d = RefDataList[i].SE_d[selectId];
+                      list[j].IsRManualInput = (RefDataList[i].DeviceID == deviceId);
                       list[j].ExamDateTime = RefDataList[i].ExamDateTime;
                       isExist = true;
                       break;
@@ -301,21 +309,21 @@ namespace BlazorDbTest.Controllers {
                     if (list[j].LS_d == null) {
                       // 左眼かつ同じ測定日の左眼が0のとき
                       list[j].LExamID = RefDataList[i].ID;
-                      list[j].LS_d = RefDataList[i].S_d[0];    // todo:
-                      list[j].LC_d = RefDataList[i].C_d[0];
-                      list[j].LA_deg = RefDataList[i].A_deg[0];
-                      list[j].LSE_d = RefDataList[i].SE_d[0];
-                      list[j].IsLManualInput = (RefDataList[i].DeviceID == 4);  // todo:
+                      list[j].LS_d = RefDataList[i].S_d[selectId];
+                      list[j].LC_d = RefDataList[i].C_d[selectId];
+                      list[j].LA_deg = RefDataList[i].A_deg[selectId];
+                      list[j].LSE_d = RefDataList[i].SE_d[selectId];
+                      list[j].IsLManualInput = (RefDataList[i].DeviceID == deviceId);
                       isExist = true;
                       break;
                     } else if (list[j].ExamDateTime < RefDataList[i].ExamDateTime) {
                       // 左眼かつ同じ測定時間が新しい
                       list[j].LExamID = RefDataList[i].ID;
-                      list[j].LS_d = RefDataList[i].S_d[0];    // todo:
-                      list[j].LC_d = RefDataList[i].C_d[0];
-                      list[j].LA_deg = RefDataList[i].A_deg[0];
-                      list[j].LSE_d = RefDataList[i].SE_d[0];
-                      list[j].IsLManualInput = (RefDataList[i].DeviceID == 4);  // todo:
+                      list[j].LS_d = RefDataList[i].S_d[selectId];
+                      list[j].LC_d = RefDataList[i].C_d[selectId];
+                      list[j].LA_deg = RefDataList[i].A_deg[selectId];
+                      list[j].LSE_d = RefDataList[i].SE_d[selectId];
+                      list[j].IsLManualInput = (RefDataList[i].DeviceID == deviceId);
                       list[j].ExamDateTime = RefDataList[i].ExamDateTime;
                       isExist = true;
                       break;
@@ -345,18 +353,18 @@ namespace BlazorDbTest.Controllers {
               };
               if (RefDataList[i].EyeId == EyeType.right) {
                 var.RExamID = RefDataList[i].ID;
-                var.RS_d = RefDataList[i].S_d[0];    // todo:
-                var.RC_d = RefDataList[i].C_d[0];
-                var.RA_deg = RefDataList[i].A_deg[0];
-                var.RSE_d = RefDataList[i].SE_d[0];
-                var.IsRManualInput = (RefDataList[i].DeviceID == 4);  // todo:
+                var.RS_d = RefDataList[i].S_d[selectId];
+                var.RC_d = RefDataList[i].C_d[selectId];
+                var.RA_deg = RefDataList[i].A_deg[selectId];
+                var.RSE_d = RefDataList[i].SE_d[selectId];
+                var.IsRManualInput = (RefDataList[i].DeviceID == deviceId);
               } else if (RefDataList[i].EyeId == EyeType.left) {
                 var.LExamID = RefDataList[i].ID;
-                var.LS_d = RefDataList[i].S_d[0];    // todo:
-                var.LC_d = RefDataList[i].C_d[0];
-                var.LA_deg = RefDataList[i].A_deg[0];
-                var.LSE_d = RefDataList[i].SE_d[0];
-                var.IsLManualInput = (RefDataList[i].DeviceID == 4);  // todo:
+                var.LS_d = RefDataList[i].S_d[selectId];
+                var.LC_d = RefDataList[i].C_d[selectId];
+                var.LA_deg = RefDataList[i].A_deg[selectId];
+                var.LSE_d = RefDataList[i].SE_d[selectId];
+                var.IsLManualInput = (RefDataList[i].DeviceID == deviceId);
               }
               list.Add(var);
             }
@@ -376,9 +384,9 @@ namespace BlazorDbTest.Controllers {
         recRef.eye_id = DBCommonController.Select_Eye_ID(sqlConnection, posEye);
         recRef.device_id = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
 
-        recRef.is_exam_data = true;
+        recRef.is_exam_data = false;
         recRef.comment = ""; // タグが無いので空文字
-        recRef.select_id = 0; // 0固定でよい
+        recRef.select_id = DBCommonController.Select_SelectTypeID(sqlConnection, DBConst.SELECT_TYPE[(int)DBConst.SelectType.average]) - 1;
 
         recRef.is_meas_auto = false; // false固定でよい
 

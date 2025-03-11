@@ -8,7 +8,7 @@
     public Gender Gender { get; set; }                  //性別
     public int Age { get; set; }                        //年齢
     public DateTime? BirthDate { get; set; }            //生年月日
-    public string SameID { get; set; } = default!;      //同一ID
+    public string? SameID { get; set; } = default!;      //同一ID
     public int DeviceID { get; set; }                   //装置種別
     public string UUID { get; set; } = default!;        //UUID
   }
