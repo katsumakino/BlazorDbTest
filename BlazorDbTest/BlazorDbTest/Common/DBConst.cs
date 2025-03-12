@@ -261,6 +261,52 @@ namespace BlazorDbTest.Common {
 
     public static string AxmDeviceType = "AXM2";
 
+    public static string[] AXIAL_DEVICE_TYPE = ["none", "OA1", "OA-2000", "AXM2"];
+
+    public enum AxialDeviceType {
+      none = 0,
+      oa1,
+      oa2000,
+      axm2
+    }
+
+    public static string[] REF_DEVICE_TYPE = ["none", "MR-6000", "AXM2"];
+
+    public enum RefDeviceType {
+      none = 0,
+      mr6000,
+      axm2
+    }
+
+    public static string[] KRT_DEVICE_TYPE = ["none", "OA-2000", "OA-1", "MR-6000", "AXM2"];
+
+    public enum KrtDeviceType {
+      none = 0,
+      oa2000,
+      oa1,
+      mr6000,
+      axm2
+    }
+
+    public static string[] PACHY_DEVICE_TYPE = ["none", "OA-2000", "MR-6000", "AXM2"];
+
+    public enum PachyDeviceType {
+      none = 0,
+      oa2000,
+      mr6000,
+      axm2
+    }
+
+    public static string[] DIA_DEVICE_TYPE = ["none", "OA-2000", "OA-1", "MR-6000", "AXM2"];
+
+    public enum DiaDeviceType {
+      none = 0,
+      oa2000,
+      oa1,
+      mr6000,
+      axm2
+    }
+
     public static string[] FITTINGS_TYPE = ["none", "contact", "immersion", "contact2", "optlength"];
 
     public enum FittingsType {

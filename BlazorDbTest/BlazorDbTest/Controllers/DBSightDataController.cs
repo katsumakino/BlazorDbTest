@@ -100,7 +100,7 @@ namespace BlazorDbTest.Controllers {
           // 患者データが無ければ、測定データも存在しない
           return DataSource;
         } else {
-          int deviceId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
+          int axmId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
 
           // 実行するクエリコマンド定義
           string Query = "SELECT * FROM ";
@@ -146,7 +146,7 @@ namespace BlazorDbTest.Controllers {
                                Sight = Convert.ToDouble(data[COLNAME_ExamSightList[(int)eExamSight.sight_d]]),
                                EyeId = (EyeType)Enum.ToObject(typeof(EyeType), data[COLNAME_ExamSightList[(int)eExamSight.eye_id]]),
                                IsExamData = (bool)data[COLNAME_ExamSightList[(int)eExamSight.is_exam_data]],
-                               DeviceID = deviceId, 
+                               DeviceId = axmId, 
                                ExamDateTime = (DateTime)data[COLNAME_ExamSightList[(int)eExamSight.measured_at]],
                              }).ToList();
 

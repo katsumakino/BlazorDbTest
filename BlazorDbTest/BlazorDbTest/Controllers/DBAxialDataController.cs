@@ -103,7 +103,10 @@ namespace BlazorDbTest.Controllers {
           // 患者データが無ければ、測定データも存在しない
           return DataSource;
         } else {
-          int deviceId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
+          int axmId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
+          // todo: 設定取得
+          int deviceId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AXIAL_DEVICE_TYPE[0]);
+          int fittingId = DBCommonController.Select_FittingId_By_FittingType(sqlConnection, DBConst.FITTINGS_TYPE[0]);
 
           // 実行するクエリコマンド定義
           string Query = "SELECT * FROM ";
@@ -132,6 +135,26 @@ namespace BlazorDbTest.Controllers {
           Query += DBCommonController._col(COLNAME_ExamOptaxialList[(int)eExamOptAxial.is_exam_data]);
           Query += " = ";
           Query += DBCommonController._val("TRUE");
+          Query += " AND ";
+          Query += "( ";
+          Query += DBCommonController._table(DBCommonController.DB_TableNames[(int)DBCommonController.eDbTable.EXAM_OPTAXIAL]);
+          Query += ".";
+          Query += DBCommonController._col(COLNAME_ExamOptaxialList[(int)eExamOptAxial.device_id]);
+          Query += " = ";
+          Query += DBCommonController._val(axmId.ToString());
+          Query += " OR ";
+          Query += DBCommonController._table(DBCommonController.DB_TableNames[(int)DBCommonController.eDbTable.EXAM_OPTAXIAL]);
+          Query += ".";
+          Query += DBCommonController._col(COLNAME_ExamOptaxialList[(int)eExamOptAxial.device_id]);
+          Query += " = ";
+          Query += DBCommonController._val(deviceId.ToString());
+          Query += " )";
+          Query += " AND ";
+          Query += DBCommonController._table(DBCommonController.DB_TableNames[(int)DBCommonController.eDbTable.EXAM_OPTAXIAL]);
+          Query += ".";
+          Query += DBCommonController._col(COLNAME_ExamOptaxialList[(int)eExamOptAxial.fitting_id]);
+          Query += " = ";
+          Query += DBCommonController._val(fittingId.ToString());
           Query += " )";
           Query += " ORDER BY ";
           Query += DBCommonController._col(COLNAME_ExamOptaxialList[(int)eExamOptAxial.measured_at]);
@@ -148,7 +171,7 @@ namespace BlazorDbTest.Controllers {
                                ID = data[COLNAME_ExamOptaxialList[(int)eExamOptAxial.exam_id]].ToString() ?? string.Empty,
                                Axial = DBCommonController._objectToDoubleList(data[COLNAME_ExamOptaxialList[(int)eExamOptAxial.axial_mm]]),
                                EyeId = (EyeType)Enum.ToObject(typeof(EyeType), data[COLNAME_ExamOptaxialList[(int)eExamOptAxial.eye_id]]),
-                               DeviceID = deviceId, 
+                               DeviceId = axmId, 
                                ExamDateTime = (DateTime)data[COLNAME_ExamOptaxialList[(int)eExamOptAxial.measured_at]],
                              }).ToList();
 
@@ -255,7 +278,7 @@ namespace BlazorDbTest.Controllers {
       List<AxialList> list = new List<AxialList>();
       if (axialDataList != null) {
 
-        int deviceId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
+        int axmId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
         // todo: 設定ファイルから取得
         int selectId = DBCommonController.Select_SelectTypeID(sqlConnection, DBConst.SELECT_TYPE[(int)DBConst.SelectType.average]) - 1;
 
@@ -274,14 +297,14 @@ namespace BlazorDbTest.Controllers {
                       // 右眼かつ同じ測定日の右眼がnullのとき
                       list[j].RExamID = axialDataList[i].ID;
                       list[j].RAxial = axialDataList[i].Axial[selectId];
-                      list[j].IsRManualInput = (axialDataList[i].DeviceID == deviceId);
+                      list[j].IsRManualInput = (axialDataList[i].DeviceId == axmId);
                       isExist = true;
                       break;
                     } else if (list[j].ExamDateTime < axialDataList[i].ExamDateTime) {
                       // 右眼かつ同じ測定時間が新しい
                       list[j].RExamID = axialDataList[i].ID;
                       list[j].RAxial = axialDataList[i].Axial[selectId];
-                      list[j].IsRManualInput = (axialDataList[i].DeviceID == deviceId);
+                      list[j].IsRManualInput = (axialDataList[i].DeviceId == axmId);
                       list[j].ExamDateTime = axialDataList[i].ExamDateTime;
                       isExist = true;
                       break;
@@ -293,14 +316,14 @@ namespace BlazorDbTest.Controllers {
                       // 左眼かつ同じ測定日の左眼がnullのとき
                       list[j].LExamID = axialDataList[i].ID;
                       list[j].LAxial = axialDataList[i].Axial[selectId];
-                      list[j].IsLManualInput = (axialDataList[i].DeviceID == deviceId);
+                      list[j].IsLManualInput = (axialDataList[i].DeviceId == axmId);
                       isExist = true;
                       break;
                     } else if (list[j].ExamDateTime < axialDataList[i].ExamDateTime) {
                       // 左眼かつ同じ測定時間が新しい
                       list[j].LExamID = axialDataList[i].ID;
                       list[j].LAxial = axialDataList[i].Axial[selectId];
-                      list[j].IsLManualInput = (axialDataList[i].DeviceID == deviceId);
+                      list[j].IsLManualInput = (axialDataList[i].DeviceId == axmId);
                       list[j].ExamDateTime = axialDataList[i].ExamDateTime;
                       isExist = true;
                       break;
@@ -324,12 +347,12 @@ namespace BlazorDbTest.Controllers {
               };
               if (axialDataList[i].EyeId == EyeType.right) {
                 var.RExamID = axialDataList[i].ID;
-                var.RAxial = axialDataList[i].Axial[0] ?? null;
-                var.IsRManualInput = (axialDataList[i].DeviceID == deviceId);
+                var.RAxial = axialDataList[i].Axial[0];
+                var.IsRManualInput = (axialDataList[i].DeviceId == axmId);
               } else if (axialDataList[i].EyeId == EyeType.left) {
                 var.LExamID = axialDataList[i].ID;
-                var.LAxial = axialDataList[i].Axial[0] ?? null;
-                var.IsLManualInput = (axialDataList[i].DeviceID == deviceId);
+                var.LAxial = axialDataList[i].Axial[0];
+                var.IsLManualInput = (axialDataList[i].DeviceId == axmId);
               }
               list.Add(var);
             }
@@ -460,7 +483,7 @@ namespace BlazorDbTest.Controllers {
     /// <param name="max"></param>
     /// <param name="sqlConnection"></param>
     /// <returns></returns>
-    public static double GetLatestAxialData(string pt_uuid, int eye_id, DateOnly examdate, double min, double max, int selectId, NpgsqlConnection sqlConnection) {
+    public static double GetLatestAxialData(string pt_uuid, int eye_id, DateOnly examdate, double min, double max, int selectId, int fittingId, NpgsqlConnection sqlConnection) {
       double axial_mm = -1;
 
       try {
@@ -504,6 +527,10 @@ namespace BlazorDbTest.Controllers {
         Query += "] ";
         Query += " <= ";
         Query += max;
+        Query += " AND ";
+        Query += DBCommonController._col(COLNAME_ExamOptaxialList[(int)eExamOptAxial.fitting_id]);
+        Query += " = ";
+        Query += fittingId;
         Query += " ORDER BY ";
         Query += DBCommonController._col(COLNAME_ExamOptaxialList[(int)eExamOptAxial.measured_at]);
         Query += " DESC LIMIT 1; ";

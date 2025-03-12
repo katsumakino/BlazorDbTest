@@ -107,7 +107,7 @@ namespace BlazorDbTest.Controllers {
           // 患者データが無ければ、測定データも存在しない
           return DataSource;
         } else {
-          int deviceId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
+          int axmId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
 
           // 実行するクエリコマンド定義
           string Query = "SELECT * FROM ";
@@ -156,7 +156,7 @@ namespace BlazorDbTest.Controllers {
                              SE_d = Convert.ToDouble(data[COLNAME_ExamSciRefList[(int)eExamSciRef.se_d]]),
                              EyeId = (EyeType)Enum.ToObject(typeof(EyeType), data[COLNAME_ExamSciRefList[(int)eExamSciRef.eye_id]]),
                              IsExamData = (bool)data[COLNAME_ExamSciRefList[(int)eExamSciRef.is_exam_data]],
-                             DeviceID = deviceId, 
+                             DeviceId = axmId, 
                              ExamDateTime = (DateTime)data[COLNAME_ExamSciRefList[(int)eExamSciRef.measured_at]],
                            }).ToList();
 
@@ -264,7 +264,7 @@ namespace BlazorDbTest.Controllers {
       List<RefList> list = new List<RefList>();
       if (SciRefDataList != null) {
 
-        int deviceId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
+        int axmId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
 
         try {
           for (int i = 0; i < SciRefDataList.Length; i++) {
@@ -284,7 +284,7 @@ namespace BlazorDbTest.Controllers {
                       list[j].RC_d = SciRefDataList[i].C_d;
                       list[j].RA_deg = SciRefDataList[i].A_deg;
                       list[j].RSE_d = SciRefDataList[i].SE_d;
-                      list[j].IsRManualInput = (SciRefDataList[i].DeviceID == deviceId);
+                      list[j].IsRManualInput = (SciRefDataList[i].DeviceId == axmId);
                       isExist = true;
                       break;
                     } else if (list[j].ExamDateTime < SciRefDataList[i].ExamDateTime) {
@@ -294,7 +294,7 @@ namespace BlazorDbTest.Controllers {
                       list[j].RC_d = SciRefDataList[i].C_d;
                       list[j].RA_deg = SciRefDataList[i].A_deg;
                       list[j].RSE_d = SciRefDataList[i].SE_d;
-                      list[j].IsRManualInput = (SciRefDataList[i].DeviceID == deviceId);
+                      list[j].IsRManualInput = (SciRefDataList[i].DeviceId == axmId);
                       list[j].ExamDateTime = SciRefDataList[i].ExamDateTime;
                       isExist = true;
                       break;
@@ -309,7 +309,7 @@ namespace BlazorDbTest.Controllers {
                       list[j].LC_d = SciRefDataList[i].C_d;
                       list[j].LA_deg = SciRefDataList[i].A_deg;
                       list[j].LSE_d = SciRefDataList[i].SE_d;
-                      list[j].IsLManualInput = (SciRefDataList[i].DeviceID == deviceId);
+                      list[j].IsLManualInput = (SciRefDataList[i].DeviceId == axmId);
                       isExist = true;
                       break;
                     } else if (list[j].ExamDateTime < SciRefDataList[i].ExamDateTime) {
@@ -319,7 +319,7 @@ namespace BlazorDbTest.Controllers {
                       list[j].LC_d = SciRefDataList[i].C_d;
                       list[j].LA_deg = SciRefDataList[i].A_deg;
                       list[j].LSE_d = SciRefDataList[i].SE_d;
-                      list[j].IsLManualInput = (SciRefDataList[i].DeviceID == deviceId);
+                      list[j].IsLManualInput = (SciRefDataList[i].DeviceId == axmId);
                       list[j].ExamDateTime = SciRefDataList[i].ExamDateTime;
                       isExist = true;
                       break;
@@ -353,14 +353,14 @@ namespace BlazorDbTest.Controllers {
                 var.RC_d = SciRefDataList[i].C_d;
                 var.RA_deg = SciRefDataList[i].A_deg;
                 var.RSE_d = SciRefDataList[i].SE_d;
-                var.IsRManualInput = (SciRefDataList[i].DeviceID == deviceId);
+                var.IsRManualInput = (SciRefDataList[i].DeviceId == axmId);
               } else if (SciRefDataList[i].EyeId == EyeType.left) {
                 var.LExamID = SciRefDataList[i].ID;
                 var.LS_d = SciRefDataList[i].S_d;
                 var.LC_d = SciRefDataList[i].C_d;
                 var.LA_deg = SciRefDataList[i].A_deg;
                 var.LSE_d = SciRefDataList[i].SE_d;
-                var.IsLManualInput = (SciRefDataList[i].DeviceID == deviceId);
+                var.IsLManualInput = (SciRefDataList[i].DeviceId == axmId);
               }
               list.Add(var);
             }

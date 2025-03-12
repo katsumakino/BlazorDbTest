@@ -111,6 +111,10 @@ namespace BlazorDbTest.Controllers {
           // 患者データが無ければ、測定データも存在しない
           return DataSource;
         } else {
+          int axmId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
+          // todo: 設定取得
+          int deviceId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.REF_DEVICE_TYPE[0]);
+
           // 実行するクエリコマンド定義
           string Query = "SELECT * FROM ";
           Query += DBCommonController._table(DBCommonController.DB_TableNames[(int)DBCommonController.eDbTable.EXAM_REF]);
@@ -138,6 +142,20 @@ namespace BlazorDbTest.Controllers {
           Query += DBCommonController._col(COLNAME_ExamRefList[(int)eExamRef.is_exam_data]);
           Query += " = ";
           Query += DBCommonController._val("TRUE");
+          Query += " AND ";
+          Query += "( ";
+          Query += DBCommonController._table(DBCommonController.DB_TableNames[(int)DBCommonController.eDbTable.EXAM_REF]);
+          Query += ".";
+          Query += DBCommonController._col(COLNAME_ExamRefList[(int)eExamRef.device_id]);
+          Query += " = ";
+          Query += DBCommonController._val(axmId.ToString());
+          Query += " OR ";
+          Query += DBCommonController._table(DBCommonController.DB_TableNames[(int)DBCommonController.eDbTable.EXAM_REF]);
+          Query += ".";
+          Query += DBCommonController._col(COLNAME_ExamRefList[(int)eExamRef.device_id]);
+          Query += " = ";
+          Query += DBCommonController._val(deviceId.ToString());
+          Query += " )";
           Query += " )";
           Query += " ORDER BY ";
           Query += DBCommonController._col(COLNAME_ExamRefList[(int)eExamRef.measured_at]);
@@ -158,7 +176,7 @@ namespace BlazorDbTest.Controllers {
                              SE_d = DBCommonController._objectToDoubleList(data[COLNAME_ExamRefList[(int)eExamRef.se_d]]),
                              EyeId = (EyeType)Enum.ToObject(typeof(EyeType), data[COLNAME_ExamRefList[(int)eExamRef.eye_id]]),
                              IsExamData = (bool)data[COLNAME_ExamRefList[(int)eExamRef.is_exam_data]],
-                             DeviceID = 4,     // todo: 
+                             DeviceId = axmId, 
                              ExamDateTime = (DateTime)data[COLNAME_ExamRefList[(int)eExamRef.measured_at]],
                            }).ToList();
 
@@ -266,7 +284,7 @@ namespace BlazorDbTest.Controllers {
       List<RefList> list = new List<RefList>();
       if (RefDataList != null) {
 
-        int deviceId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
+        int axmId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
         // todo: 設定ファイルから取得
         int selectId = DBCommonController.Select_SelectTypeID(sqlConnection, DBConst.SELECT_TYPE[(int)DBConst.SelectType.average]) - 1;
 
@@ -288,7 +306,7 @@ namespace BlazorDbTest.Controllers {
                       list[j].RC_d = RefDataList[i].C_d[selectId];
                       list[j].RA_deg = RefDataList[i].A_deg[selectId];
                       list[j].RSE_d = RefDataList[i].SE_d[selectId];
-                      list[j].IsRManualInput = (RefDataList[i].DeviceID == deviceId);
+                      list[j].IsRManualInput = (RefDataList[i].DeviceId == axmId);
                       isExist = true;
                       break;
                     } else if (list[j].ExamDateTime < RefDataList[i].ExamDateTime) {
@@ -298,7 +316,7 @@ namespace BlazorDbTest.Controllers {
                       list[j].RC_d = RefDataList[i].C_d[selectId];
                       list[j].RA_deg = RefDataList[i].A_deg[selectId];
                       list[j].RSE_d = RefDataList[i].SE_d[selectId];
-                      list[j].IsRManualInput = (RefDataList[i].DeviceID == deviceId);
+                      list[j].IsRManualInput = (RefDataList[i].DeviceId == axmId);
                       list[j].ExamDateTime = RefDataList[i].ExamDateTime;
                       isExist = true;
                       break;
@@ -313,7 +331,7 @@ namespace BlazorDbTest.Controllers {
                       list[j].LC_d = RefDataList[i].C_d[selectId];
                       list[j].LA_deg = RefDataList[i].A_deg[selectId];
                       list[j].LSE_d = RefDataList[i].SE_d[selectId];
-                      list[j].IsLManualInput = (RefDataList[i].DeviceID == deviceId);
+                      list[j].IsLManualInput = (RefDataList[i].DeviceId == axmId);
                       isExist = true;
                       break;
                     } else if (list[j].ExamDateTime < RefDataList[i].ExamDateTime) {
@@ -323,7 +341,7 @@ namespace BlazorDbTest.Controllers {
                       list[j].LC_d = RefDataList[i].C_d[selectId];
                       list[j].LA_deg = RefDataList[i].A_deg[selectId];
                       list[j].LSE_d = RefDataList[i].SE_d[selectId];
-                      list[j].IsLManualInput = (RefDataList[i].DeviceID == deviceId);
+                      list[j].IsLManualInput = (RefDataList[i].DeviceId == axmId);
                       list[j].ExamDateTime = RefDataList[i].ExamDateTime;
                       isExist = true;
                       break;
@@ -357,14 +375,14 @@ namespace BlazorDbTest.Controllers {
                 var.RC_d = RefDataList[i].C_d[selectId];
                 var.RA_deg = RefDataList[i].A_deg[selectId];
                 var.RSE_d = RefDataList[i].SE_d[selectId];
-                var.IsRManualInput = (RefDataList[i].DeviceID == deviceId);
+                var.IsRManualInput = (RefDataList[i].DeviceId == axmId);
               } else if (RefDataList[i].EyeId == EyeType.left) {
                 var.LExamID = RefDataList[i].ID;
                 var.LS_d = RefDataList[i].S_d[selectId];
                 var.LC_d = RefDataList[i].C_d[selectId];
                 var.LA_deg = RefDataList[i].A_deg[selectId];
                 var.LSE_d = RefDataList[i].SE_d[selectId];
-                var.IsLManualInput = (RefDataList[i].DeviceID == deviceId);
+                var.IsLManualInput = (RefDataList[i].DeviceId == axmId);
               }
               list.Add(var);
             }

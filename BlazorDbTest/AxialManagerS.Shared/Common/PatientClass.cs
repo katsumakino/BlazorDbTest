@@ -9,7 +9,7 @@
     public int Age { get; set; }                        //年齢
     public DateTime? BirthDate { get; set; }            //生年月日
     public string? SameID { get; set; } = default!;      //同一ID
-    public int DeviceID { get; set; }                   //装置種別
+    public int DeviceId { get; set; }                   //装置種別
     public string UUID { get; set; } = default!;        //UUID
   }
 
@@ -68,7 +68,7 @@
     public string? ID { get; set; } = default!;                      //測定データID
     public List<double?> Axial { get; set; } = new List<double?>(); //眼軸長
     public EyeType EyeId { get; set; }                              //左右眼情報
-    public int? DeviceID { get; set; }                               //測定装置ID
+    public int? DeviceId { get; set; }                               //測定装置ID
     public DateTime? ExamDateTime { get; set; }                     //測定日時
   }
 
@@ -109,7 +109,7 @@
     public List<double?> AveK_d { get; set; } = new List<double?>(); //平均角膜曲率屈折力[D]
     public List<double?> Cyl_d { get; set; } = new List<double?>();  //乱視度数[D]
     public EyeType EyeId { get; set; }          //左右眼情報
-    public int? DeviceID { get; set; }           //測定装置ID
+    public int? DeviceId { get; set; }           //測定装置ID
     public bool? IsExamData { get; set; }        //測定データ有無
     public DateTime? ExamDateTime { get; set; } //測定日時
   }
@@ -140,7 +140,7 @@
     public List<int?> A_deg { get; set; } = new List<int?>();       //乱視軸[°]
     public List<double?> SE_d { get; set; } = new List<double?>();  //等価球面度数[D]
     public EyeType EyeId { get; set; }                              //左右眼情報
-    public int? DeviceID { get; set; }                               //測定装置ID
+    public int? DeviceId { get; set; }                               //測定装置ID
     public bool? IsExamData { get; set; }                            //測定データ有無
     public DateTime? ExamDateTime { get; set; }                     //測定日時
   }
@@ -153,7 +153,7 @@
     public int? A_deg { get; set; }                      //乱視軸[°]
     public double? SE_d { get; set; }                    //等価球面度数[D]
     public EyeType EyeId { get; set; }                  //左右眼情報
-    public int? DeviceID { get; set; }                   //測定装置ID
+    public int? DeviceId { get; set; }                   //測定装置ID
     public bool? IsExamData { get; set; }                //測定データ有無
     public DateTime? ExamDateTime { get; set; }         //測定日時
   }
@@ -175,7 +175,7 @@
     public string? ID { get; set; } = default!;                      //測定データID
     public List<double?> Pachy { get; set; } = new List<double?>(); //中央角膜厚
     public EyeType EyeId { get; set; }                              //左右眼情報
-    public int? DeviceID { get; set; }                               //測定装置ID
+    public int? DeviceId { get; set; }                               //測定装置ID
     public bool? IsExamData { get; set; }                            //測定データ有無
     public DateTime? ExamDateTime { get; set; }                     //測定日時
   }
@@ -197,7 +197,7 @@
     public string? ID { get; set; } = default!;                      //測定データID
     public double? Pupil { get; set; }                               //瞳孔径
     public EyeType EyeId { get; set; }                              //左右眼情報
-    public int? DeviceID { get; set; }                               //測定装置ID
+    public int? DeviceId { get; set; }                               //測定装置ID
     public bool? IsExamData { get; set; }                            //測定データ有無
     public DateTime? ExamDateTime { get; set; }                     //測定日時
   }
@@ -217,7 +217,7 @@
     public string? ID { get; set; } = default!;                      //測定データID
     public double? Sight { get; set; }                               //視力
     public EyeType EyeId { get; set; }                              //左右眼情報
-    public int? DeviceID { get; set; }                               //測定装置ID
+    public int? DeviceId { get; set; }                               //測定装置ID
     public bool? IsExamData { get; set; }                            //測定データ有無
     public DateTime? ExamDateTime { get; set; }                     //測定日時
   }

@@ -194,12 +194,15 @@ namespace BlazorDbTest.Controllers {
           NpgsqlConnection sqlConnection = dbAccess.GetSqlConnection();
 
           // todo: 設定に合わせた位置と比較(※DBのIndexは1から)
-          int selectId = DBCommonController.Select_SelectTypeID(sqlConnection, DBConst.SELECT_TYPE[(int)DBConst.SelectType.average]);
+          int selectId = Select_SelectTypeID(sqlConnection, DBConst.SELECT_TYPE[(int)DBConst.SelectType.average]);
+          // todo: 設定取得
+          int deviceId = Select_Device_ID(sqlConnection, DBConst.AXIAL_DEVICE_TYPE[0]);
+          int fittingId = Select_FittingId_By_FittingType(sqlConnection, DBConst.FITTINGS_TYPE[0]);
 
           int eye_id_r = Select_Eye_ID(sqlConnection, DBConst.strEyeType[DBConst.eEyeType.RIGHT]);
           int eye_id_l = Select_Eye_ID(sqlConnection, DBConst.strEyeType[DBConst.eEyeType.LEFT]);
           int commenttype_patient = Select_AxmCommentTypeId(sqlConnection, AXM_COMMENT_TYPE[(int)eAxmCommentType.Patient]);
-          int device_axm_id = Select_Device_ID(sqlConnection, "AxialManager2");
+          int axmId = Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
           int exam_optaxial_id = Select_Examtype_ID(sqlConnection, DBConst.strMstDataType[DBConst.eMSTDATATYPE.OPTAXIAL]);
 
           var tblPatientList = "tblPatientList";          // PatientList
@@ -272,7 +275,6 @@ namespace BlazorDbTest.Controllers {
             Query += string.Format(Query5, tblExamList, _dotcol(COLNAME_ExamList[(int)eExamList.examtype_id]), exam_optaxial_id);
           } else {
             // 測定日時を指定しないときは、NULLも含める
-            // todo: 装置種別も確認
             Query += "AND ";
             Query += string.Format(Query4, tblExamList, _dotcol(COLNAME_ExamList[(int)eExamList.examtype_id]), exam_optaxial_id);
           }
@@ -317,10 +319,10 @@ namespace BlazorDbTest.Controllers {
             Query += string.Format(Query5, tblAxmPatientList, _dotcol(COLNAME_AxmPatientList[(int)eAxmPatientList.is_axm_same_pt_id]), patientSearch.IsSameID);
           }
           // ExamListの検索条件を使用するときのみ、装置情報の検索条件に付与
+          string Query8 = "AND ({0}{1} = {2} OR {0}{1} = {3})";
           if (patientSearch.IsExamDate == true || patientSearch.IsAxial == true) {
-            Query += string.Format(Query5, tblExamList, _dotcol(COLNAME_ExamList[(int)eExamList.device_id]), device_axm_id);
+            Query += string.Format(Query8, tblExamList, _dotcol(COLNAME_ExamList[(int)eExamList.device_id]), axmId, deviceId);
           }
-          // todo: 表示設定の反映
           Query += ");";
 
           NpgsqlCommand Command = new(Query, sqlConnection);
@@ -344,8 +346,8 @@ namespace BlazorDbTest.Controllers {
 
               if (pt_uuid != null && pt_uuid != string.Empty) {
                 // 最新測定日の測定値取得
-                axial_r = GetLatestAxialData(pt_uuid, eye_id_r, examdate, axialMin, axialMax, selectId, sqlConnection);
-                axial_l = GetLatestAxialData(pt_uuid, eye_id_l, examdate, axialMin, axialMax, selectId, sqlConnection);
+                axial_r = GetLatestAxialData(pt_uuid, eye_id_r, examdate, axialMin, axialMax, selectId, fittingId, sqlConnection);
+                axial_l = GetLatestAxialData(pt_uuid, eye_id_l, examdate, axialMin, axialMax, selectId, fittingId, sqlConnection);
 
                 // 眼軸長検索条件ありのとき、両眼測定値無しなら、リストに追加しない
                 if (axial_r < 0 && axial_l < 0 && patientSearch.IsAxial == true) {

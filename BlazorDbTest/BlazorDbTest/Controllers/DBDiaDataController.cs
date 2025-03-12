@@ -103,7 +103,9 @@ namespace BlazorDbTest.Controllers {
           // 患者データが無ければ、測定データも存在しない
           return DataSource;
         } else {
-          int deviceId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
+          int axmId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
+          // todo: 設定取得
+          int deviceId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.DIA_DEVICE_TYPE[0]);
 
           // 実行するクエリコマンド定義
           string Query = "SELECT * FROM ";
@@ -132,6 +134,20 @@ namespace BlazorDbTest.Controllers {
           Query += DBCommonController._col(COLNAME_ExamDiaList[(int)eExamDia.is_exam_pupil_data]);
           Query += " = ";
           Query += DBCommonController._val("TRUE");
+          Query += " AND ";
+          Query += "( ";
+          Query += DBCommonController._table(DBCommonController.DB_TableNames[(int)DBCommonController.eDbTable.EXAM_DIA]);
+          Query += ".";
+          Query += DBCommonController._col(COLNAME_ExamDiaList[(int)eExamDia.device_id]);
+          Query += " = ";
+          Query += DBCommonController._val(axmId.ToString());
+          Query += " OR ";
+          Query += DBCommonController._table(DBCommonController.DB_TableNames[(int)DBCommonController.eDbTable.EXAM_DIA]);
+          Query += ".";
+          Query += DBCommonController._col(COLNAME_ExamDiaList[(int)eExamDia.device_id]);
+          Query += " = ";
+          Query += DBCommonController._val(deviceId.ToString());
+          Query += " )";
           Query += " )";
           Query += " ORDER BY ";
           Query += DBCommonController._col(COLNAME_ExamDiaList[(int)eExamDia.measured_at]);
@@ -149,7 +165,7 @@ namespace BlazorDbTest.Controllers {
                              Pupil = Convert.ToDouble(data[COLNAME_ExamDiaList[(int)eExamDia.pupil_mm]]),
                              EyeId = (EyeType)Enum.ToObject(typeof(EyeType), data[COLNAME_ExamDiaList[(int)eExamDia.eye_id]]),
                              IsExamData = (bool)data[COLNAME_ExamDiaList[(int)eExamDia.is_exam_pupil_data]],
-                             DeviceID = deviceId, 
+                             DeviceId = axmId, 
                              ExamDateTime = (DateTime)data[COLNAME_ExamDiaList[(int)eExamDia.measured_at]],
                            }).ToList();
 
@@ -256,7 +272,7 @@ namespace BlazorDbTest.Controllers {
     public List<DiaList> SetDiaList(string pt_id, DiaData[] DiaDataList, NpgsqlConnection sqlConnection) {
       List<DiaList> list = new List<DiaList>();
       if (DiaDataList != null) {
-        int deviceId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
+        int axmId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
 
         try {
           for (int i = 0; i < DiaDataList.Length; i++) {
@@ -273,14 +289,14 @@ namespace BlazorDbTest.Controllers {
                       // 右眼かつ同じ測定日の右眼がnullのとき
                       list[j].RExamID = DiaDataList[i].ID;
                       list[j].RPupil = DiaDataList[i].Pupil;
-                      list[j].IsRManualInput = (DiaDataList[i].DeviceID == deviceId);
+                      list[j].IsRManualInput = (DiaDataList[i].DeviceId == axmId);
                       isExist = true;
                       break;
                     } else if (list[j].ExamDateTime < DiaDataList[i].ExamDateTime) {
                       // 右眼かつ同じ測定時間が新しい
                       list[j].RExamID = DiaDataList[i].ID;
                       list[j].RPupil = DiaDataList[i].Pupil;
-                      list[j].IsRManualInput = (DiaDataList[i].DeviceID == deviceId);
+                      list[j].IsRManualInput = (DiaDataList[i].DeviceId == axmId);
                       list[j].ExamDateTime = DiaDataList[i].ExamDateTime;
                       isExist = true;
                       break;
@@ -292,14 +308,14 @@ namespace BlazorDbTest.Controllers {
                       // 左眼かつ同じ測定日の左眼がnullのとき
                       list[j].LExamID = DiaDataList[i].ID;
                       list[j].LPupil = DiaDataList[i].Pupil;
-                      list[j].IsLManualInput = (DiaDataList[i].DeviceID == deviceId);
+                      list[j].IsLManualInput = (DiaDataList[i].DeviceId == axmId);
                       isExist = true;
                       break;
                     } else if (list[j].ExamDateTime < DiaDataList[i].ExamDateTime) {
                       // 左眼かつ同じ測定時間が新しい
                       list[j].LExamID = DiaDataList[i].ID;
                       list[j].LPupil = DiaDataList[i].Pupil;
-                      list[j].IsLManualInput = (DiaDataList[i].DeviceID == deviceId);
+                      list[j].IsLManualInput = (DiaDataList[i].DeviceId == axmId);
                       list[j].ExamDateTime = DiaDataList[i].ExamDateTime;
                       isExist = true;
                       break;
@@ -324,11 +340,11 @@ namespace BlazorDbTest.Controllers {
               if (DiaDataList[i].EyeId == EyeType.right) {
                 var.RExamID = DiaDataList[i].ID;
                 var.RPupil = DiaDataList[i].Pupil;
-                var.IsRManualInput = (DiaDataList[i].DeviceID == deviceId);
+                var.IsRManualInput = (DiaDataList[i].DeviceId == axmId);
               } else if (DiaDataList[i].EyeId == EyeType.left) {
                 var.LExamID = DiaDataList[i].ID;
                 var.LPupil = DiaDataList[i].Pupil;
-                var.IsLManualInput = (DiaDataList[i].DeviceID == deviceId);
+                var.IsLManualInput = (DiaDataList[i].DeviceId == axmId);
               }
               list.Add(var);
             }

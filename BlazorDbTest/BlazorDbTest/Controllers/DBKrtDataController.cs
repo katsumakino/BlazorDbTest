@@ -120,7 +120,10 @@ namespace BlazorDbTest.Controllers {
           // 患者データが無ければ、測定データも存在しない
           return DataSource;
         } else {
-          int deviceId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
+          int axmId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
+          // todo: 設定取得
+          int deviceId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.KRT_DEVICE_TYPE[0]);
+          int phiId = DBCommonController.Select_PhiId_By_PhiType(sqlConnection, DBConst.PHI_TYPE[0]);
 
           // 実行するクエリコマンド定義
           string Query = "SELECT * FROM ";
@@ -149,6 +152,26 @@ namespace BlazorDbTest.Controllers {
           Query += DBCommonController._col(COLNAME_ExamKrtList[(int)eExamKrt.is_exam_data]);
           Query += " = ";
           Query += DBCommonController._val("TRUE");
+          Query += " AND ";
+          Query += "( ";
+          Query += DBCommonController._table(DBCommonController.DB_TableNames[(int)DBCommonController.eDbTable.EXAM_KRT]);
+          Query += ".";
+          Query += DBCommonController._col(COLNAME_ExamKrtList[(int)eExamKrt.device_id]);
+          Query += " = ";
+          Query += DBCommonController._val(axmId.ToString());
+          Query += " OR ";
+          Query += DBCommonController._table(DBCommonController.DB_TableNames[(int)DBCommonController.eDbTable.EXAM_KRT]);
+          Query += ".";
+          Query += DBCommonController._col(COLNAME_ExamKrtList[(int)eExamKrt.device_id]);
+          Query += " = ";
+          Query += DBCommonController._val(deviceId.ToString());
+          Query += " )";
+          Query += " AND ";
+          Query += DBCommonController._table(DBCommonController.DB_TableNames[(int)DBCommonController.eDbTable.EXAM_KRT]);
+          Query += ".";
+          Query += DBCommonController._col(COLNAME_ExamKrtList[(int)eExamKrt.phi_id]);
+          Query += " = ";
+          Query += DBCommonController._val(phiId.ToString());
           Query += " )";
           Query += " ORDER BY ";
           Query += DBCommonController._col(COLNAME_ExamKrtList[(int)eExamKrt.measured_at]);
@@ -172,7 +195,7 @@ namespace BlazorDbTest.Controllers {
                              Cyl_d = DBCommonController._objectToDoubleList(data[COLNAME_ExamKrtList[(int)eExamKrt.cyl_d]]),
                              EyeId = (EyeType)Enum.ToObject(typeof(EyeType), data[COLNAME_ExamKrtList[(int)eExamKrt.eye_id]]),
                              IsExamData = (bool)data[COLNAME_ExamKrtList[(int)eExamKrt.is_exam_data]],
-                             DeviceID = deviceId, 
+                             DeviceId = axmId, 
                              ExamDateTime = (DateTime)data[COLNAME_ExamKrtList[(int)eExamKrt.measured_at]],
                            }).ToList();
 
@@ -280,7 +303,7 @@ namespace BlazorDbTest.Controllers {
       List<KrtList> list = new List<KrtList>();
       if (krtDataList != null) {
 
-        int deviceId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
+        int axmId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
         // todo: 設定ファイルから取得
         int selectId = DBCommonController.Select_SelectTypeID(sqlConnection, DBConst.SELECT_TYPE[(int)DBConst.SelectType.average]) - 1;
 
@@ -305,7 +328,7 @@ namespace BlazorDbTest.Controllers {
                       list[j].RAveK_mm = krtDataList[i].AveK_mm[selectId];
                       list[j].RAveK_d = krtDataList[i].AveK_d[selectId];
                       list[j].RCyl_d = krtDataList[i].Cyl_d[selectId];
-                      list[j].IsRManualInput = (krtDataList[i].DeviceID == deviceId);
+                      list[j].IsRManualInput = (krtDataList[i].DeviceId == axmId);
                       isExist = true;
                       break;
                     } else if (list[j].ExamDateTime < krtDataList[i].ExamDateTime) {
@@ -318,7 +341,7 @@ namespace BlazorDbTest.Controllers {
                       list[j].RAveK_mm = krtDataList[i].AveK_mm[selectId];
                       list[j].RAveK_d = krtDataList[i].AveK_d[selectId];
                       list[j].RCyl_d = krtDataList[i].Cyl_d[selectId];
-                      list[j].IsRManualInput = (krtDataList[i].DeviceID == deviceId);
+                      list[j].IsRManualInput = (krtDataList[i].DeviceId == axmId);
                       list[j].ExamDateTime = krtDataList[i].ExamDateTime;
                       isExist = true;
                       break;
@@ -336,7 +359,7 @@ namespace BlazorDbTest.Controllers {
                       list[j].LAveK_mm = krtDataList[i].AveK_mm[selectId];
                       list[j].LAveK_d = krtDataList[i].AveK_d[selectId];
                       list[j].LCyl_d = krtDataList[i].Cyl_d[selectId];
-                      list[j].IsLManualInput = (krtDataList[i].DeviceID == deviceId);
+                      list[j].IsLManualInput = (krtDataList[i].DeviceId == axmId);
                       isExist = true;
                       break;
                     } else if (list[j].ExamDateTime < krtDataList[i].ExamDateTime) {
@@ -349,7 +372,7 @@ namespace BlazorDbTest.Controllers {
                       list[j].LAveK_mm = krtDataList[i].AveK_mm[selectId];
                       list[j].LAveK_d = krtDataList[i].AveK_d[selectId];
                       list[j].LCyl_d = krtDataList[i].Cyl_d[selectId];
-                      list[j].IsLManualInput = (krtDataList[i].DeviceID == deviceId);
+                      list[j].IsLManualInput = (krtDataList[i].DeviceId == axmId);
                       list[j].ExamDateTime = krtDataList[i].ExamDateTime;
                       isExist = true;
                       break;
@@ -392,7 +415,7 @@ namespace BlazorDbTest.Controllers {
                 var.RAveK_mm = krtDataList[i].AveK_mm[selectId];
                 var.RAveK_d = krtDataList[i].AveK_d[selectId];
                 var.RCyl_d = krtDataList[i].Cyl_d[selectId];
-                var.IsRManualInput = (krtDataList[i].DeviceID == deviceId);
+                var.IsRManualInput = (krtDataList[i].DeviceId == axmId);
               } else if (krtDataList[i].EyeId == EyeType.left) {
                 var.LExamID = krtDataList[i].ID;
                 var.LK1_mm = krtDataList[i].K1_mm[selectId];
@@ -402,7 +425,7 @@ namespace BlazorDbTest.Controllers {
                 var.LAveK_mm = krtDataList[i].AveK_mm[selectId];
                 var.LAveK_d = krtDataList[i].AveK_d[selectId];
                 var.LCyl_d = krtDataList[i].Cyl_d[selectId];
-                var.IsLManualInput = (krtDataList[i].DeviceID == deviceId);
+                var.IsLManualInput = (krtDataList[i].DeviceId == axmId);
               }
               list.Add(var);
             }

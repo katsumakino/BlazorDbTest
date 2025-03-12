@@ -104,7 +104,9 @@ namespace BlazorDbTest.Controllers {
           // 患者データが無ければ、測定データも存在しない
           return DataSource;
         } else {
-          int deviceId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
+          int axmId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
+          // todo: 設定取得
+          int deviceId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.PACHY_DEVICE_TYPE[0]);
 
           // 実行するクエリコマンド定義
           string Query = "SELECT * FROM ";
@@ -133,6 +135,20 @@ namespace BlazorDbTest.Controllers {
           Query += DBCommonController._col(COLNAME_ExamPachyList[(int)eExamPachy.is_exam_data]);
           Query += " = ";
           Query += DBCommonController._val("TRUE");
+          Query += " AND ";
+          Query += "( ";
+          Query += DBCommonController._table(DBCommonController.DB_TableNames[(int)DBCommonController.eDbTable.EXAM_PACHY_CCT]);
+          Query += ".";
+          Query += DBCommonController._col(COLNAME_ExamPachyList[(int)eExamPachy.device_id]);
+          Query += " = ";
+          Query += DBCommonController._val(axmId.ToString());
+          Query += " OR ";
+          Query += DBCommonController._table(DBCommonController.DB_TableNames[(int)DBCommonController.eDbTable.EXAM_PACHY_CCT]);
+          Query += ".";
+          Query += DBCommonController._col(COLNAME_ExamPachyList[(int)eExamPachy.device_id]);
+          Query += " = ";
+          Query += DBCommonController._val(deviceId.ToString());
+          Query += " )";
           Query += " )";
           Query += " ORDER BY ";
           Query += DBCommonController._col(COLNAME_ExamPachyList[(int)eExamPachy.measured_at]);
@@ -150,7 +166,7 @@ namespace BlazorDbTest.Controllers {
                                Pachy = DBCommonController._objectToDoubleList(data[COLNAME_ExamPachyList[(int)eExamPachy.pachy_um]]),
                                EyeId = (EyeType)Enum.ToObject(typeof(EyeType), data[COLNAME_ExamPachyList[(int)eExamPachy.eye_id]]),
                                IsExamData = (bool)data[COLNAME_ExamPachyList[(int)eExamPachy.is_exam_data]],
-                               DeviceID = deviceId, 
+                               DeviceId = axmId, 
                                ExamDateTime = (DateTime)data[COLNAME_ExamPachyList[(int)eExamPachy.measured_at]],
                              }).ToList();
 
@@ -258,7 +274,7 @@ namespace BlazorDbTest.Controllers {
       List<PachyList> list = new List<PachyList>();
       if (PachyDataList != null) {
         try {
-          int deviceId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
+          int axmId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
 
           for (int i = 0; i < PachyDataList.Length; i++) {
             bool isExist = false;
@@ -274,14 +290,14 @@ namespace BlazorDbTest.Controllers {
                       // 右眼かつ同じ測定日の右眼がnullのとき
                       list[j].RExamID = PachyDataList[i].ID;
                       list[j].RPachy = PachyDataList[i].Pachy[0];  // 0固定で良い
-                      list[j].IsRManualInput = (PachyDataList[i].DeviceID == deviceId);
+                      list[j].IsRManualInput = (PachyDataList[i].DeviceId == axmId);
                       isExist = true;
                       break;
                     } else if (list[j].ExamDateTime < PachyDataList[i].ExamDateTime) {
                       // 右眼かつ同じ測定時間が新しい
                       list[j].RExamID = PachyDataList[i].ID;
                       list[j].RPachy = PachyDataList[i].Pachy[0];
-                      list[j].IsRManualInput = (PachyDataList[i].DeviceID == deviceId);
+                      list[j].IsRManualInput = (PachyDataList[i].DeviceId == axmId);
                       list[j].ExamDateTime = PachyDataList[i].ExamDateTime;
                       isExist = true;
                       break;
@@ -293,14 +309,14 @@ namespace BlazorDbTest.Controllers {
                       // 左眼かつ同じ測定日の左眼が0のとき
                       list[j].LExamID = PachyDataList[i].ID;
                       list[j].LPachy = PachyDataList[i].Pachy[0];
-                      list[j].IsLManualInput = (PachyDataList[i].DeviceID == deviceId);
+                      list[j].IsLManualInput = (PachyDataList[i].DeviceId == axmId);
                       isExist = true;
                       break;
                     } else if (list[j].ExamDateTime < PachyDataList[i].ExamDateTime) {
                       // 左眼かつ同じ測定時間が新しい
                       list[j].LExamID = PachyDataList[i].ID;
                       list[j].LPachy = PachyDataList[i].Pachy[0];
-                      list[j].IsLManualInput = (PachyDataList[i].DeviceID == deviceId);
+                      list[j].IsLManualInput = (PachyDataList[i].DeviceId == axmId);
                       list[j].ExamDateTime = PachyDataList[i].ExamDateTime;
                       isExist = true;
                       break;
@@ -325,11 +341,11 @@ namespace BlazorDbTest.Controllers {
               if (PachyDataList[i].EyeId == EyeType.right) {
                 var.RExamID = PachyDataList[i].ID;
                 var.RPachy = PachyDataList[i].Pachy[0];
-                var.IsRManualInput = (PachyDataList[i].DeviceID == deviceId);
+                var.IsRManualInput = (PachyDataList[i].DeviceId == axmId);
               } else if (PachyDataList[i].EyeId == EyeType.left) {
                 var.LExamID = PachyDataList[i].ID;
                 var.LPachy = PachyDataList[i].Pachy[0];
-                var.IsLManualInput = (PachyDataList[i].DeviceID == deviceId);
+                var.IsLManualInput = (PachyDataList[i].DeviceId == axmId);
               }
               list.Add(var);
             }

@@ -56,7 +56,6 @@
 </div>
 <div>
   <button @onclick="PatientInfoButtonClick">Register</button>
-  <button @onclick="UpdatePatientListButtonClick">Update</button>
   <button @onclick="UpdatePatientFlagButtonClick">Flag Set</button>
 </div>
 
@@ -388,9 +387,6 @@
     AxmCommentModel.CommentType = AxmCommentType.none;
     AxmCommentModel.ExamDateTime = DateTime.Today;
     editContextAxmComment = new(AxmCommentModel);
-
-    // API を呼び出してデータを取得
-    patientList = await HttpClient.GetFromJsonAsync<PatientInfo[]>("api/DBPatientInfo/GetPatientInfoList");
   }
 
   void PatientInfoButtonClick() {
@@ -416,11 +412,6 @@
   void AxmCommentButtonClick() {
     // 治療状況リスト更新
     Task.Run(() => SetAxmCommentListAsync());
-  }
-
-  void UpdatePatientListButtonClick() {
-    // 患者情報リスト更新
-    Task.Run(() => GetPatientListAsync());
   }
 
   void UpdatePatientFlagButtonClick() {
@@ -494,9 +485,6 @@
 
     var response = await HttpClient.PostAsync(url, content);
 
-    patientList = await HttpClient.GetFromJsonAsync<PatientInfo[]>("api/DBPatientInfo/GetPatientInfoList");
-
-    //画面を更新する
     StateHasChanged();
   }
 
@@ -504,17 +492,6 @@
     string content = $"api/DBPatientInfo/GetPatientInfo/";
     content += PatientInfoModel.UUID;
     PatientInfo info = await HttpClient.GetFromJsonAsync<PatientInfo>(content);
-
-    //画面を更新する
-    StateHasChanged();
-  }
-
-  /// <summary>
-  /// DBから患者情報を取得
-  /// </summary>
-  /// <returns></returns>
-  protected async Task GetPatientListAsync() {
-    patientList = await HttpClient.GetFromJsonAsync<PatientInfo[]>("api/DBPatientInfo/GetPatientInfoList");
 
     //画面を更新する
     StateHasChanged();
