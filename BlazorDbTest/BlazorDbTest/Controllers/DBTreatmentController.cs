@@ -160,8 +160,8 @@ namespace BlazorDbTest.Controllers {
             treatment_id = treat_id,
             treatmenttype_id = type_id,
             pt_uuid = uuid,
-            start_at = conditions.TreatmentData.StartDateTime,
-            end_at = conditions.TreatmentData.EndDateTime,
+            start_at = conditions.TreatmentData.StartDateTime ?? DateTime.MinValue,
+            end_at = conditions.TreatmentData.EndDateTime ?? DateTime.MaxValue,
             created_at = dateNow,
             updated_at = dateNow
           }, sqlConnection);

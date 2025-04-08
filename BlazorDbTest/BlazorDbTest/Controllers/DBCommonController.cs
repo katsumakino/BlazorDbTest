@@ -132,7 +132,7 @@ namespace BlazorDbTest.Controllers {
         examrec.created_at = dateNow;
 
         // 検査タイプID、検査眼ID、検査日時で検索し該当するものがあればExamIDを変更
-        retExamId = Select_ExamID_by_PK_and_ExamDateTime(sqlConnection, examrec.examtype_id, examrec.eye_id, (DateTime)examrec.measured_at, examrec.device_id);
+        retExamId = Select_ExamID_by_PK_and_ExamDateTime(sqlConnection, examrec.examtype_id, examrec.eye_id, (DateTime)examrec.measured_at, examrec.device_id, pt_uuid);
         if (retExamId != -1) { examrec.exam_id = retExamId; } else { retExamId = examrec.exam_id; }
 
         // Insert(Upsert)実施
@@ -294,7 +294,7 @@ namespace BlazorDbTest.Controllers {
       return result;
     }
 
-    public static int Select_ExamID_by_PK_and_ExamDateTime(NpgsqlConnection sqlConnection, int examtypeId, int eyeId, DateTime dtExam, int deviceId) {
+    public static int Select_ExamID_by_PK_and_ExamDateTime(NpgsqlConnection sqlConnection, int examtypeId, int eyeId, DateTime dtExam, int deviceId, string uuid) {
       int result = -1;
       StringBuilder stringBuilder = new StringBuilder();
       stringBuilder.Append("select ");
@@ -317,6 +317,10 @@ namespace BlazorDbTest.Controllers {
       stringBuilder.Append(_col(COLNAME_ExamList[(int)eExamList.device_id]));
       stringBuilder.Append("= ");
       stringBuilder.Append(_val(deviceId.ToString()));
+      stringBuilder.Append(" and ");
+      stringBuilder.Append(_col(COLNAME_ExamList[(int)eExamList.pt_uuid]));
+      stringBuilder.Append("= ");
+      stringBuilder.Append(_val(uuid));
       stringBuilder.Append(";");
       using NpgsqlCommand npgsqlCommand = new NpgsqlCommand(stringBuilder.ToString(), sqlConnection);
       using NpgsqlDataReader npgsqlDataReader = npgsqlCommand.ExecuteReader();
