@@ -19,7 +19,7 @@ namespace BlazorDbTest.Controllers {
         if (conditions == null) return;
         if (conditions.PatientID == null || conditions.PatientID == string.Empty) return;
 
-        bool result = false;
+        bool result = true;
         DBAccess dbAccess = DBAccess.GetInstance();
 
         try {
@@ -51,7 +51,9 @@ namespace BlazorDbTest.Controllers {
             rec_Ref_r.measured_at = conditions.ExamDateTime;
 
             // DB登録
-            result = Insert(rec_Ref_r, sqlConnection);
+            if (rec_Ref_r.is_exam_data == true) {
+              result = Insert(rec_Ref_r, sqlConnection);
+            }
 
             // EXAM_LISTに保存(左眼測定値)
             var exam_id_l = DBCommonController.RegisterExamList(uuid,
@@ -71,7 +73,9 @@ namespace BlazorDbTest.Controllers {
             rec_Ref_l.measured_at = conditions.ExamDateTime;
 
             // DB登録
-            result &= Insert(rec_Ref_l, sqlConnection);
+            if (rec_Ref_l.is_exam_data == true) {
+              result &= Insert(rec_Ref_l, sqlConnection);
+            }
           }
         } catch {
         } finally {

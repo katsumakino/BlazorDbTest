@@ -56,7 +56,7 @@ namespace BlazorDbTest.Controllers {
                 pt_uuid = uuid,
                 axm_pt_id = SelectMaxAxmPatientId(sqlConnection),
                 axm_flag = conditions.Mark,
-                is_axm_same_pt_id = (conditions.SameID != string.Empty),
+                is_axm_same_pt_id = (conditions.SameID != null && conditions.SameID != string.Empty),
                 axm_same_pt_id = conditions.SameID ?? string.Empty,
                 updated_at = dateTime,
                 created_at = dateTime
@@ -88,7 +88,7 @@ namespace BlazorDbTest.Controllers {
               pt_uuid = uuid,
               axm_pt_id = SelectMaxAxmPatientId(sqlConnection),
               axm_flag = conditions.Mark,
-              is_axm_same_pt_id = (conditions.SameID != string.Empty),
+              is_axm_same_pt_id = (conditions.SameID != null && conditions.SameID != string.Empty),
               axm_same_pt_id = conditions.SameID ?? string.Empty,
               updated_at = dateTime,
               created_at = dateTime
@@ -701,7 +701,7 @@ namespace BlazorDbTest.Controllers {
       return result;
     }
 
-    public static string[] GENDER_TYPE = ["", "male", "female", "other"];
+    public static string[] GENDER_TYPE = ["none", "male", "female", "other"];
 
     public enum GenderType {
       none = 0,

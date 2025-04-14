@@ -18,7 +18,7 @@ namespace BlazorDbTest.Controllers {
         if (conditions == null) return;
         if (conditions.PatientID == null || conditions.PatientID == string.Empty) return;
 
-        bool result = false;
+        bool result = true;
         DBAccess dbAccess = DBAccess.GetInstance();
 
         try {
@@ -50,7 +50,9 @@ namespace BlazorDbTest.Controllers {
             rec_optaxial_r.measured_at = conditions.ExamDateTime;
 
             // DB登録
-            result = Insert(rec_optaxial_r, sqlConnection);
+            if (rec_optaxial_r.is_exam_data == true) {
+              result = Insert(rec_optaxial_r, sqlConnection);
+            }
 
             // EXAM_LISTに保存(左眼測定値)
             var exam_id_l = DBCommonController.RegisterExamList(uuid,
@@ -67,7 +69,9 @@ namespace BlazorDbTest.Controllers {
             rec_optaxial_l.measured_at = conditions.ExamDateTime;
 
             // DB登録
-            result &= Insert(rec_optaxial_l, sqlConnection);
+            if (rec_optaxial_l.is_exam_data == true) {
+              result &= Insert(rec_optaxial_l, sqlConnection);
+            }              
           }
         } catch {
         } finally {
@@ -104,6 +108,7 @@ namespace BlazorDbTest.Controllers {
           return DataSource;
         } else {
           int axmId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
+          int axmOldId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmOldDeviceType);
           // todo: 設定取得
           int deviceId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AXIAL_DEVICE_TYPE[0]);
           int fittingId = DBCommonController.Select_FittingId_By_FittingType(sqlConnection, DBConst.FITTINGS_TYPE[0]);
@@ -142,6 +147,12 @@ namespace BlazorDbTest.Controllers {
           Query += DBCommonController._col(COLNAME_ExamOptaxialList[(int)eExamOptAxial.device_id]);
           Query += " = ";
           Query += DBCommonController._val(axmId.ToString());
+          Query += " OR ";
+          Query += DBCommonController._table(DBCommonController.DB_TableNames[(int)DBCommonController.eDbTable.EXAM_OPTAXIAL]);
+          Query += ".";
+          Query += DBCommonController._col(COLNAME_ExamOptaxialList[(int)eExamOptAxial.device_id]);
+          Query += " = ";
+          Query += DBCommonController._val(axmOldId.ToString());
           Query += " OR ";
           Query += DBCommonController._table(DBCommonController.DB_TableNames[(int)DBCommonController.eDbTable.EXAM_OPTAXIAL]);
           Query += ".";
@@ -271,7 +282,9 @@ namespace BlazorDbTest.Controllers {
     /// ・1測定日1データ(右左)とする
     /// ・同じ測定日のデータがある場合、装置種別AxMのデータを優先する
     /// ・同じ測定日のデータは、測定時間が新しいものを採用する
-    /// ・装置種別AxMのデータは、1測定日に1つしか登録できない
+    /// ・装置種別AXM2のデータは、1測定日に1つしか登録できない
+    /// ・AXMのデータと装置で撮ったデータの測定日が重複することがあっても、それは同じデータだと考えられる
+    /// 　(変更が合った場合の装置種別はAXM2となるため)
     /// </summary>
     /// <param name="axialDataList"></param>
     public List<AxialList> SetAxialList(string pt_id, AxialData[] axialDataList, NpgsqlConnection sqlConnection) {
@@ -279,7 +292,6 @@ namespace BlazorDbTest.Controllers {
       if (axialDataList != null) {
 
         int axmId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
-        // todo: 設定ファイルから取得
         int selectId = DBCommonController.Select_SelectTypeID(sqlConnection, DBConst.SELECT_TYPE[(int)DBConst.SelectType.average]) - 1;
 
         try {
@@ -290,8 +302,8 @@ namespace BlazorDbTest.Controllers {
                   == DBCommonController._objectToDateOnly(axialDataList[i].ExamDateTime)) {
 
                 if (axialDataList[i].EyeId == EyeType.right) {
-                  // 装置種別AxMのデータを優先する
-                  // 装置種別AxMのデータは、1測定日に1つしか登録できない
+                  // 装置種別AXM2のデータを優先する
+                  // 装置種別AXM2のデータは、1測定日に1つしか登録できない
                   if (!list[j].IsRManualInput) {
                     if (list[j].RAxial == null) {
                       // 右眼かつ同じ測定日の右眼がnullのとき

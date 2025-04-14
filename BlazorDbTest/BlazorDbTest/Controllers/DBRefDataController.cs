@@ -20,7 +20,7 @@ namespace BlazorDbTest.Controllers {
         if (conditions == null) return;
         if (conditions.PatientID == null || conditions.PatientID == string.Empty) return;
 
-        bool result = false;
+        bool result = true;
         DBAccess dbAccess = DBAccess.GetInstance();
 
         try {
@@ -55,7 +55,9 @@ namespace BlazorDbTest.Controllers {
             rec_Ref_r.measured_at = conditions.ExamDateTime;
 
             // DB登録
-            result = Insert(rec_Ref_r, sqlConnection);
+            if (rec_Ref_r.is_exam_data == true) {
+              result = Insert(rec_Ref_r, sqlConnection);
+            }
 
             // EXAM_LISTに保存(左眼測定値)
             var exam_id_l = DBCommonController.RegisterExamList(uuid,
@@ -75,7 +77,9 @@ namespace BlazorDbTest.Controllers {
             rec_Ref_l.measured_at = conditions.ExamDateTime;
 
             // DB登録
-            result &= Insert(rec_Ref_l, sqlConnection);
+            if (rec_Ref_l.is_exam_data == true) {
+              result &= Insert(rec_Ref_l, sqlConnection);
+            }
           }
         } catch {
         } finally {
@@ -112,6 +116,7 @@ namespace BlazorDbTest.Controllers {
           return DataSource;
         } else {
           int axmId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
+          int axmOldId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmOldDeviceType);
           // todo: 設定取得
           int deviceId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.REF_DEVICE_TYPE[0]);
 
@@ -149,6 +154,12 @@ namespace BlazorDbTest.Controllers {
           Query += DBCommonController._col(COLNAME_ExamRefList[(int)eExamRef.device_id]);
           Query += " = ";
           Query += DBCommonController._val(axmId.ToString());
+          Query += " OR ";
+          Query += DBCommonController._table(DBCommonController.DB_TableNames[(int)DBCommonController.eDbTable.EXAM_REF]);
+          Query += ".";
+          Query += DBCommonController._col(COLNAME_ExamRefList[(int)eExamRef.device_id]);
+          Query += " = ";
+          Query += DBCommonController._val(axmOldId.ToString());
           Query += " OR ";
           Query += DBCommonController._table(DBCommonController.DB_TableNames[(int)DBCommonController.eDbTable.EXAM_REF]);
           Query += ".";

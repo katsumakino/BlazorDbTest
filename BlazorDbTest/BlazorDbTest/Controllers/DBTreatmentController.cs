@@ -1,9 +1,11 @@
 ﻿using AxialManagerS.Shared.Common;
 using Microsoft.AspNetCore.Mvc;
 using Npgsql;
+using System;
 using System.Data;
 using System.Text;
 using static BlazorDbTest.Controllers.DBCommonController;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace BlazorDbTest.Controllers {
 
@@ -146,7 +148,7 @@ namespace BlazorDbTest.Controllers {
           }
 
           // IDが登録済みであるか確認
-          var treat_id = Select_TreatmentId_By_Treatment(sqlConnection, conditions.TreatmentData.ID);
+          var treat_id = Select_TreatmentId_By_Treatment(sqlConnection, uuid, conditions.TreatmentData);
           if (treat_id == -1) {
             // 新規登録なら、ID割り当て
             treat_id = SelectMaxTreatmentId(sqlConnection);
@@ -160,8 +162,8 @@ namespace BlazorDbTest.Controllers {
             treatment_id = treat_id,
             treatmenttype_id = type_id,
             pt_uuid = uuid,
-            start_at = conditions.TreatmentData.StartDateTime ?? DateTime.MinValue,
-            end_at = conditions.TreatmentData.EndDateTime ?? DateTime.MaxValue,
+            start_at = conditions.TreatmentData.StartDateTime,
+            end_at = conditions.TreatmentData.EndDateTime,
             created_at = dateNow,
             updated_at = dateNow
           }, sqlConnection);
@@ -539,7 +541,8 @@ namespace BlazorDbTest.Controllers {
     }
 
     // treatment_idの有無を取得
-    public static int Select_TreatmentId_By_Treatment(NpgsqlConnection sqlConnection, int treatment) {
+    public static int Select_TreatmentId_By_Treatment(NpgsqlConnection sqlConnection, string uuid, TreatmentData data) {
+      // 治療状況IDが同じ、または被検者UUIDと治療ID、開始日が同じであれば、治療状況登録済と判断する
       int result = -1;
       StringBuilder stringBuilder = new StringBuilder();
       stringBuilder.Append("select ");
@@ -550,9 +553,23 @@ namespace BlazorDbTest.Controllers {
       stringBuilder.Append(_col(COLNAME_AxmTreatmentList[(int)eAxmTreatment.treatment_id]));
       stringBuilder.Append(" = ");
       stringBuilder.Append(_bind(COLNAME_AxmTreatmentList[(int)eAxmTreatment.treatment_id]));
-      stringBuilder.Append(";");
+      stringBuilder.Append(" or (");
+      stringBuilder.Append(_col(COLNAME_AxmTreatmentList[(int)eAxmTreatment.pt_uuid]));
+      stringBuilder.Append(" = ");
+      stringBuilder.Append(_val(uuid));
+      stringBuilder.Append(" and ");
+      stringBuilder.Append(_col(COLNAME_AxmTreatmentList[(int)eAxmTreatment.treatmenttype_id]));
+      stringBuilder.Append(" = ");
+      stringBuilder.Append(_bind(COLNAME_AxmTreatmentList[(int)eAxmTreatment.treatmenttype_id]));
+      stringBuilder.Append(" and ");
+      stringBuilder.Append(_col(COLNAME_AxmTreatmentList[(int)eAxmTreatment.start_at]));
+      stringBuilder.Append(" = ");
+      stringBuilder.Append(_bind(COLNAME_AxmTreatmentList[(int)eAxmTreatment.start_at]));
+      stringBuilder.Append(");");
       using NpgsqlCommand npgsqlCommand = new NpgsqlCommand(stringBuilder.ToString(), sqlConnection);
-      npgsqlCommand.Parameters.AddWithValue(COLNAME_AxmTreatmentList[(int)eAxmTreatment.treatment_id], treatment);
+      npgsqlCommand.Parameters.AddWithValue(COLNAME_AxmTreatmentList[(int)eAxmTreatment.treatment_id], data.ID);
+      npgsqlCommand.Parameters.AddWithValue(COLNAME_AxmTreatmentList[(int)eAxmTreatment.treatmenttype_id], data.TreatID);
+      npgsqlCommand.Parameters.AddWithValue(COLNAME_AxmTreatmentList[(int)eAxmTreatment.start_at], _DateTimeToObject(data.StartDateTime));
       using NpgsqlDataReader npgsqlDataReader = npgsqlCommand.ExecuteReader();
       while (npgsqlDataReader.Read()) {
         result = _objectToInt(npgsqlDataReader[0]);

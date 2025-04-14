@@ -592,8 +592,12 @@ namespace BlazorDbTest.Controllers {
       return "do update set \"" + colUpdatedAt + "\" = '" + dtUpdate.ToString("yyyy-MM-dd HH:mm:ss.FFFFFF") + "' ";
     }
 
-    public static string _doupdatevalue(string col, string valueStr) {
-      return ", \"" + col + "\" = '" + valueStr + "' ";
+    public static string _doupdatevalue(string col, string? valueStr) {
+      if (valueStr != null && valueStr != string.Empty) {
+        return ", \"" + col + "\" = '" + valueStr + "' ";
+      }
+
+      return ", \"" + col + "\" = " + "NULL ";
     }
 
     public static string _doupdateintlist(string col, List<int?> list) {
