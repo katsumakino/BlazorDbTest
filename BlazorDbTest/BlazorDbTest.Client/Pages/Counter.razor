@@ -4,6 +4,7 @@
 @using System.Text.Json;
 @using System.Runtime.CompilerServices;
 @using BlazorDbTest.Common;
+@using Microsoft.AspNetCore.Components.Web
 
 <PageTitle>Counter</PageTitle>
 
@@ -12,6 +13,13 @@
 <p role="status">Current count: @currentCount</p>
 
 <button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
+
+<input @oninput="HandleInput" @bind="Barcode" style="position: absolute; left: -9999px;" />
+
+<button @onclick="CheckDbConnection">
+  DB接続テスト
+</button>
+<p>State: @IsConnection</p>
 
 @code {
   private int currentCount = 0;
@@ -53,6 +61,43 @@
       Console.Error.WriteLine($"Request error: {ex.Message}");
     } catch (InvalidOperationException ex) {
       Console.Error.WriteLine($"Invalid operation: {ex.Message}");
+    }
+  }
+
+  private string? Barcode { get; set; }
+  private string? IsConnection { get; set; } = "aaaa";
+
+  private void HandleInput(ChangeEventArgs e) {
+    Barcode = e.Value?.ToString();
+    // バーコード入力が完了したときの処理をここに記述
+    ProcessBarcode(Barcode);
+  }
+
+  private void ProcessBarcode(string? barcode) {
+    // バーコード処理のロジックをここに記述
+    Console.WriteLine($"バーコードが入力されました: {barcode}");
+
+    // todo: 設定に合わせて、文字数切り出し
+    string originalString = "Hello, World!";
+    int startIndex = 7; // 開始位置（0から始まるインデックス）
+    int length = 5; // 取得する文字数
+
+    string substring = originalString.Substring(startIndex, length);
+    Console.WriteLine(substring); // 出力: World
+
+    // todo: 被検者ID検索、画面更新
+  }
+
+  private async Task CheckDbConnection() {
+    try {
+      var response = await HttpClient.GetAsync("api/DBCommon/CheckConnection");
+      if (response.IsSuccessStatusCode) {
+        IsConnection = await response.Content.ReadAsStringAsync();
+      } else {
+        IsConnection = "Connection failed";
+      }
+    } catch (Exception ex) {
+      IsConnection = $"Error: {ex.Message}";
     }
   }
 

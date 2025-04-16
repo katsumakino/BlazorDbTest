@@ -1,4 +1,5 @@
 ﻿using BlazorDbTest.Common;
+using Microsoft.AspNetCore.Mvc;
 using Npgsql;
 using System.Data;
 using System.Text;
@@ -60,10 +61,28 @@ namespace BlazorDbTest.Controllers {
     }
   }
 
-  public class DBCommonController {
+  [Route("api/[controller]")]
+  public class DBCommonController : ControllerBase {
 
-    // 患者UUID取得
-    public static string Select_PTUUID_by_PTID(NpgsqlConnection sqlConnection, string sPtid) {
+    [HttpGet("CheckConnection")]
+    public IActionResult CheckConnection() {
+      DBAccess dbAccess = DBAccess.GetInstance();
+
+      try {
+        // PostgreSQL Server 通信接続
+        NpgsqlConnection sqlConnection = dbAccess.GetSqlConnection();
+        if(sqlConnection.State == ConnectionState.Open) {
+          return Ok("DB接続成功");
+        } else {
+          return BadRequest("DB接続失敗");
+        }
+      } catch {
+        return BadRequest("DB接続失敗");
+      }
+  }
+
+  // 患者UUID取得
+  public static string Select_PTUUID_by_PTID(NpgsqlConnection sqlConnection, string sPtid) {
       string result = string.Empty;
       StringBuilder stringBuilder = new StringBuilder();
       stringBuilder.Append("select ");
