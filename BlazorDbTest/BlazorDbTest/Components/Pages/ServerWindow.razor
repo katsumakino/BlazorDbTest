@@ -1,0 +1,22 @@
+﻿@page "/serverwindow"
+@using System.Text.Json;
+@using System.Runtime.CompilerServices;
+@using BlazorDbTest.Common;
+@using Microsoft.AspNetCore.Components.Web
+
+<PageTitle>ServerWindow</PageTitle>
+
+<h3>ServerWindow</h3>
+
+<p role="status">Current count: @currentCount</p>
+
+<button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
+
+@code {
+	private int currentCount = 0;
+
+  private void IncrementCount() {
+    currentCount++;
+  }
+
+}

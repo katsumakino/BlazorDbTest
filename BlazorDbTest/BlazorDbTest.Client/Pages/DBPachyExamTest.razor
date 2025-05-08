@@ -9,6 +9,8 @@
 <div class="part-group">
   <label>ID:</label>
   <InputText @bind-Value="PatientInfoModel.ID" autocomplete=off />
+  <label>Same ID:</label>
+  <InputText @bind-Value="PatientInfoModel.SameID" autocomplete=off />
 </div>
 
 @* PACHY *@
@@ -96,7 +98,7 @@
 
   void PachyRegisterButtonClick() {
     Task.Run(() => SetPachyDataAsync());
-	}
+  }
 
   private JsonSerializerOptions options = new JsonSerializerOptions {
       Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All)
@@ -115,6 +117,13 @@
     var content = new StringContent(conditions, Encoding.UTF8, "application/json");
 
     var response = await HttpClient.PostAsync(url, content);
+
+    int i = 0;
+    if (response.IsSuccessStatusCode) {
+      i = 1;
+    } else {
+      i = -1;
+    }
   }
 
   void PachyViewButtonClick() {
@@ -126,10 +135,32 @@
   /// </summary>
   /// <returns></returns>
   protected async Task GetPachyListAsync() {
-    string content = $"api/DBPachyData/GetPachyList/";
-    content += PatientInfoModel.ID;
+    // string content = $"api/DBPachyData/GetPachyList/";
+    // content += PatientInfoModel.ID;
 
-    pachyList = await HttpClient.GetFromJsonAsync<PachyList[]>(content);
+    // pachyList = await HttpClient.GetFromJsonAsync<PachyList[]>(content);
+
+    PatientIdInfo idInfo = new PatientIdInfo {
+				PatientID = PatientInfoModel.ID,
+				SamePatientID = PatientInfoModel.SameID,
+        IsSameID = (PatientInfoModel.SameID != null && PatientInfoModel.SameID != string.Empty)
+			};
+
+    string url = $"api/DBPachyData/GetPachyList/";
+
+    var conditions = JsonSerializer.Serialize(idInfo, options);
+    var content = new StringContent(conditions, Encoding.UTF8, "application/json");
+
+    // POST リクエストを送信し、レスポンスを取得
+    var response = await HttpClient.PostAsync(url, content);
+
+    // レスポンスをデシリアライズして pachyList にセット
+    if (response.IsSuccessStatusCode) {
+      pachyList = await response.Content.ReadFromJsonAsync<PachyList[]>();
+    } else {
+      // エラーハンドリング
+      pachyList = null;
+    }
 
     //画面を更新する
     StateHasChanged();

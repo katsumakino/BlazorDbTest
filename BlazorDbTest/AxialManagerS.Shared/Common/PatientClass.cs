@@ -222,6 +222,12 @@
     public DateTime? ExamDateTime { get; set; }                     //測定日時
   }
 
+  public class PatientIdInfo {
+    public string PatientID { get; set; } = default!;       //被検者ID
+    public string? SamePatientID { get; set; } = default!;   //同一被検者ID
+    public bool IsSameID { get; set; } = false;             //同一被検者ID有無
+  }
+
   // 測定データ移動用クラス
   public class MoveExamData {
     public string? RExamID { get; set; } = default!;           // 測定データID(右)

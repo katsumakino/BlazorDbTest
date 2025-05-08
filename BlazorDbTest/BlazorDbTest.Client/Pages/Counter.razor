@@ -16,14 +16,27 @@
 
 <input @oninput="HandleInput" @bind="Barcode" style="position: absolute; left: -9999px;" />
 
+<button @onclick="CheckBarcode">
+  バーコードテスト
+</button>
+
 <button @onclick="CheckDbConnection">
   DB接続テスト
 </button>
 <p>State: @IsConnection</p>
 
+<h4>○ 変更後ID</h4>
+<div class="part-group">
+  <label>ID:</label>
+  <InputText @bind-Value="patientId" autocomplete=off oninput="filterForbiddenWords(this)" />
+  <button @onclick="CheckDuplication" >ID重複確認</button>
+  <p>PtId: @IsDuplication</p>
+</div>
+
 @code {
   private int currentCount = 0;
   private LogInfo logInfo = new LogInfo();
+  private string patientId = string.Empty;
 
   private void IncrementCount()
   {
@@ -66,6 +79,7 @@
 
   private string? Barcode { get; set; }
   private string? IsConnection { get; set; } = "aaaa";
+  private string? IsDuplication { get; set; } = "---";
 
   private void HandleInput(ChangeEventArgs e) {
     Barcode = e.Value?.ToString();
@@ -88,6 +102,10 @@
     // todo: 被検者ID検索、画面更新
   }
 
+  private async Task CheckBarcode() {
+    ProcessBarcode("test");
+  }
+
   private async Task CheckDbConnection() {
     try {
       var response = await HttpClient.GetAsync("api/DBCommon/CheckConnection");
@@ -98,6 +116,19 @@
       }
     } catch (Exception ex) {
       IsConnection = $"Error: {ex.Message}";
+    }
+  }
+
+  private async Task CheckDuplication() {
+    try {
+      var response = await HttpClient.GetAsync("api/DBPatientInfo/CheckPatientId/" + patientId);
+      if (response.IsSuccessStatusCode) {
+        IsDuplication = "OK";
+      } else {
+        IsDuplication = "NG";
+      }
+    } catch (Exception ex) {
+      IsDuplication = $"Error: {ex.Message}";
     }
   }
 

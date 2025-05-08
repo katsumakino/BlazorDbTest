@@ -14,10 +14,10 @@ namespace BlazorDbTest.Controllers {
 
     // 角膜厚測定値書込み
     [HttpPost("SetPachy")]
-    public void SetPachy([FromBody] PachyList conditions) {
+    public IActionResult SetPachy([FromBody] PachyList conditions) {
       try {
-        if (conditions == null) return;
-        if (conditions.PatientID == null || conditions.PatientID == string.Empty) return;
+        if (conditions == null) return BadRequest("failed");
+        if (conditions.PatientID == null || conditions.PatientID == string.Empty) return BadRequest("failed");
 
         bool result = true;
         DBAccess dbAccess = DBAccess.GetInstance();
@@ -33,7 +33,7 @@ namespace BlazorDbTest.Controllers {
           var uuid = DBCommonController.Select_PTUUID_by_PTID(sqlConnection, conditions.PatientID);
           if (uuid == string.Empty) {
             // AXMからの測定データ登録時は、必ず患者データが存在する
-            return;
+            return BadRequest("failed");
           } else {
             // EXAM_LISTに保存(右眼測定値)
             var exam_id_r = DBCommonController.RegisterExamList(uuid,
@@ -85,16 +85,23 @@ namespace BlazorDbTest.Controllers {
       } catch {
       }
 
-      return;
+      return Ok();
     }
 
     // 角膜厚測定値書込み
-    [HttpGet("GetPachyList/{patientId}")]
-    public List<PachyList> GetPachyList(string patientId) {
+    [HttpPost("GetPachyList")]
+    public async Task<ActionResult<IEnumerable<PachyList>>> GetPachyList([FromBody] PatientIdInfo conditions) {
       List<PachyList> DataSource = new();
-      if (patientId == null || patientId == string.Empty) return DataSource;
+      if (conditions == null || string.IsNullOrEmpty(conditions.PatientID)) {
+        return BadRequest("Invalid search conditions.");
+      }
+
+      if(conditions.IsSameID == true && string.IsNullOrEmpty(conditions.SamePatientID)) {
+        return BadRequest("Invalid search conditions.");
+      }
 
       DBAccess dbAccess = DBAccess.GetInstance();
+      bool isError = false;
 
       try {
         // PostgreSQL Server 通信接続
@@ -102,15 +109,21 @@ namespace BlazorDbTest.Controllers {
 
         // クエリコマンド実行
         // UUIDの有無を確認(true:update / false:insert)
-        var uuid = DBCommonController.Select_PTUUID_by_PTID(sqlConnection, patientId);
+        var uuid = DBCommonController.Select_PTUUID_by_PTID(sqlConnection, conditions.PatientID);
         if (uuid == string.Empty) {
           // 患者データが無ければ、測定データも存在しない
-          return DataSource;
+          return BadRequest("Invalid search conditions.");
         } else {
           int axmId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmDeviceType);
           int axmOldId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.AxmOldDeviceType);
           // todo: 設定取得
           int deviceId = DBCommonController.Select_Device_ID(sqlConnection, DBConst.PACHY_DEVICE_TYPE[0]);
+
+          // 同一被検者のUUIDを取得
+          var sameUuid = string.Empty;
+          if (conditions.IsSameID == true) {
+            sameUuid = DBCommonController.Select_PTUUID_by_PTID(sqlConnection, conditions.SamePatientID);
+          }
 
           // 実行するクエリコマンド定義
           string Query = "SELECT * FROM ";
@@ -128,11 +141,24 @@ namespace BlazorDbTest.Controllers {
           Query += ".";
           Query += DBCommonController._col(DBCommonController.COLNAME_ExamList[(int)DBCommonController.eExamList.exam_id]);
           Query += " AND ";
+          Query += " ( ";
           Query += DBCommonController._table(DBCommonController.DB_TableNames[(int)DBCommonController.eDbTable.EXAM_LIST]);
           Query += ".";
           Query += DBCommonController._col(DBCommonController.COLNAME_ExamList[(int)DBCommonController.eExamList.pt_uuid]);
           Query += " = ";
           Query += DBCommonController._val(uuid);
+
+          // 同一被検者のUUIDがあれば、条件に追加
+          if (sameUuid != null && sameUuid != string.Empty) {
+            Query += " OR ";
+            Query += DBCommonController._table(DBCommonController.DB_TableNames[(int)DBCommonController.eDbTable.EXAM_LIST]);
+            Query += ".";
+            Query += DBCommonController._col(DBCommonController.COLNAME_ExamList[(int)DBCommonController.eExamList.pt_uuid]);
+            Query += " = ";
+            Query += DBCommonController._val(sameUuid);
+          }
+
+          Query += " ) ";
           Query += " AND ";
           Query += DBCommonController._table(DBCommonController.DB_TableNames[(int)DBCommonController.eDbTable.EXAM_PACHY_CCT]);
           Query += ".";
@@ -180,15 +206,20 @@ namespace BlazorDbTest.Controllers {
                                ExamDateTime = (DateTime)data[COLNAME_ExamPachyList[(int)eExamPachy.measured_at]],
                              }).ToList();
 
-          DataSource = SetPachyList(patientId, PachyDataSource.ToArray(), sqlConnection);
+          DataSource = SetPachyList(conditions.PatientID, PachyDataSource.ToArray(), sqlConnection);
         }
       } catch {
+        isError = true;
       } finally {
         // PostgreSQL Server 通信切断
         dbAccess.CloseSqlConnection();
       }
 
-      return DataSource;
+      if(isError) {
+        return BadRequest("Invalid search conditions.");
+      }
+
+      return Ok(DataSource);
     }
 
     // 角膜厚測定値削除

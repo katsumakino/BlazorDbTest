@@ -5,11 +5,10 @@ using Npgsql;
 using System.Data;
 using System.Text;
 using System.Text.Json;
-using static BlazorDbTest.Controllers.DBCommonController;
-using static BlazorDbTest.Controllers.DBAxmCommentController;
 using static BlazorDbTest.Controllers.DBAxialDataController;
+using static BlazorDbTest.Controllers.DBAxmCommentController;
+using static BlazorDbTest.Controllers.DBCommonController;
 using static BlazorDbTest.Controllers.DBTreatmentController;
-using System;
 
 namespace BlazorDbTest.Controllers {
 
@@ -159,7 +158,7 @@ namespace BlazorDbTest.Controllers {
         if (result == 1) {
           DataRow data = DataTable.Rows[0];
           DataSource = new PatientInfo() {
-            Mark = (resultAxm == 1)? (bool)AxmDataTable.Rows[0][COLNAME_AxmPatientList[(int)eAxmPatientList.axm_flag]] : false,
+            Mark = (resultAxm == 1) ? (bool)AxmDataTable.Rows[0][COLNAME_AxmPatientList[(int)eAxmPatientList.axm_flag]] : false,
             ID = data[COLNAME_PatientList[(int)ePatientList.pt_id]].ToString() ?? string.Empty,
             FamilyName = data[COLNAME_PatientList[(int)ePatientList.pt_lastname]].ToString() ?? string.Empty,
             FirstName = data[COLNAME_PatientList[(int)ePatientList.pt_firstname]].ToString() ?? string.Empty,
@@ -391,6 +390,19 @@ namespace BlazorDbTest.Controllers {
         } finally {
           // PostgreSQL Server 通信切断
           dbAccess.CloseSqlConnection();
+
+          LogController logController = new();
+          AxialManagerS.Shared.Common.LogInfo logInfo = new() {
+            Type = "GetPatientInfo",
+            Message = "患者情報取得",
+            ErrLevel = "I",
+            SourcePosition = string.Empty,
+            SubMessage = string.Empty,
+            IPAddress = string.Empty,
+            Screenshot = string.Empty
+          };
+
+          logController.WriteLogServer(logInfo);
         }
       } catch {
 
@@ -443,6 +455,42 @@ namespace BlazorDbTest.Controllers {
       }
 
       return;
+    }
+
+    // 被検者IDの重複の有無を確認
+    [HttpGet("CheckPatientId/{conditions}")]
+    public IActionResult CheckPatientId(string conditions) {
+      DBAccess dbAccess = DBAccess.GetInstance();
+
+      try {
+        // PostgreSQL Server 通信接続
+        NpgsqlConnection sqlConnection = dbAccess.GetSqlConnection();
+
+        // 被検者IDの重複の有無を確認
+        int count = 0;
+        string Query = "SELECT COUNT(*) FROM ";
+        Query += _table(DB_TableNames[(int)eDbTable.PATIENT_LIST]);
+        Query += " WHERE ";
+        Query += _col(COLNAME_PatientList[(int)ePatientList.pt_id]);
+        Query += " = ";
+        Query += _val(conditions);
+        Query += ";";
+
+        using NpgsqlCommand npgsqlCommand = new NpgsqlCommand(Query, sqlConnection);
+        using NpgsqlDataReader npgsqlDataReader = npgsqlCommand.ExecuteReader();
+        count = npgsqlDataReader.Read() ? Convert.ToInt32(npgsqlDataReader[0]) : -1;
+
+        if (count == 0) {
+          return Ok("OK");
+        } else {
+          return BadRequest("Duplication");
+        }
+      } catch {
+        return BadRequest("Duplication");
+      } finally {
+        // PostgreSQL Server 通信切断
+        dbAccess.CloseSqlConnection();
+      }
     }
 
     // 主キー重複時Update

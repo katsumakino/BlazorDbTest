@@ -72,12 +72,12 @@ namespace BlazorDbTest.Controllers {
         // PostgreSQL Server 通信接続
         NpgsqlConnection sqlConnection = dbAccess.GetSqlConnection();
         if(sqlConnection.State == ConnectionState.Open) {
-          return Ok("DB接続成功");
+          return Ok("connected");
         } else {
-          return BadRequest("DB接続失敗");
+          return BadRequest("failed");
         }
       } catch {
-        return BadRequest("DB接続失敗");
+        return BadRequest("failed");
       }
   }
 
